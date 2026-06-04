@@ -1,0 +1,101 @@
+Metadata-Version: 2.4
+Name: alberta-electricity-price-predictor
+Version: 0.1.0
+Summary: A machine learning project for Alberta electricity price prediction and decision support.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: license-file
+
+# Alberta Electricity Price Predictor
+
+A machine learning project that predicts Alberta electricity prices and turns those predictions into simple usage recommendations.
+
+## Project Goal
+
+This project helps Alberta households on variable-rate electricity plans decide when to use flexible electricity loads.
+
+Examples include:
+
+- laundry
+- dishwashing
+- electric vehicle charging
+- other shiftable household usage
+
+The final product will not only show predicted prices. It will also classify hours as recommended, acceptable, or avoid.
+
+## Why This Matters
+
+Alberta electricity prices can change sharply from hour to hour. A raw price forecast is useful, but most households need a simpler answer:
+
+> When should I use electricity, and when should I avoid it?
+
+This project turns hourly market data into practical decision support.
+
+## Data Sources
+
+The project will use two data sources:
+
+- historical hourly Alberta electricity data from a local CSV file
+- live or recent pool price data from the AESO API
+
+The historical CSV supports training and evaluation. The API supports future live scoring.
+
+## Planned Machine Learning Tasks
+
+This project will solve two related problems:
+
+1. Regression: predict future electricity prices.
+2. Classification: estimate future spike risk.
+
+The decision layer will combine both outputs into a recommendation.
+
+## Recommendation Labels
+
+The product will use three simple labels:
+
+- `recommended`
+- `acceptable`
+- `avoid`
+
+The rule is price-first:
+
+- high predicted price -> avoid
+- low predicted price and low spike risk -> recommended
+- all other cases -> acceptable
+
+## Project Status
+
+Current phase: Phase 0 — repository setup and scaffolding.
+
+The repository is being built from zero with a clean public-first structure.
+
+## Tech Stack
+
+Planned stack:
+
+- Python
+- pandas
+- scikit-learn
+- MLflow
+- FastAPI
+- React
+- Vite
+- Tailwind CSS
+
+## Repository Structure
+
+```text
+alberta-electricity-price-predictor/
+├── configs/
+├── data/
+│   ├── raw/
+│   ├── interim/
+│   └── processed/
+├── docs/
+├── notebooks/
+├── src/
+├── tests/
+├── logs/
+├── README.md
+└── .gitignore
