@@ -66,4 +66,3 @@ def load_historical_data(csv_path: Path) -> pd.DataFrame:
   return data
 
 
-load_historical_data(Path('data/raw/Hourly_Metered_Volumes_and_Pool_Price_and_AIL_2020-Jul2025.csv'))
