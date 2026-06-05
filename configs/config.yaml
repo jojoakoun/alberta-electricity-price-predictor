@@ -20,7 +20,7 @@ data:
 api:
   host: "127.0.0.1"
   port: 8000
-  aeso_base_url: ""
+  aeso_base_url: "https://apimgw.aeso.ca/public/poolprice-api/v1.1"
   aeso_pool_price_endpoint: "/price/poolPrice"
 
 modeling:
