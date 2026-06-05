@@ -25,12 +25,46 @@ This project turns hourly market data into practical decision support.
 
 ## Data Sources
 
-The project will use two data sources:
+The project uses two data sources:
 
 - historical hourly Alberta electricity data from a local CSV file
-- live or recent pool price data from the AESO API
+- recent pool price data from the AESO API
 
-The historical CSV supports training and evaluation. The API supports future live scoring.
+The historical CSV supports data preparation and future model training. The AESO API supports extending the historical dataset with newer pool price records.
+
+## Current Project Status
+
+Current phase: data engineering.
+
+The repository foundation is complete. The project can currently load, clean, validate, and combine historical Alberta electricity price data with recent AESO pool price API data.
+
+A short status summary is available here:
+
+[View project status](docs/PROJECT_STATUS.md)
+
+## Current Data Pipeline
+
+The current data pipeline can:
+
+- load the raw historical CSV
+- rename raw columns into project-standard column names
+- validate required columns
+- validate missing values where required
+- detect duplicate UTC timestamps
+- sort time-series data by UTC time
+- fetch AESO pool price data from the API
+- normalize AESO API responses into the project schema
+- extend the historical dataset with new API records
+- avoid replacing existing historical rows during API integration
+
+## Current Data Outputs
+
+The generated data files are local outputs and are not tracked by Git.
+
+| Output file | Description |
+|---|---|
+| `data/interim/csv_historical_prices_clean.csv` | Cleaned historical dataset created from the local CSV |
+| `data/interim/extended_historical_prices_clean.csv` | Historical dataset extended with recent AESO API data |
 
 ## Planned Machine Learning Tasks
 
@@ -55,18 +89,16 @@ The rule is price-first:
 - low predicted price and low spike risk -> recommended
 - all other cases -> acceptable
 
-## Project Status
-
-Current phase: Phase 0 — repository setup and scaffolding.
-
-The repository is being built from zero with a clean public-first structure.
-
 ## Tech Stack
 
-Planned stack:
+Current and planned stack:
 
 - Python
 - pandas
+- pytest
+- requests
+- python-dotenv
+- PyYAML
 - scikit-learn
 - MLflow
 - FastAPI
@@ -86,7 +118,17 @@ alberta-electricity-price-predictor/
 ├── docs/
 ├── notebooks/
 ├── src/
+│   └── electricity_predictor/
+│       ├── data/
+│       ├── features/
+│       ├── modeling/
+│       ├── visualization/
+│       ├── serving/
+│       └── api/
 ├── tests/
 ├── logs/
 ├── README.md
-└── .gitignore
+├── LICENSE
+├── Makefile
+├── pyproject.toml
+└── requirements.txt
