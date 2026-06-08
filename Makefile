@@ -16,3 +16,9 @@ config-check:
 pipeline:
 	# Build the current historical dataset from CSV and AESO API data.
 	python src/electricity_predictor/data/pipeline.py
+
+
+
+data-quality:
+	# Inspect the current historical dataset before feature engineering.
+	python src/electricity_predictor/data/data_quality.py
