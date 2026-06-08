@@ -2,13 +2,16 @@ from pathlib import Path
 
 import pandas as pd
 
-from electricity_predictor.data.ingestion import load_historical_data, validate_historical_data
+from electricity_predictor.data.ingestion import (
+  load_historical_data, validate_historical_data
+)
+
 from electricity_predictor.data.pipeline import (
   build_clean_historical_dataset,
+  build_current_historical_dataset,
   combine_historical_and_api_data,
   get_api_start_date_after_history,
 )
-
 
 CSV_PATH = Path("data/raw/Hourly_Metered_Volumes_and_Pool_Price_and_AIL_2020-Jul2025.csv")
 
@@ -159,3 +162,9 @@ def test_combine_historical_and_api_data_keeps_only_new_api_hours() -> None:
 
   # If the API overwrote the historical row, this value would be 999.0.
   assert historical_23h_price == 50.0
+  
+
+def test_build_current_historical_dataset_function_exists() -> None:
+
+  # The pipeline should expose the current dataset builder.
+  assert callable(build_current_historical_dataset)

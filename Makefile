@@ -12,3 +12,7 @@ test:
 config-check:
 	# Check that the configuration can be loaded.
 	python -c "from electricity_predictor.config import load_configuration; print(load_configuration()['project']['name'])"
+
+pipeline:
+	# Build the current historical dataset from CSV and AESO API data.
+	python src/electricity_predictor/data/pipeline.py
