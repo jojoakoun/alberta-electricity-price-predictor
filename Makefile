@@ -1,4 +1,4 @@
-.PHONY: install test config-check
+.PHONY: install test config-check pipeline data-quality
 
 install:
 	# Install dependencies and register the local package.
@@ -16,8 +16,6 @@ config-check:
 pipeline:
 	# Build the current historical dataset from CSV and AESO API data.
 	python src/electricity_predictor/data/pipeline.py
-
-
 
 data-quality:
 	# Inspect the current historical dataset before feature engineering.

@@ -8,7 +8,7 @@ This document summarizes the current state of the project.
 
 The project is currently in the data engineering phase.
 
-The repository foundation is complete. The project can load, clean, validate, combine, and inspect historical Alberta electricity price data with recent AESO pool price API data.
+The repository foundation is complete. The project can load, clean, validate, combine, inspect, and explore historical Alberta electricity price data with recent AESO pool price API data.
 
 ## Completed Work
 
@@ -28,6 +28,7 @@ The repository foundation is complete. The project can load, clean, validate, co
 | Makefile pipeline command | Complete | The project can run the main data pipeline with `make pipeline`. |
 | Data quality reporting | Complete | The project can generate a readable quality summary for the current historical dataset. |
 | Makefile data quality command | Complete | The project can run the data quality report with `make data-quality`. |
+| Exploratory data analysis | Complete | The project includes an EDA notebook that answers 10 business questions before feature engineering and modeling. |
 | Automated tests | Complete | The current test suite passes successfully. |
 
 ## Current Data Outputs
@@ -48,6 +49,7 @@ The repository foundation is complete. The project can load, clean, validate, co
 | `src/electricity_predictor/data/aeso_api.py` | Fetches, normalizes, and validates AESO pool price API data. |
 | `src/electricity_predictor/data/pipeline.py` | Builds clean interim datasets from historical and API sources. |
 | `src/electricity_predictor/data/data_quality.py` | Generates a readable quality summary for the current historical dataset. |
+| `notebooks/01_eda.ipynb` | Explores the current historical dataset before feature engineering and modeling. |
 | `tests/test_config.py` | Tests project configuration loading. |
 | `tests/test_ingestion.py` | Tests historical ingestion, validation, dataset building, and merge behavior. |
 | `tests/test_aeso_api.py` | Tests AESO API response normalization without calling the live API. |
@@ -76,25 +78,46 @@ The current historical dataset quality report shows:
 
 | Check | Current result |
 |---|---:|
-| Rows | 56,413 |
+| Rows | 57,112 |
 | Columns | 5 |
 | Min UTC time | 2020-01-01 07:00:00 |
-| Max UTC time | 2026-06-08 19:00:00 |
+| Max UTC time | 2026-07-07 22:00:00 |
 | Duplicate UTC timestamps | 0 |
 | Missing hourly UTC timestamps | 0 |
 | Missing `datetime_universal_time` values | 0 |
 | Missing `datetime_local_time` values | 0 |
-| Missing `actual_price` values | 4 |
+| Missing `actual_price` values | 3 |
 | Missing `forecast_price` values | 0 |
-| Missing `alberta_internal_load` values | 7,478 |
-| Zero `actual_price` values | 1,740 |
-| Zero `forecast_price` values | 2,329 |
+| Missing `alberta_internal_load` values | 8177 |
+| Zero `actual_price` values | 1880 |
+| Zero `forecast_price` values | 2500 |
+
+## EDA Summary
+
+The EDA notebook is located at:
+
+```text
+notebooks/01_eda.ipynb
+```
+
+The notebook answers 10 business questions covering:
+
+- data coverage
+- hourly time-series completeness
+- actual price distribution
+- zero, low, high, and extreme price ranges
+- price spike timing
+- hour-of-day patterns
+- day-of-week patterns
+- monthly and seasonal patterns
+- AESO forecast usefulness
+- recommendation-threshold considerations
 
 ## Important Data Notes
 
 The dataset is hourly and continuous from the first UTC timestamp to the latest UTC timestamp.
 
-The 4 missing `actual_price` values are recent API records where the actual price is not finalized yet. These rows are kept in the source dataset but should be excluded later from model training datasets.
+Recent API rows may contain missing `actual_price` values when the actual price is not finalized yet. These rows are kept in the source dataset but should be excluded later from model training datasets.
 
 The `alberta_internal_load` column is available in the historical CSV but missing for recent AESO pool price API records because the current pool price API response does not provide that field.
 
@@ -117,3 +140,5 @@ Zero price values exist in both `actual_price` and `forecast_price`. These value
 | Current main dataset | `data/interim/current_historical_prices_clean.csv` |
 | Source dataset rule | Keep recent incomplete API rows |
 | Training dataset rule | Exclude rows without finalized `actual_price` before model training |
+| First modeling dataset rule | Do not rely on `alberta_internal_load` unless a recent AIL source is added |
+| Recommendation threshold rule | Do not define final thresholds before feature engineering, modeling, and evaluation |
