@@ -2,60 +2,70 @@
 
 This file records the main technical and product decisions for the Alberta Electricity Price Predictor.
 
-Each entry explains:
+Each decision uses this structure:
 
-- what we chose
-- why we chose it
-- what we rejected
-- what comes next
+- **Decision:** what we chose
+- **Why:** why the choice makes sense
+- **Rejected:** what we chose not to do
+- **Next:** what the decision supports next
+
+Decision IDs are organized by phase:
+
+- `P0` = repository setup
+- `P1` = data engineering
+- `P2` = feature engineering
+
+---
 
 ## Phase 0 — Repository Setup
 
-### Decision 1 — Build a clean public-first project
+### P0-D01 — Build a clean public-first project
 
-We chose to build the project from zero with a clean public repository structure.
+**Decision:** Build the project from zero with a clean public repository structure.
 
-Why: the repository must be easy to understand, easy to run, and easy to maintain.
+**Why:** The repository must be easy to understand, run, and maintain.
 
-Rejected: starting with unnecessary complexity before the core product works.
+**Rejected:** Starting with unnecessary complexity before the core product works.
 
-Next: create the project foundation, then add data engineering in Phase 1.
+**Next:** Use the project foundation to support data engineering, modeling, and application development.
 
-### Decision 2 — Keep the public product name simple
+### P0-D02 — Keep the public product name simple
 
-We chose to use `Alberta Electricity Price Predictor` as the project name for now.
+**Decision:** Use `Alberta Electricity Price Predictor` as the project name.
 
-Why: this name is clear and describes the project directly.
+**Why:** The name is clear and describes the project directly.
 
-Rejected: using a separate brand name before the product direction is stable.
+**Rejected:** Using a separate brand name before the product direction is stable.
 
-Next: revisit branding only after the core product works.
+**Next:** Revisit branding only after the core product works.
+
+---
 
 ## Phase 1 — Data Engineering
 
-### Decision 3 — Keep CSV as the interim data format
+### P1-D01 — Keep CSV as the interim data format
 
-We chose to keep interim datasets as CSV files.
+**Decision:** Keep interim datasets as CSV files.
 
-Why: CSV is simple, readable, easy to inspect, and enough for the current phase.
+**Why:** CSV is simple, readable, easy to inspect, and enough for the current phase.
 
-Rejected: switching to Excel or a heavier data format before the project needs it.
+**Rejected:** Switching to Excel or a heavier data format before the project needs it.
 
-Next: continue using CSV for interim outputs unless scale or performance requires another format.
+**Next:** Continue using CSV for interim outputs unless scale or performance requires another format.
 
-### Decision 4 — Separate historical ingestion from API ingestion
+### P1-D02 — Separate historical ingestion from API ingestion
 
-We chose to keep historical CSV ingestion and AESO API ingestion in separate modules.
+**Decision:** Keep historical CSV ingestion and AESO API ingestion in separate modules.
 
-Why: the two sources have different formats, validation needs, and failure modes.
+**Why:** The two sources have different formats, validation needs, and failure modes.
 
-Rejected: mixing CSV and API logic in one large script.
+**Rejected:** Mixing CSV and API logic in one large script.
 
-Next: keep each source clean, then combine them through the pipeline layer.
+**Next:** Keep each source clean, then combine them through the pipeline layer.
 
-### Decision 5 — Use project-standard column names
+### P1-D03 — Use project-standard column names
 
-We chose to rename raw source columns into stable project names.
+**Decision:** Rename raw source columns into stable project names.
 
 Current standard columns include:
 
@@ -65,58 +75,100 @@ Current standard columns include:
 - `forecast_price`
 - `alberta_internal_load`
 
-Why: stable names make downstream code easier to read and maintain.
+**Why:** Stable names make downstream code easier to read and maintain.
 
-Rejected: using source-specific names such as `Date_Begin_GMT` or `ACTUAL_AIL` throughout the project.
+**Rejected:** Using source-specific names such as `Date_Begin_GMT` or `ACTUAL_AIL` throughout the project.
 
-Next: use these names consistently in validation, EDA, feature engineering, and modeling.
+**Next:** Use these names consistently in validation, EDA, feature engineering, and modeling.
 
-### Decision 6 — Extend historical data without overwriting it
+### P1-D04 — Extend historical data without overwriting it
 
-We chose to let AESO API data extend the historical CSV data only after the last historical UTC timestamp.
+**Decision:** Let AESO API data extend the historical CSV data only after the last historical UTC timestamp.
 
-Why: the historical CSV remains the trusted base for older records, while the API adds newer records.
+**Why:** The historical CSV remains the trusted base for older records, while the API adds newer records.
 
-Rejected: allowing API rows to overwrite existing historical rows.
+**Rejected:** Allowing API rows to overwrite existing historical rows.
 
-Next: continue checking for duplicate UTC timestamps after merging.
+**Next:** Continue checking for duplicate UTC timestamps after merging.
 
-### Decision 7 — Keep recent incomplete API rows in the source dataset
+### P1-D05 — Keep recent incomplete API rows in the source dataset
 
-We chose to keep recent API rows even when `actual_price` is not finalized yet.
+**Decision:** Keep recent API rows even when `actual_price` is not finalized yet.
 
-Why: recent market data may include hours where the actual pool price is not available yet. These rows are useful for live data awareness but not for training.
+**Why:** Recent market data may include hours where the actual pool price is not available yet. These rows are useful for live data awareness but not for training.
 
-Rejected: deleting incomplete recent rows from the source dataset.
+**Rejected:** Deleting incomplete recent rows from the source dataset.
 
-Next: exclude rows without finalized `actual_price` when creating modeling datasets.
+**Next:** Exclude rows without finalized `actual_price` when creating modeling datasets.
 
-### Decision 8 — Do not use `alberta_internal_load` in the first modeling dataset unless recent load data is added
+### P1-D06 — Do not rely on `alberta_internal_load` in the first modeling dataset unless recent load data is added
 
-We found that `alberta_internal_load` is available in the historical CSV but missing for recent AESO pool price API records.
+**Decision:** Do not rely on `alberta_internal_load` as a required feature in the first modeling dataset.
 
-Why: a model that relies on this feature would not work consistently on current API-extended data unless a recent AIL source is added.
+**Why:** This column is available in the historical CSV but missing for recent AESO pool price API records. A model that depends on it would not work consistently on current API-extended data.
 
-Rejected: forcing `alberta_internal_load` into the first modeling dataset despite recent missing values.
+**Rejected:** Forcing `alberta_internal_load` into the first modeling dataset despite recent missing values.
 
-Next: either exclude this feature from the first model or add a reliable recent AIL source later.
+**Next:** Either exclude this feature from the first model or add a reliable recent AIL source later.
 
-### Decision 9 — Add explicit data quality reporting before feature engineering
+### P1-D07 — Add explicit data quality reporting before feature engineering
 
-We chose to add a data quality report before building features.
+**Decision:** Add a data quality report before building features.
 
-Why: feature engineering should not start until the project understands coverage, missing values, duplicate timestamps, hourly continuity, and zero-price behavior.
+**Why:** Feature engineering should not start until the project understands coverage, missing values, duplicate timestamps, hourly continuity, and zero-price behavior.
 
-Rejected: moving directly from data ingestion to feature engineering without quality checks.
+**Rejected:** Moving directly from data ingestion to feature engineering without quality checks.
 
-Next: use the data quality report as a checkpoint before modeling data preparation.
+**Next:** Use the data quality report as a checkpoint before modeling data preparation.
 
-### Decision 10 — Complete EDA before defining recommendation thresholds
+### P1-D08 — Complete EDA before defining recommendation thresholds
 
-We chose to answer business-focused EDA questions before defining `recommended`, `acceptable`, and `avoid` thresholds.
+**Decision:** Answer business-focused EDA questions before defining `recommended`, `acceptable`, and `avoid` thresholds.
 
-Why: thresholds should be supported by historical price behavior, spike patterns, forecast usefulness, and model evaluation.
+**Why:** Thresholds should be supported by historical price behavior, spike patterns, forecast usefulness, and model evaluation.
 
-Rejected: hardcoding recommendation thresholds too early.
+**Rejected:** Hardcoding recommendation thresholds too early.
 
-Next: use EDA findings to guide feature engineering, baseline models, spike-risk classification, and the future decision layer.
+**Next:** Use EDA findings to guide feature engineering, baseline models, spike-risk classification, and the future decision layer.
+
+---
+
+## Phase 2 — Feature Engineering
+
+### P2-D01 — Create a separate modeling dataset
+
+**Decision:** Create a separate modeling dataset instead of modifying the current historical dataset directly.
+
+**Why:** The current historical dataset is the clean source dataset produced by the data pipeline. Feature engineering adds model-specific columns, removes rows that are not usable for training, and prepares data for machine learning.
+
+**Rejected:** Adding feature columns directly to `data/interim/current_historical_prices_clean.csv`.
+
+**Next:** Create a feature engineering module that reads the current historical dataset and writes a processed modeling dataset.
+
+### P2-D02 — Exclude unfinished target rows from modeling datasets
+
+**Decision:** Exclude rows where `actual_price` is missing from modeling datasets.
+
+**Why:** `actual_price` is the target for price prediction. Rows without a finalized actual price cannot be used to train or evaluate a supervised model.
+
+**Rejected:** Keeping unfinished target rows in the modeling dataset.
+
+**Next:** Keep incomplete recent rows in the source dataset, but remove them when building model-ready data.
+
+### P2-D03 — Build the first feature set with available current data
+
+**Decision:** Build the first modeling dataset using features that are available in the current API-extended dataset.
+
+Initial feature groups may include:
+
+- time features
+- forecast price features
+- lag features
+- rolling price features
+- recent spike-history features
+
+**Why:** The first model should work with the data that the project can reliably generate now.
+
+**Rejected:** Depending on unavailable or incomplete external features before the first modeling dataset works.
+
+**Next:** Design and implement the first feature engineering module slowly, with tests and inspection after each step.
