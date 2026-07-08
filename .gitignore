@@ -44,3 +44,5 @@ client/dist/
 # Build artifacts
 dist/
 build/
+context_exports/
+*.egg-info/

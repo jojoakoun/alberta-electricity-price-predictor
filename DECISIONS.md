@@ -14,6 +14,7 @@ Decision IDs are organized by phase:
 - `P0` = repository setup
 - `P1` = data engineering
 - `P2` = feature engineering
+- `P3` = modeling
 
 ---
 
@@ -183,3 +184,27 @@ Initial feature groups may include:
 **Rejected:** Dropping incomplete feature rows directly from the modeling dataset.
 
 **Next:** Use `training_dataset.csv` as the input for Phase 3 baseline modeling.
+
+---
+
+## Phase 3 — Modeling
+
+### P3-D01 — Separate regression and classification modeling code
+
+**Decision:** Organize modeling code under `src/electricity_predictor/modeling/` with separate `regression/` and `classification/` folders.
+
+**Why:** The project has two related but different machine learning tasks. Regression predicts the exact electricity price, while classification will later support `recommended`, `acceptable`, and `avoid` usage categories.
+
+**Rejected:** Keeping all modeling files in one flat folder or mixing regression and classification logic in the same module.
+
+**Next:** Start Phase 3 with a naive regression baseline, then compare it against Linear Regression before adding more complex models.
+
+### P3-D02 — Start modeling with a naive regression baseline
+
+**Decision:** Start Phase 3 with a naive regression baseline that predicts `actual_price` using `actual_price_lag_1h`.
+
+**Why:** A baseline gives the project a simple benchmark. Future models are only useful if they beat this simple prediction. Since electricity prices are time-series data, the previous hour price is a reasonable first comparison point.
+
+**Rejected:** Starting directly with Linear Regression, Random Forest, Gradient Boosting, XGBoost, or Deep Learning before establishing a simple benchmark.
+
+**Next:** Build the naive baseline, evaluate it with MAE and RMSE, then compare later models against it.

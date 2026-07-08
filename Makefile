@@ -1,4 +1,4 @@
-.PHONY: install test config-check pipeline data-quality features feature-quality training-data
+.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context baseline
 
 install:
 	# Install dependencies and register the local package.
@@ -35,3 +35,36 @@ training-data:
 	python src/electricity_predictor/features/training_data.py
 
 
+project-context:
+	# Export important project files into one text file for context sharing.
+	mkdir -p context_exports
+	find . \
+		-path "./.git" -prune -o \
+		-path "./.venv" -prune -o \
+		-path "./data" -prune -o \
+		-path "./context_exports" -prune -o \
+		-path "./__pycache__" -prune -o \
+		-path "./.pytest_cache" -prune -o \
+		-path "./.ipynb_checkpoints" -prune -o \
+		-name "*.csv" -prune -o \
+		-name "*.pkl" -prune -o \
+		-name "*.joblib" -prune -o \
+		-name "*.pyc" -prune -o \
+		-type f \( \
+			-name "*.py" -o \
+			-name "*.md" -o \
+			-name "*.yaml" -o \
+			-name "*.yml" -o \
+			-name "*.toml" -o \
+			-name "Makefile" -o \
+			-name "requirements.txt" \
+		\) -print | sort | while read file; do \
+			echo "===== $$file ====="; \
+			sed -n '1,260p' "$$file"; \
+			echo ""; \
+		done > context_exports/project_context.txt
+	@echo "Project context exported to context_exports/project_context.txt"
+
+baseline:
+	# Run the naive regression baseline.
+	python src/electricity_predictor/modeling/regression/baseline.py

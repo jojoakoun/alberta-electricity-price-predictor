@@ -1,6 +1,8 @@
 pandas
 numpy
-pyyaml
-python-dotenv
 requests
+python-dotenv
+PyYAML
 pytest
+scikit-learn
+matplotlib
