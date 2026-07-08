@@ -219,3 +219,14 @@ Initial feature groups may include:
 
 **Next:** Create a reusable split function for train, validation, and test datasets before training Linear Regression or other models.
 
+
+### P3-D04 — Evaluate baseline models on the time-based test set
+
+**Decision:** Evaluate regression baseline performance on the chronological test set instead of the full training dataset.
+
+**Why:** The test set contains the newest data and better represents future-like model performance. Evaluating on the full dataset can make the score look more general than it really is.
+
+**Rejected:** Reporting the baseline score using all available training rows.
+
+**Next:** Use the same split strategy when evaluating Linear Regression and future regression models.
+

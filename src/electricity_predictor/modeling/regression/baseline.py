@@ -2,10 +2,12 @@ from pathlib import Path
 
 import pandas as pd
 
+from electricity_predictor.config import load_configuration
 from electricity_predictor.modeling.metrics import (
   mean_absolute_error_value,
   root_mean_squared_error_value,
 )
+from electricity_predictor.modeling.split import split_time_series_data
 
 
 TARGET_COLUMN = "actual_price"
@@ -32,20 +34,38 @@ def evaluate_naive_baseline(data: pd.DataFrame) -> dict[str, float]:
   }
 
 
-def print_baseline_summary(scores: dict[str, float]) -> None:
+def print_baseline_summary(scores: dict[str, float], row_count: int) -> None:
   """Print a readable summary of baseline model performance."""
   print("Naive baseline regression")
   print("=========================")
   print(f"Prediction column: {NAIVE_BASELINE_PREDICTION_COLUMN}")
   print(f"Target column: {TARGET_COLUMN}")
+  print(f"Evaluation rows: {row_count:,}")
   print(f"MAE: {scores['mae']:.2f}")
   print(f"RMSE: {scores['rmse']:.2f}")
 
 
 if __name__ == "__main__":
+  configuration = load_configuration()
+
   training_dataset_path = Path("data/processed/training_dataset.csv")
+  modeling_config = configuration["modeling"]
 
   training_data = load_training_dataset(training_dataset_path)
-  baseline_scores = evaluate_naive_baseline(training_data)
 
-  print_baseline_summary(baseline_scores)
+  train_data, validation_data, test_data = split_time_series_data(
+    data=training_data,
+    train_ratio=modeling_config["train_ratio"],
+    validation_ratio=modeling_config["validation_ratio"],
+    test_ratio=modeling_config["test_ratio"],
+  )
+
+  # Evaluate on the newest split to estimate future-like baseline performance.
+  baseline_scores = evaluate_naive_baseline(test_data)
+
+  print_baseline_summary(
+    scores=baseline_scores,
+    row_count=len(test_data),
+  )
+  
+  
