@@ -172,3 +172,14 @@ Initial feature groups may include:
 **Rejected:** Depending on unavailable or incomplete external features before the first modeling dataset works.
 
 **Next:** Design and implement the first feature engineering module slowly, with tests and inspection after each step.
+
+
+### P2-D04 — Keep modeling data separate from training data
+
+**Decision:** Keep `data/processed/modeling_dataset.csv` as the full feature-engineered dataset and create a separate `data/processed/training_dataset.csv` for rows that are ready for model training.
+
+**Why:** Lag and rolling features naturally create missing values in the first rows because there is not enough historical context. Keeping the modeling dataset complete makes feature quality inspection transparent, while the training dataset can remove incomplete rows before modeling.
+
+**Rejected:** Dropping incomplete feature rows directly from the modeling dataset.
+
+**Next:** Use `training_dataset.csv` as the input for Phase 3 baseline modeling.

@@ -1,11 +1,19 @@
 # Project Status
+
 ## Alberta Electricity Price Predictor
+
 This document summarizes the current state of the project.
+
 ## Current Phase
-The project is currently in the feature engineering phase.
+
+The project is currently at the end of Phase 2 — Feature Engineering and ML preprocessing.
+
 The repository foundation and Phase 1 data engineering work are complete. The project can load, clean, validate, combine, inspect, and explore historical Alberta electricity price data with recent AESO pool price API data.
-Phase 2 has started. The project can now build a first modeling dataset with time features, lag features, and rolling price features.
+
+Phase 2 is complete for baseline modeling. The project can now build a feature-engineered modeling dataset, inspect feature quality, and create a model-ready training dataset.
+
 ## Completed Work
+
 | Area | Status | Summary |
 |---|---:|---|
 | Repository foundation | Complete | The project has a clean structure with source code, tests, configuration, documentation, and ignored local data files. |
@@ -27,16 +35,25 @@ Phase 2 has started. The project can now build a first modeling dataset with tim
 | Time features | Complete | The modeling dataset includes `hour`, `day_of_week`, `month`, and `is_weekend`. |
 | Lag features | Complete | The modeling dataset includes past price features that avoid target leakage. |
 | Rolling price features | Complete | The modeling dataset includes rolling summaries based only on past actual prices. |
+| Feature quality reporting | Complete | The project can inspect missing values introduced by lag and rolling features. |
 | Makefile feature command | Complete | The project can build the modeling dataset with `make features`. |
+| Makefile feature quality command | Complete | The project can run the feature quality report with `make feature-quality`. |
+| Training dataset preparation | Complete | The project can create a model-ready training dataset by removing rows with missing engineered features. |
+| Makefile training data command | Complete | The project can build the training dataset with `make training-data`. |
 | Automated tests | Complete | The current test suite passes successfully. |
+
 ## Current Data Outputs
+
 | Output file | Description | Git status |
 |---|---|---|
 | `data/raw/Hourly_Metered_Volumes_and_Pool_Price_and_AIL_2020-Jul2025.csv` | Raw historical electricity data source | Ignored |
 | `data/interim/csv_historical_prices_clean.csv` | Cleaned historical dataset created from the local CSV | Ignored |
 | `data/interim/current_historical_prices_clean.csv` | Current historical dataset extended with recent AESO API data | Ignored |
-| `data/processed/modeling_dataset.csv` | First model-ready dataset with time, lag, and rolling features | Ignored |
+| `data/processed/modeling_dataset.csv` | Full feature-engineered dataset with time, lag, and rolling features. It keeps early rows with missing engineered features for transparency. | Ignored |
+| `data/processed/training_dataset.csv` | Model-ready dataset with incomplete engineered feature rows removed. This is the input for baseline modeling. | Ignored |
+
 ## Current Core Modules
+
 | File | Purpose |
 |---|---|
 | `src/electricity_predictor/config.py` | Loads project configuration. |
@@ -46,12 +63,19 @@ Phase 2 has started. The project can now build a first modeling dataset with tim
 | `src/electricity_predictor/data/pipeline.py` | Builds clean interim datasets from historical and API sources. |
 | `src/electricity_predictor/data/data_quality.py` | Generates a readable quality summary for the current historical dataset. |
 | `src/electricity_predictor/features/feature_engineering.py` | Builds the first processed modeling dataset with time, lag, and rolling features. |
+| `src/electricity_predictor/features/feature_columns.py` | Centralizes shared engineered feature column names. |
+| `src/electricity_predictor/features/feature_quality.py` | Reports missing values created by lag and rolling feature windows. |
+| `src/electricity_predictor/features/training_data.py` | Builds the model-ready training dataset from the modeling dataset. |
 | `notebooks/01_eda.ipynb` | Explores the current historical dataset before feature engineering and modeling. |
 | `tests/test_config.py` | Tests project configuration loading. |
 | `tests/test_ingestion.py` | Tests historical ingestion, validation, dataset building, and merge behavior. |
 | `tests/test_aeso_api.py` | Tests AESO API response normalization without calling the live API. |
 | `tests/test_feature_engineering.py` | Tests time features, missing target removal, lag features, rolling features, and modeling dataset columns. |
+| `tests/test_feature_quality.py` | Tests feature quality reporting logic. |
+| `tests/test_training_data.py` | Tests training dataset preparation logic. |
+
 ## Current Makefile Commands
+
 | Command | Purpose |
 |---|---|
 | `make install` | Installs dependencies and registers the local package. |
@@ -60,26 +84,40 @@ Phase 2 has started. The project can now build a first modeling dataset with tim
 | `make pipeline` | Builds the current historical dataset from CSV and AESO API data. |
 | `make data-quality` | Runs the data quality report for the current historical dataset. |
 | `make features` | Builds the processed modeling dataset for machine learning. |
+| `make feature-quality` | Inspects missing values created by feature engineering. |
+| `make training-data` | Builds the model-ready training dataset. |
+
 ## Current Validation Status
+
 The current test suite passes successfully.
+
 ```text
-18 passed
+25 passed
 ```
+
 ## Current Modeling Dataset
+
 The current modeling dataset is created by:
+
 ```bash
 make features
 ```
+
 The output file is:
+
 ```text
 data/processed/modeling_dataset.csv
 ```
+
 Current shape:
+
 | Check | Current result |
 |---|---:|
 | Rows | 57,109 |
 | Columns | 14 |
+
 Current modeling columns:
+
 | Column | Role |
 |---|---|
 | `datetime_universal_time` | Main UTC timestamp key. |
@@ -96,8 +134,34 @@ Current modeling columns:
 | `actual_price_rolling_24h_mean` | Mean actual price from the previous 24 hours. |
 | `actual_price_rolling_24h_max` | Maximum actual price from the previous 24 hours. |
 | `actual_price_rolling_7d_mean` | Mean actual price from the previous 7 days. |
+
+## Current Training Dataset
+
+The current training dataset is created by:
+
+```bash
+make training-data
+```
+
+The output file is:
+
+```text
+data/processed/training_dataset.csv
+```
+
+Current shape:
+
+| Check | Current result |
+|---|---:|
+| Rows | 56,941 |
+| Columns | 14 |
+
+The training dataset is created from `modeling_dataset.csv` by removing rows with missing engineered feature values. This keeps the modeling dataset transparent while giving Phase 3 a clean input for baseline modeling.
+
 ## Current Data Quality Snapshot
+
 The current historical dataset quality report shows:
+
 | Check | Current result |
 |---|---:|
 | Rows | 57,112 |
@@ -113,12 +177,17 @@ The current historical dataset quality report shows:
 | Missing `alberta_internal_load` values | 8177 |
 | Zero `actual_price` values | 1880 |
 | Zero `forecast_price` values | 2500 |
+
 ## EDA Summary
+
 The EDA notebook is located at:
+
 ```text
 notebooks/01_eda.ipynb
 ```
+
 The notebook answers 10 business questions covering:
+
 - data coverage
 - hourly time-series completeness
 - actual price distribution
@@ -129,13 +198,23 @@ The notebook answers 10 business questions covering:
 - monthly and seasonal patterns
 - AESO forecast usefulness
 - recommendation-threshold considerations
+
 ## Important Data Notes
+
 The dataset is hourly and continuous from the first UTC timestamp to the latest UTC timestamp.
+
 Recent API rows may contain missing `actual_price` values when the actual price is not finalized yet. These rows are kept in the source dataset but excluded from the processed modeling dataset.
+
 The `alberta_internal_load` column is available in the historical CSV but missing for recent AESO pool price API records because the current pool price API response does not provide that field.
+
 Zero price values exist in both `actual_price` and `forecast_price`. These values are not removed automatically because they may represent real market behavior or API-specific reporting behavior. They require modeling and evaluation before final decisions are made.
+
 Lag and rolling features are built from past values only. This prevents the model from using the current `actual_price` target as an input feature.
+
+The training dataset removes rows with missing engineered feature values before baseline modeling.
+
 ## Key Design Decisions
+
 | Decision | Current choice |
 |---|---|
 | Project name | `Alberta Electricity Price Predictor` |
@@ -151,16 +230,19 @@ Lag and rolling features are built from past values only. This prevents the mode
 | Historical merge rule | API data extends historical data but does not overwrite existing historical rows |
 | Current main dataset | `data/interim/current_historical_prices_clean.csv` |
 | Current modeling dataset | `data/processed/modeling_dataset.csv` |
+| Current training dataset | `data/processed/training_dataset.csv` |
 | Source dataset rule | Keep recent incomplete API rows |
-| Training dataset rule | Exclude rows without finalized `actual_price` before model training |
+| Training dataset rule | Exclude rows without finalized `actual_price` and rows with missing engineered feature values before model training |
 | First modeling dataset rule | Do not rely on `alberta_internal_load` unless a recent AIL source is added |
 | Feature leakage rule | Lag and rolling features must use past values only |
 | Recommendation threshold rule | Do not define final thresholds before feature engineering, modeling, and evaluation |
+
 ## Next Work
+
 | Next step | Purpose |
 |---|---|
-| Add feature quality checks | Inspect missing values introduced by lag and rolling windows. |
-| Decide how to handle early rows with missing lag and rolling values | Prepare the dataset for model training. |
-| Build a baseline regression model | Predict `actual_price` with a simple benchmark model. |
-| Evaluate baseline performance | Understand whether the first feature set is useful. |
+| Begin Phase 3 baseline modeling | Create the first benchmark model before using more complex models. |
+| Build a naive regression baseline | Predict `actual_price` using a simple benchmark such as the previous hour price. |
+| Evaluate baseline performance | Establish MAE and RMSE reference scores. |
+| Compare against Linear Regression | Check whether the engineered features improve over the naive baseline. |
 | Design spike-risk labels later | Support future `recommended`, `acceptable`, and `avoid` logic without hardcoding thresholds too early. |
