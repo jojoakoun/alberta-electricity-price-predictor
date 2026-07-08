@@ -67,15 +67,15 @@ project-context:
 
 baseline:
 	# Run the naive regression baseline.
-	python src/electricity_predictor/modeling/regression/baseline.py
+	python src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
 
 linear-regression:
 	# Train and evaluate the Linear Regression model on the validation split.
-	python src/electricity_predictor/modeling/regression/linear_regression.py
+	python src/electricity_predictor/modeling/regression/linear/linear_regression.py
 
 ridge-regression:
 	# Train and evaluate the Ridge Regression model on the validation split.
-	python src/electricity_predictor/modeling/regression/ridge_regression.py
+	python src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
 
 
 lasso-regression:
