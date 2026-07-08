@@ -208,3 +208,14 @@ Initial feature groups may include:
 **Rejected:** Starting directly with Linear Regression, Random Forest, Gradient Boosting, XGBoost, or Deep Learning before establishing a simple benchmark.
 
 **Next:** Build the naive baseline, evaluate it with MAE and RMSE, then compare later models against it.
+
+### P3-D03 — Use time-based splits for model evaluation
+
+**Decision:** Split modeling data by chronological order instead of random order.
+
+**Why:** Electricity prices are time-series data. A random split can train the model on future records and test it on older records. This creates unrealistic evaluation and possible data leakage.
+
+**Rejected:** Using a random train/test split for model evaluation.
+
+**Next:** Create a reusable split function for train, validation, and test datasets before training Linear Regression or other models.
+
