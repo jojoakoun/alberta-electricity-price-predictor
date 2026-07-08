@@ -49,6 +49,28 @@ def add_lag_features(data: pd.DataFrame) -> pd.DataFrame:
   return data
 
 
+def add_rolling_features(data: pd.DataFrame) -> pd.DataFrame:
+  """Add rolling summaries from past actual prices."""
+  data = data.copy()
+
+  # Sort by UTC time so rolling windows follow the true hourly sequence.
+  data = data.sort_values("datetime_universal_time").reset_index(drop=True)
+
+  # Shift first so the current target value is not included in its own features.
+  past_actual_price = data["actual_price"].shift(1)
+
+  # The 24-hour mean captures the recent market level before the target hour.
+  data["actual_price_rolling_24h_mean"] = past_actual_price.rolling(24).mean()
+
+  # The 24-hour max captures whether the market recently had a high-price event.
+  data["actual_price_rolling_24h_max"] = past_actual_price.rolling(24).max()
+
+  # The 7-day mean captures broader market context before the target hour.
+  data["actual_price_rolling_7d_mean"] = past_actual_price.rolling(24 * 7).mean()
+
+  return data
+
+
 def build_basic_modeling_dataset(data: pd.DataFrame) -> pd.DataFrame:
   """Build the first simple modeling dataset."""
   data = data.copy()
@@ -61,6 +83,9 @@ def build_basic_modeling_dataset(data: pd.DataFrame) -> pd.DataFrame:
 
   # Add past price values without leaking the current target value.
   data = add_lag_features(data)
+
+  # Add rolling summaries from past prices to describe recent market conditions.
+  data = add_rolling_features(data)
 
   # Keep only columns that are available now and useful for the first modeling dataset.
   modeling_columns = [
@@ -75,6 +100,9 @@ def build_basic_modeling_dataset(data: pd.DataFrame) -> pd.DataFrame:
     "actual_price_lag_1h",
     "actual_price_lag_24h",
     "forecast_price_lag_1h",
+    "actual_price_rolling_24h_mean",
+    "actual_price_rolling_24h_max",
+    "actual_price_rolling_7d_mean",
   ]
 
   return data[modeling_columns]

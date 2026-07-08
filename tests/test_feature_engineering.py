@@ -66,6 +66,9 @@ def test_build_basic_modeling_dataset_returns_expected_columns():
     "actual_price_lag_1h",
     "actual_price_lag_24h",
     "forecast_price_lag_1h",
+    "actual_price_rolling_24h_mean",
+    "actual_price_rolling_24h_max",
+    "actual_price_rolling_7d_mean",
   ]
 
 
@@ -95,3 +98,24 @@ def test_build_basic_modeling_dataset_adds_lag_features():
   assert pd.isna(result.loc[0, "forecast_price_lag_1h"])
   assert result.loc[1, "forecast_price_lag_1h"] == 28.00
   assert result.loc[2, "forecast_price_lag_1h"] == 38.00
+
+
+def test_build_basic_modeling_dataset_adds_rolling_features():
+  rows = []
+
+  for hour in range(25):
+    rows.append({
+      "datetime_universal_time": pd.Timestamp("2026-01-01 07:00:00") + pd.Timedelta(hours=hour),
+      "datetime_local_time": pd.Timestamp("2026-01-01 00:00:00") + pd.Timedelta(hours=hour),
+      "actual_price": float(hour + 1),
+      "forecast_price": float(hour + 1),
+    })
+
+  data = pd.DataFrame(rows)
+
+  result = build_basic_modeling_dataset(data)
+
+  # Rolling features must use past values only, so the current target is excluded.
+  assert pd.isna(result.loc[23, "actual_price_rolling_24h_mean"])
+  assert result.loc[24, "actual_price_rolling_24h_mean"] == 12.5
+  assert result.loc[24, "actual_price_rolling_24h_max"] == 24.0
