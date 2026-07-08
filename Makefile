@@ -1,4 +1,4 @@
-.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context baseline
+.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models full-pipeline
 
 install:
 	# Install dependencies and register the local package.
@@ -68,3 +68,43 @@ project-context:
 baseline:
 	# Run the naive regression baseline.
 	python src/electricity_predictor/modeling/regression/baseline.py
+
+linear-regression:
+	# Train and evaluate the Linear Regression model on the validation split.
+	python src/electricity_predictor/modeling/regression/linear_regression.py
+
+ridge-regression:
+	# Train and evaluate the Ridge Regression model on the validation split.
+	python src/electricity_predictor/modeling/regression/ridge_regression.py
+
+
+lasso-regression:
+	# Train and evaluate the Lasso Regression model on the validation split.
+	python src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
+
+lasso-tuning:
+	# Tune Lasso Regression with TimeSeriesSplit on the chronological train split.
+	python src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
+
+elastic-net-regression:
+	# Train and evaluate the Elastic Net Regression model on the validation split.
+	python src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
+
+elastic-net-tuning:
+	# Tune Elastic Net Regression with TimeSeriesSplit on the chronological train split.
+	python src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
+
+regression-models:
+	# Train and evaluate all current regression models.
+	python src/electricity_predictor/modeling/regression/run_regression_models.py
+
+full-pipeline:
+	# Run the complete current workflow from data refresh to model results and tests.
+	$(MAKE) pipeline
+	$(MAKE) data-quality
+	$(MAKE) features
+	$(MAKE) feature-quality
+	$(MAKE) training-data
+	$(MAKE) regression-models
+	$(MAKE) test
+

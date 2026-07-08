@@ -174,7 +174,6 @@ Initial feature groups may include:
 
 **Next:** Design and implement the first feature engineering module slowly, with tests and inspection after each step.
 
-
 ### P2-D04 — Keep modeling data separate from training data
 
 **Decision:** Keep `data/processed/modeling_dataset.csv` as the full feature-engineered dataset and create a separate `data/processed/training_dataset.csv` for rows that are ready for model training.
@@ -219,7 +218,6 @@ Initial feature groups may include:
 
 **Next:** Create a reusable split function for train, validation, and test datasets before training Linear Regression or other models.
 
-
 ### P3-D04 — Evaluate baseline models on the time-based test set
 
 **Decision:** Evaluate regression baseline performance on the chronological test set instead of the full training dataset.
@@ -230,3 +228,74 @@ Initial feature groups may include:
 
 **Next:** Use the same split strategy when evaluating Linear Regression and future regression models.
 
+### P3-D05 — Track model evaluation results in a shared summary file
+
+**Decision:** Save model evaluation results in a shared results summary file.
+
+**Why:** The project will test multiple regression and classification models. A shared summary makes it easier to compare models and choose the best approach at the end.
+
+**Rejected:** Keeping model scores only in terminal output.
+
+**Next:** Create a reusable model results writer before adding Linear Regression.
+
+### P3-D06 — Compare base and tuned regression models
+
+**Decision:** Keep both base and tuned versions of serious regression models in the model results summary.
+
+Current regression models include:
+
+- `naive_baseline`
+- `linear_regression`
+- `ridge_regression`
+- `ridge_regression_tuned`
+- `lasso_regression`
+- `lasso_regression_tuned`
+- `elastic_net_regression`
+- `elastic_net_regression_tuned`
+- `random_forest_regressor`
+- `random_forest_regressor_tuned`
+
+**Why:** Base models show the default model behavior, while tuned models show whether hyperparameter search improves validation performance. Keeping both makes model comparison more transparent.
+
+**Rejected:** Reporting only tuned models and losing the baseline comparison for each model family.
+
+**Next:** Use the validation results to choose the strongest regression candidate before final test-set evaluation.
+
+### P3-D07 — Use TimeSeriesSplit for regression hyperparameter tuning
+
+**Decision:** Use `TimeSeriesSplit` for Ridge, Lasso, Elastic Net, and Random Forest tuning.
+
+**Why:** Electricity prices are time-series data. Hyperparameter tuning must respect chronological order so future rows do not leak into older training folds.
+
+**Rejected:** Using random cross-validation, shuffled folds, or standard `KFold` for time-series model tuning.
+
+**Next:** Continue using chronological validation for all future model tuning, including future classification models.
+
+### P3-D08 — Organize regression models by model family
+
+**Decision:** Organize regression model files into one folder per model family.
+
+Current regression structure includes:
+
+- `baseline/`
+- `linear/`
+- `ridge/`
+- `lasso/`
+- `elastic_net/`
+- `random_forest/`
+
+**Why:** Each model family can now keep its base model, tuned model, and tests together. This makes the project easier to extend when more models are added.
+
+**Rejected:** Keeping all regression files in one flat folder as the number of models grows.
+
+**Next:** Follow the same structure for future models such as gradient boosting or classification models.
+
+### P3-D09 — Keep test data protected until final model selection
+
+**Decision:** Use the validation split for comparing learned regression models and keep the test split protected until the final model is selected.
+
+**Why:** The test set should estimate future-like performance only once the modeling process has chosen a final candidate. Reusing the test set during model selection would make results less trustworthy.
+
+**Rejected:** Repeatedly using the test split to choose between learned models.
+
+**Next:** Select the best validation model, then evaluate the final chosen regression model on the protected test split.
