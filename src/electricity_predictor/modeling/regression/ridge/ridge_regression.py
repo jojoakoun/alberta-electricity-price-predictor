@@ -24,11 +24,13 @@ RIDGE_ALPHA = 1.0
 def train_ridge_regression_model(
   train_data: pd.DataFrame,
   alpha: float = RIDGE_ALPHA,
+  target_column: str = TARGET_COLUMN,
 ) -> Ridge:
-  """Train a Ridge Regression model using the regression feature columns."""
+  """Train a Ridge Regression model for one regression target column."""
   # Use the same model inputs as Linear Regression for a fair comparison.
   features = train_data[REGRESSION_FEATURE_COLUMNS]
-  target = train_data[TARGET_COLUMN]
+  # The target column controls which future horizon this model learns to predict.
+  target = train_data[target_column]
 
   # Ridge learns linear weights but penalizes coefficients that become too large.
   model = Ridge(alpha=alpha)
@@ -40,10 +42,12 @@ def train_ridge_regression_model(
 def evaluate_ridge_regression_model(
   model: Ridge,
   evaluation_data: pd.DataFrame,
+  target_column: str = TARGET_COLUMN,
 ) -> dict[str, float]:
-  """Evaluate a trained Ridge Regression model."""
+  """Evaluate a trained Ridge Regression model against one target column."""
   features = evaluation_data[REGRESSION_FEATURE_COLUMNS]
-  target = evaluation_data[TARGET_COLUMN]
+  # The target column is the true future price for the selected horizon.
+  target = evaluation_data[target_column]
 
   # Keep predictions aligned with validation rows before scoring.
   predictions = pd.Series(model.predict(features), index=evaluation_data.index)
@@ -59,12 +63,14 @@ def build_ridge_regression_result(
   row_count: int,
   split: str,
   alpha: float = RIDGE_ALPHA,
+  horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for Ridge Regression."""
   # Store alpha because it controls the strength of Ridge regularization.
   return build_model_result_row(
     model_name="ridge_regression",
     task="regression",
+    horizon_hours=horizon_hours,
     split=split,
     evaluation_rows=row_count,
     metrics=scores,

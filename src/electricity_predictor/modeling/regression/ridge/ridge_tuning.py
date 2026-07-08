@@ -30,6 +30,7 @@ def evaluate_ridge_alpha_with_time_series_cv(
   train_data: pd.DataFrame,
   alpha: float,
   n_splits: int = RIDGE_TUNING_SPLITS,
+  target_column: str = TARGET_COLUMN,
 ) -> dict[str, float]:
   """Evaluate one Ridge alpha using chronological cross-validation."""
   # TimeSeriesSplit keeps Ridge tuning honest for time-series data.
@@ -51,10 +52,11 @@ def evaluate_ridge_alpha_with_time_series_cv(
     model = train_ridge_regression_model(
       train_data=fold_train_data,
       alpha=alpha,
+      target_column=target_column,
     )
 
     fold_features = fold_validation_data[REGRESSION_FEATURE_COLUMNS]
-    fold_target = fold_validation_data[TARGET_COLUMN]
+    fold_target = fold_validation_data[target_column]
     # Align predictions with the fold validation rows before calculating metrics.
     fold_predictions = pd.Series(
       model.predict(fold_features),
@@ -70,7 +72,7 @@ def evaluate_ridge_alpha_with_time_series_cv(
   }
 
 
-def tune_ridge_alpha(train_data: pd.DataFrame) -> dict:
+def tune_ridge_alpha(train_data: pd.DataFrame, target_column: str = TARGET_COLUMN) -> dict:
   """Find the Ridge alpha with the lowest time-series CV MAE."""
   tuning_results = []
 
@@ -79,6 +81,7 @@ def tune_ridge_alpha(train_data: pd.DataFrame) -> dict:
     scores = evaluate_ridge_alpha_with_time_series_cv(
       train_data=train_data,
       alpha=alpha,
+      target_column=target_column,
     )
 
     tuning_results.append(
@@ -101,11 +104,13 @@ def build_tuned_ridge_result(
   best_alpha: float,
   cv_mae: float,
   cv_rmse: float,
+  horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for tuned Ridge Regression."""
   return build_model_result_row(
     model_name="ridge_regression_tuned",
     task="regression",
+    horizon_hours=horizon_hours,
     split=split,
     evaluation_rows=row_count,
     metrics=scores,

@@ -30,11 +30,13 @@ def train_elastic_net_regression_model(
   alpha: float = ELASTIC_NET_ALPHA,
   l1_ratio: float = ELASTIC_NET_L1_RATIO,
   max_iter: int = ELASTIC_NET_MAX_ITER,
+  target_column: str = TARGET_COLUMN,
 ) -> ElasticNet:
-  """Train an Elastic Net Regression model using the regression feature columns."""
+  """Train an Elastic Net Regression model for one regression target column."""
   # Use the shared regression features so Elastic Net is compared fairly.
   features = train_data[REGRESSION_FEATURE_COLUMNS]
-  target = train_data[TARGET_COLUMN]
+  # The target column controls which future horizon this model learns to predict.
+  target = train_data[target_column]
 
   # Elastic Net mixes Ridge-style shrinkage with Lasso-style feature selection.
   model = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, max_iter=max_iter)
@@ -49,10 +51,12 @@ def train_elastic_net_regression_model(
 def evaluate_elastic_net_regression_model(
   model: ElasticNet,
   evaluation_data: pd.DataFrame,
+  target_column: str = TARGET_COLUMN,
 ) -> dict[str, float]:
-  """Evaluate a trained Elastic Net Regression model."""
+  """Evaluate a trained Elastic Net Regression model against one target column."""
   features = evaluation_data[REGRESSION_FEATURE_COLUMNS]
-  target = evaluation_data[TARGET_COLUMN]
+  # The target column is the true future price for the selected horizon.
+  target = evaluation_data[target_column]
 
   # Keep prediction indexes aligned with the validation rows.
   predictions = pd.Series(model.predict(features), index=evaluation_data.index)
@@ -70,12 +74,14 @@ def build_elastic_net_regression_result(
   alpha: float = ELASTIC_NET_ALPHA,
   l1_ratio: float = ELASTIC_NET_L1_RATIO,
   max_iter: int = ELASTIC_NET_MAX_ITER,
+  horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for Elastic Net Regression."""
   # Store alpha and l1_ratio because both control Elastic Net behavior.
   return build_model_result_row(
     model_name="elastic_net_regression",
     task="regression",
+    horizon_hours=horizon_hours,
     split=split,
     evaluation_rows=row_count,
     metrics=scores,

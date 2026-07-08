@@ -20,11 +20,15 @@ from electricity_predictor.modeling.split import split_time_series_data
 TARGET_COLUMN = "actual_price"
 
 
-def train_linear_regression_model(train_data: pd.DataFrame) -> LinearRegression:
-  """Train a Linear Regression model using the regression feature columns."""
+def train_linear_regression_model(
+  train_data: pd.DataFrame,
+  target_column: str = TARGET_COLUMN,
+) -> LinearRegression:
+  """Train a Linear Regression model for one regression target column."""
   # Use the shared regression feature list so model comparisons stay fair.
   features = train_data[REGRESSION_FEATURE_COLUMNS]
-  target = train_data[TARGET_COLUMN]
+  # The target column controls which future horizon this model learns to predict.
+  target = train_data[target_column]
 
   # Linear Regression learns one weight for each feature to predict actual_price.
   model = LinearRegression()
@@ -36,10 +40,12 @@ def train_linear_regression_model(train_data: pd.DataFrame) -> LinearRegression:
 def evaluate_linear_regression_model(
   model: LinearRegression,
   evaluation_data: pd.DataFrame,
+  target_column: str = TARGET_COLUMN,
 ) -> dict[str, float]:
-  """Evaluate a trained Linear Regression model."""
+  """Evaluate a trained Linear Regression model against one target column."""
   features = evaluation_data[REGRESSION_FEATURE_COLUMNS]
-  target = evaluation_data[TARGET_COLUMN]
+  # The target column is the true future price for the selected horizon.
+  target = evaluation_data[target_column]
 
   # Keep predictions aligned with the evaluation rows before calculating errors.
   predictions = pd.Series(model.predict(features), index=evaluation_data.index)
@@ -54,12 +60,14 @@ def build_linear_regression_result(
   scores: dict[str, float],
   row_count: int,
   split: str,
+  horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for Linear Regression."""
-  # Store the model setup so the result can be reproduced later.
+  # Store the horizon so model_results.csv can compare forecast distances.
   return build_model_result_row(
     model_name="linear_regression",
     task="regression",
+    horizon_hours=horizon_hours,
     split=split,
     evaluation_rows=row_count,
     metrics=scores,

@@ -12,6 +12,7 @@ def test_build_model_result_row_fills_regression_metrics():
   result = build_model_result_row(
     model_name="naive_baseline",
     task="regression",
+    horizon_hours=1,
     split="test",
     evaluation_rows=8542,
     metrics={
@@ -24,6 +25,7 @@ def test_build_model_result_row_fills_regression_metrics():
 
   assert result["model_name"] == "naive_baseline"
   assert result["task"] == "regression"
+  assert result["horizon_hours"] == 1
   assert result["split"] == "test"
   assert result["evaluation_rows"] == 8542
   assert result["model_parameters"] == "prediction_column=actual_price_lag_1h"
@@ -37,7 +39,7 @@ def test_build_model_result_row_fills_regression_metrics():
   assert result["f1"] is None
 
 
-def test_build_model_result_row_fills_classification_metrics():
+def test_build_model_result_row_allows_no_horizon_for_non_forecast_results():
   result = build_model_result_row(
     model_name="logistic_regression",
     task="classification",
@@ -55,6 +57,7 @@ def test_build_model_result_row_fills_classification_metrics():
 
   assert result["model_name"] == "logistic_regression"
   assert result["task"] == "classification"
+  assert result["horizon_hours"] is None
   assert result["model_parameters"] == "class_weight=balanced"
   assert result["accuracy"] == 0.85
   assert result["precision"] == 0.80
@@ -72,6 +75,7 @@ def test_append_model_result_creates_results_file(tmp_path):
   result = build_model_result_row(
     model_name="naive_baseline",
     task="regression",
+    horizon_hours=1,
     split="test",
     evaluation_rows=8542,
     metrics={
@@ -90,6 +94,7 @@ def test_append_model_result_creates_results_file(tmp_path):
   assert saved_data.columns.tolist() == MODEL_RESULT_COLUMNS
   assert len(saved_data) == 1
   assert saved_data.loc[0, "model_name"] == "naive_baseline"
+  assert saved_data.loc[0, "horizon_hours"] == 1
 
   # Empty CSV fields are read back by pandas as NaN.
   assert pd.isna(saved_data.loc[0, "model_parameters"])
@@ -104,6 +109,7 @@ def test_append_model_result_keeps_existing_results(tmp_path):
   first_result = build_model_result_row(
     model_name="naive_baseline",
     task="regression",
+    horizon_hours=1,
     split="test",
     evaluation_rows=8542,
     metrics={
@@ -115,6 +121,7 @@ def test_append_model_result_keeps_existing_results(tmp_path):
   second_result = build_model_result_row(
     model_name="linear_regression",
     task="regression",
+    horizon_hours=3,
     split="validation",
     evaluation_rows=8541,
     metrics={
@@ -134,6 +141,8 @@ def test_append_model_result_keeps_existing_results(tmp_path):
     "naive_baseline",
     "linear_regression",
   ]
+  assert saved_data["horizon_hours"].tolist() == [1, 3]
+
 
 def test_write_model_results_rebuilds_summary_file(tmp_path):
   output_path = tmp_path / "model_results.csv"
@@ -141,6 +150,7 @@ def test_write_model_results_rebuilds_summary_file(tmp_path):
   old_result = build_model_result_row(
     model_name="old_model",
     task="regression",
+    horizon_hours=1,
     split="validation",
     evaluation_rows=10,
     metrics={
@@ -152,6 +162,7 @@ def test_write_model_results_rebuilds_summary_file(tmp_path):
   new_result = build_model_result_row(
     model_name="linear_regression",
     task="regression",
+    horizon_hours=6,
     split="validation",
     evaluation_rows=8541,
     metrics={
@@ -170,6 +181,6 @@ def test_write_model_results_rebuilds_summary_file(tmp_path):
   # A fresh summary should replace older rows instead of appending duplicates.
   assert len(saved_data) == 1
   assert saved_data.loc[0, "model_name"] == "linear_regression"
+  assert saved_data.loc[0, "horizon_hours"] == 6
   assert saved_data.loc[0, "mae"] == 12.99
   assert saved_data.loc[0, "rmse"] == 42.64
-
