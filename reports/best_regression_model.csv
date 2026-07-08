@@ -1,0 +1,2 @@
+model_name,task,split,evaluation_rows,model_parameters,mae,rmse,accuracy,precision,recall,f1,notes,selection_metric,selection_rule,selection_reason
+random_forest_regressor_tuned,regression,validation,8545,n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; cv_splits=3; cv_mae=28.467747; cv_rmse=61.705915,12.6508377311072,41.84522236121896,,,,,Random Forest parameters selected with TimeSeriesSplit on the chronological train set.,mae,lowest_validation_mae,Selected because it has the lowest validation MAE among regression models.
