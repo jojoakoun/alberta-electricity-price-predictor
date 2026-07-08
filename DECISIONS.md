@@ -299,3 +299,26 @@ Current regression structure includes:
 **Rejected:** Repeatedly using the test split to choose between learned models.
 
 **Next:** Select the best validation model, then evaluate the final chosen regression model on the protected test split.
+
+### P3-D10 — Select the best regression model using validation MAE
+
+**Decision:** Select the best regression model from `reports/model_results.csv` using the lowest validation MAE.
+
+The selected model is written to:
+
+```text
+reports/best_regression_model.csv
+```
+
+The current selection rule is:
+
+```text
+selection_metric = mae
+selection_rule = lowest_validation_mae
+```
+
+**Why:** MAE is easy to interpret because it shows the average prediction error in dollars per MWh. The validation split is used for model selection so the protected test split remains untouched until final evaluation.
+
+**Rejected:** Selecting the best model using the test split, because that would leak final evaluation information into the model-selection process.
+
+**Next:** Evaluate the selected regression model once on the protected test split, then save the final model artifact.

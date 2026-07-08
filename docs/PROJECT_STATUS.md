@@ -43,6 +43,7 @@ Phase 3 regression modeling is in progress. The project now supports baseline, l
 | Elastic Net Regression | Complete | The project trains a base Elastic Net model and tunes `alpha` plus `l1_ratio` with `TimeSeriesSplit`. |
 | Random Forest Regression | Complete | The project trains a base Random Forest model and tunes tree parameters with `TimeSeriesSplit`. |
 | Regression results summary | Complete | The project writes model comparison results to `reports/model_results.csv`. |
+| Best regression model selection | Complete | The project selects the best validation regression model using lowest MAE and writes it to `reports/best_regression_model.csv`. |
 | Regression model organization | Complete | Regression models are organized by model family under `modeling/regression/`. |
 | Full pipeline command | Complete | The project can run data refresh, quality checks, feature building, training data preparation, regression models, and tests with `make full-pipeline`. |
 | Automated tests | Complete | The current test suite passes successfully. |
@@ -76,6 +77,7 @@ Phase 3 regression modeling is in progress. The project now supports baseline, l
 | `src/electricity_predictor/modeling/metrics.py` | Provides reusable MAE and RMSE metric functions. |
 | `src/electricity_predictor/modeling/model_results.py` | Builds and writes reusable model result summaries. |
 | `src/electricity_predictor/modeling/regression/run_regression_models.py` | Runs the current regression model comparison workflow. |
+| `src/electricity_predictor/modeling/regression/best_model_selection.py` | Selects the best validation regression model using the lowest MAE. |
 | `src/electricity_predictor/modeling/regression/feature_columns.py` | Centralizes regression feature columns. |
 | `src/electricity_predictor/modeling/regression/baseline/naive_baseline.py` | Evaluates the previous-hour naive regression baseline. |
 | `src/electricity_predictor/modeling/regression/linear/linear_regression.py` | Trains and evaluates Linear Regression. |
@@ -109,6 +111,7 @@ Phase 3 regression modeling is in progress. The project now supports baseline, l
 | `make elastic-net-regression` | Runs the base Elastic Net Regression model. |
 | `make elastic-net-tuning` | Tunes Elastic Net Regression with `TimeSeriesSplit`. |
 | `make regression-models` | Runs the current regression model comparison workflow. |
+| `make select-best-regression-model` | Selects the best validation regression model from `reports/model_results.csv`. |
 | `make full-pipeline` | Runs the full current workflow from data refresh to tests. |
 
 ## Current Validation Status
@@ -185,6 +188,14 @@ The training dataset is created from `modeling_dataset.csv` by removing rows wit
 
 ## Current Best Regression Result
 
+The current best validation model is selected automatically by `make select-best-regression-model`.
+
+The selection criterion is:
+
+```text
+lowest validation MAE
+```
+
 The current best validation model is:
 
 ```text
@@ -201,6 +212,12 @@ random_state=42
 ```
 
 This model currently has the strongest validation result among the tested regression models.
+
+The selection output is written to:
+
+```text
+reports/best_regression_model.csv
+```
 
 ## Current Data Quality Snapshot
 
@@ -281,6 +298,7 @@ Regression hyperparameter tuning uses `TimeSeriesSplit` inside the train split o
 | Modeling split rule | Use chronological train, validation, and test splits |
 | Tuning rule | Use `TimeSeriesSplit` for regression hyperparameter tuning |
 | Results tracking rule | Write model metrics and parameters to `reports/model_results.csv` |
+| Best-model selection rule | Select the validation regression model with the lowest MAE |
 | Test-set rule | Keep test data protected until final model selection |
 | Recommendation threshold rule | Do not define final thresholds before feature engineering, modeling, and evaluation |
 
