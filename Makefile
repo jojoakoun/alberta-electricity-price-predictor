@@ -1,4 +1,4 @@
-.PHONY: install test config-check pipeline data-quality features feature-quality
+.PHONY: install test config-check pipeline data-quality features feature-quality training-data
 
 install:
 	# Install dependencies and register the local package.
@@ -28,3 +28,10 @@ features:
 feature-quality:
 	# Inspect missing values created by feature engineering.
 	python src/electricity_predictor/features/feature_quality.py
+
+
+training-data:
+	# Build the model-ready training dataset.
+	python src/electricity_predictor/features/training_data.py
+
+

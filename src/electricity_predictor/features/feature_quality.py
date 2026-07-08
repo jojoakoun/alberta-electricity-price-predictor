@@ -2,14 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 
-ENGINEERED_FEATURE_COLUMNS = [
-  "actual_price_lag_1h",
-  "actual_price_lag_24h",
-  "forecast_price_lag_1h",
-  "actual_price_rolling_24h_mean",
-  "actual_price_rolling_24h_max",
-  "actual_price_rolling_7d_mean",
-]
+from electricity_predictor.features.feature_columns import ENGINEERED_FEATURE_COLUMNS
+
 
 def summarize_feature_quality(file_path: Path) -> dict:
   """Summarize missing values created by feature engineering."""
