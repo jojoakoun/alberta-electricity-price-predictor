@@ -30,17 +30,84 @@ The project uses two data sources:
 - historical hourly Alberta electricity data from a local CSV file
 - recent pool price data from the AESO API
 
-The historical CSV supports data preparation, EDA, and future model training. The AESO API supports extending the historical dataset with newer pool price records.
+The historical CSV supports data preparation, EDA, feature engineering, and model training. The AESO API supports extending the historical dataset with newer pool price records.
 
 ## Current Project Status
 
-Current phase: data engineering.
+Current phase: **Phase 3 — Regression Modeling**.
 
-The repository foundation is complete. The project can currently load, clean, validate, combine, inspect, and explore historical Alberta electricity price data with recent AESO pool price API data.
+The repository foundation, Phase 1 data engineering, Phase 2 feature engineering, ML preprocessing, and Phase 3 regression model comparison work are complete.
 
-A short status summary is available here:
+The project can currently:
+
+- load and validate historical Alberta electricity price data
+- fetch and normalize recent AESO pool price API data
+- combine historical and API records
+- generate data quality reports
+- create model-ready time, lag, and rolling features
+- prepare a clean training dataset
+- split the data chronologically into train, validation, and test sets
+- train and compare multiple regression models
+- tune selected regression models with `TimeSeriesSplit`
+- select the best validation regression model automatically
+
+A full status summary is available here:
 
 [View project status](docs/PROJECT_STATUS.md)
+
+Technical and product decisions are tracked here:
+
+[View project decisions](DECISIONS.md)
+
+## Current Machine Learning Status
+
+The current best validation regression model is:
+
+```text
+random_forest_regressor_tuned
+```
+
+The selection criterion is:
+
+```text
+lowest validation MAE
+```
+
+The current best parameters are:
+
+```text
+n_estimators=200
+max_depth=20
+min_samples_leaf=5
+random_state=42
+```
+
+The selected model summary is written to:
+
+```text
+reports/best_regression_model.csv
+```
+
+The full model comparison summary is written to:
+
+```text
+reports/model_results.csv
+```
+
+## Current Regression Models
+
+| Model | Type | Tuning |
+|---|---|---|
+| `naive_baseline` | Baseline | None |
+| `linear_regression` | Linear model | None |
+| `ridge_regression` | Regularized linear model | Base `alpha=1.0` |
+| `ridge_regression_tuned` | Regularized linear model | `TimeSeriesSplit` over `alpha` |
+| `lasso_regression` | Regularized linear model | Base `alpha=1.0` |
+| `lasso_regression_tuned` | Regularized linear model | `TimeSeriesSplit` over `alpha` |
+| `elastic_net_regression` | Regularized linear model | Base `alpha=1.0`, `l1_ratio=0.5` |
+| `elastic_net_regression_tuned` | Regularized linear model | `TimeSeriesSplit` over `alpha` and `l1_ratio` |
+| `random_forest_regressor` | Tree ensemble | Base tree settings |
+| `random_forest_regressor_tuned` | Tree ensemble | `TimeSeriesSplit` over tree settings |
 
 ## Current Data Pipeline
 
@@ -57,12 +124,45 @@ The current data pipeline can:
 - extend the historical dataset with new API records
 - avoid replacing existing historical rows during API integration
 - generate a readable data quality report
+- build a processed modeling dataset
+- build a clean training dataset for machine learning
+
+## Feature Engineering
+
+The project creates model-ready features from historical electricity price data.
+
+Current feature groups include:
+
+- time features
+- AESO forecast price features
+- lag price features
+- rolling price features
+
+Current modeling features include:
+
+| Feature | Purpose |
+|---|---|
+| `forecast_price` | AESO forecast price input. |
+| `hour` | Local hour of day. |
+| `day_of_week` | Local day of week. |
+| `month` | Local month. |
+| `is_weekend` | Weekend indicator. |
+| `actual_price_lag_1h` | Previous hour actual price. |
+| `actual_price_lag_24h` | Same hour previous day actual price. |
+| `forecast_price_lag_1h` | Previous hour forecast price. |
+| `actual_price_rolling_24h_mean` | Previous 24-hour mean actual price. |
+| `actual_price_rolling_24h_max` | Previous 24-hour max actual price. |
+| `actual_price_rolling_7d_mean` | Previous 7-day mean actual price. |
+
+Lag and rolling features use past values only. This prevents target leakage.
 
 ## Exploratory Data Analysis
 
 The project includes an EDA notebook:
 
-- `notebooks/01_eda.ipynb`
+```text
+notebooks/01_eda.ipynb
+```
 
 The notebook answers 10 business questions about:
 
@@ -81,16 +181,20 @@ The EDA supports the business case by studying when households may safely shift 
 
 ## Current Data Outputs
 
-The generated data files are local outputs and are not tracked by Git.
+Some generated data files are local outputs and are not tracked by Git.
 
 | Output file | Description |
 |---|---|
-| `data/interim/csv_historical_prices_clean.csv` | Cleaned historical dataset created from the local CSV |
-| `data/interim/current_historical_prices_clean.csv` | Current historical dataset extended with recent AESO API data |
+| `data/interim/csv_historical_prices_clean.csv` | Cleaned historical dataset created from the local CSV. |
+| `data/interim/current_historical_prices_clean.csv` | Current historical dataset extended with recent AESO API data. |
+| `data/processed/modeling_dataset.csv` | Full feature-engineered dataset with time, lag, and rolling features. |
+| `data/processed/training_dataset.csv` | Model-ready dataset with incomplete engineered feature rows removed. |
+| `reports/model_results.csv` | Regression model comparison summary with metrics and model parameters. |
+| `reports/best_regression_model.csv` | One-row summary of the selected best validation regression model. |
 
 ## Planned Machine Learning Tasks
 
-This project will solve two related problems:
+This project solves two related problems:
 
 1. Regression: predict future electricity prices.
 2. Classification: estimate future spike risk.
@@ -111,7 +215,7 @@ The rule is price-first:
 - low predicted price and low spike risk -> recommended
 - all other cases -> acceptable
 
-Final recommendation thresholds have not been defined yet. They will be decided after feature engineering, baseline models, spike-risk classification, and model evaluation.
+Final recommendation thresholds have not been defined yet. They will be decided after regression evaluation, spike-risk classification, and product-level decision testing.
 
 ## Tech Stack
 
@@ -141,11 +245,14 @@ alberta-electricity-price-predictor/
 │   └── processed/
 ├── docs/
 ├── notebooks/
+├── reports/
 ├── src/
 │   └── electricity_predictor/
 │       ├── data/
 │       ├── features/
 │       ├── modeling/
+│       │   ├── classification/
+│       │   └── regression/
 │       ├── visualization/
 │       ├── serving/
 │       └── api/
@@ -168,6 +275,14 @@ alberta-electricity-price-predictor/
 | `src/electricity_predictor/data/aeso_api.py` | Fetches, normalizes, and validates AESO pool price API data. |
 | `src/electricity_predictor/data/pipeline.py` | Builds clean interim datasets from historical and API sources. |
 | `src/electricity_predictor/data/data_quality.py` | Generates a readable quality summary for the current historical dataset. |
+| `src/electricity_predictor/features/feature_engineering.py` | Builds the processed modeling dataset with time, lag, and rolling features. |
+| `src/electricity_predictor/features/feature_quality.py` | Reports missing values created by lag and rolling feature windows. |
+| `src/electricity_predictor/features/training_data.py` | Builds the model-ready training dataset. |
+| `src/electricity_predictor/modeling/split.py` | Creates chronological train, validation, and test splits. |
+| `src/electricity_predictor/modeling/metrics.py` | Provides reusable MAE and RMSE metric functions. |
+| `src/electricity_predictor/modeling/model_results.py` | Builds and writes reusable model result summaries. |
+| `src/electricity_predictor/modeling/regression/run_regression_models.py` | Runs the current regression model comparison workflow. |
+| `src/electricity_predictor/modeling/regression/best_model_selection.py` | Selects the best validation regression model using the lowest MAE. |
 | `notebooks/01_eda.ipynb` | Explores the current historical dataset before feature engineering and modeling. |
 
 ## Testing
@@ -176,6 +291,12 @@ Run the full test suite with:
 
 ```bash
 make test
+```
+
+Current test status:
+
+```text
+81 passed
 ```
 
 ## Main Commands
@@ -187,6 +308,12 @@ make test
 | `make config-check` | Checks that the project configuration can be loaded. |
 | `make pipeline` | Builds the current historical dataset from CSV and AESO API data. |
 | `make data-quality` | Runs the data quality report for the current historical dataset. |
+| `make features` | Builds the processed modeling dataset for machine learning. |
+| `make feature-quality` | Inspects missing values created by feature engineering. |
+| `make training-data` | Builds the model-ready training dataset. |
+| `make regression-models` | Runs the current regression model comparison workflow. |
+| `make select-best-regression-model` | Selects the best validation regression model from `reports/model_results.csv`. |
+| `make full-pipeline` | Runs the full current workflow from data refresh to tests. |
 
 ## Environment Variables
 
