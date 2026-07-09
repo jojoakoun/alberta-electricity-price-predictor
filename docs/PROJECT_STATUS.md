@@ -73,7 +73,7 @@ The modeling workflow now produces:
 Latest test result:
 
 ```text
-89 passed
+98 passed
 ```
 
 ## Current Forecast Horizons
@@ -95,11 +95,11 @@ horizons_hours: [1, 3, 6, 12, 24]
 
 | Horizon | Selected model | Validation MAE | Validation RMSE |
 |---:|---|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 25.3681 | 69.9702 |
-| 3h | `lasso_regression_tuned` | 37.8507 | 90.7098 |
-| 6h | `lasso_regression_tuned` | 44.2625 | 94.5843 |
-| 12h | `lasso_regression_tuned` | 48.3116 | 96.7578 |
-| 24h | `lasso_regression_tuned` | 47.7392 | 97.0931 |
+| 1h | `random_forest_regressor_tuned` | 25.3567 | 69.9769 |
+| 3h | `naive_baseline` | 37.3369 | 114.5681 |
+| 6h | `naive_baseline` | 42.9736 | 125.1813 |
+| 12h | `naive_baseline` | 45.5869 | 128.1175 |
+| 24h | `naive_baseline` | 43.1847 | 122.1118 |
 
 ## Current Data Outputs
 
@@ -162,19 +162,19 @@ Some generated data files are local outputs and are not tracked by Git.
 
 The current best-model selection is based on validation MAE.
 
-The protected test split is still reserved for final evaluation after the modeling approach is selected.
+The protected test split is used only after validation-based model selection for final future-like evaluation.
 
-The full multi-horizon regression workflow is slower than earlier single-target runs because it evaluates 10 model results across 5 horizons. Random Forest tuning is the most expensive part.
+The full multi-horizon regression workflow is slower than earlier single-target runs because it evaluates 10 model results across 5 horizons. Random Forest tuning is the most expensive part, so Random Forest now uses `n_jobs=-1` to use available CPU cores.
 
 ## Final Protected Test Results
 
 | Horizon | Selected model | Test MAE | Test RMSE |
 |---:|---|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 26.5252 | 78.8670 |
-| 3h | `lasso_regression_tuned` | 38.6983 | 100.7950 |
-| 6h | `lasso_regression_tuned` | 44.9226 | 104.8689 |
-| 12h | `lasso_regression_tuned` | 48.1701 | 105.4968 |
-| 24h | `lasso_regression_tuned` | 46.6238 | 103.7971 |
+| 1h | `random_forest_regressor_tuned` | 26.5646 | 78.8840 |
+| 3h | `naive_baseline` | 38.9532 | 127.9477 |
+| 6h | `naive_baseline` | 44.7902 | 140.0225 |
+| 12h | `naive_baseline` | 47.7140 | 144.7927 |
+| 24h | `naive_baseline` | 44.0298 | 133.4145 |
 
 ## Saved Regression Model Artifacts
 
@@ -194,6 +194,6 @@ These artifacts are ignored by Git because they can be regenerated from the trac
 
 ## Next Steps
 
-1. Commit and merge the Phase 3 model-saving updates.
+1. Push the completed Phase 3 regression audit updates.
 2. Start Phase 4 — Classification and spike-risk modeling.
 3. Use regression predictions and classification outputs together later in the recommendation layer.

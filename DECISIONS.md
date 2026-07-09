@@ -236,15 +236,15 @@ Current target columns include:
 
 **Next:** Use chronological train, validation, and test splits for all regression and classification models.
 
-### P3-D04 — Evaluate baseline models on the time-based test set
+### P3-D04 — Compare baseline models on the validation split
 
-**Decision:** Evaluate regression baseline performance on the chronological test set instead of the full training dataset.
+**Decision:** Evaluate regression baseline performance on the chronological validation split during model comparison.
 
-**Why:** The test set contains the newest data and better represents future-like model performance. Evaluating on the full dataset can make the score look more general than it really is.
+**Why:** Learned regression models are selected using validation MAE. The baseline must be evaluated on the same split so the comparison is fair and auditable.
 
-**Rejected:** Reporting the baseline score using all available training rows.
+**Rejected:** Comparing learned models on validation while reporting the baseline on the protected test split.
 
-**Next:** Keep the baseline as the simple benchmark while learned models are compared on validation data.
+**Next:** Select the best predictor per horizon using validation MAE, then evaluate the selected predictors on the protected test split.
 
 ### P3-D05 — Track model evaluation results in a shared summary file
 
@@ -387,12 +387,34 @@ selection_rule = lowest_validation_mae_within_horizon
 
 **Next:** Use the final test results to close Phase 3 regression modeling and support the Phase 4 classification work.
 
-### P3-D15 — Save selected trained regression models as joblib artifacts
+### P3-D15 — Save selected regression artifacts as joblib files
 
-**Decision:** Save the selected trained regression models as local `.joblib` artifacts under `models/regression/`.
+**Decision:** Save the selected regression artifact for each forecast horizon under `models/regression/`.
 
-**Why:** The project needs reusable trained models for later prediction, serving, and recommendation logic. Joblib is a standard format for saving scikit-learn models.
+Selected learned models are saved as fitted scikit-learn model objects. Selected `naive_baseline` predictors are saved as rule artifacts that describe the prediction column and target horizon.
 
-**Rejected:** Keeping trained models only in memory or requiring full retraining before every later prediction step.
+**Why:** The selected predictor may be a trained model or a baseline rule. Saving both as artifacts gives future prediction and recommendation workflows a consistent handoff.
+
+**Rejected:** Forcing the `naive_baseline` through model training even though it is a rule, not a fitted scikit-learn estimator.
 
 **Next:** Use the saved regression artifacts as inputs for future serving and recommendation workflows.
+
+### P3-D16 — Allow the baseline to win when it performs best
+
+**Decision:** Allow `naive_baseline` to be selected as the best predictor for a forecast horizon when it has the lowest validation MAE.
+
+**Why:** A simple baseline that beats learned models is the more honest choice. The project should select the strongest predictor per horizon, not force machine learning when it does not improve performance.
+
+**Rejected:** Choosing a learned model only because it is more complex.
+
+**Next:** Improve feature engineering and external signals before expecting learned models to beat the baseline at longer horizons.
+
+### P3-D17 — Use parallel Random Forest training
+
+**Decision:** Configure Random Forest regression with `n_jobs=-1`.
+
+**Why:** Random Forest training and tuning are the slowest parts of the regression workflow. Using available CPU cores speeds up the workflow without changing the model comparison logic.
+
+**Rejected:** Refactoring the full multi-horizon workflow into process-level parallelism before the Phase 3 audit is stable.
+
+**Next:** Keep the current workflow simple, and consider horizon-level parallelism later only if runtime becomes a blocker.
