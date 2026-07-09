@@ -47,6 +47,7 @@ def evaluate_elastic_net_config_with_time_series_cv(
   train_data: pd.DataFrame,
   config: dict,
   n_splits: int = ELASTIC_NET_TUNING_SPLITS,
+  target_column: str = TARGET_COLUMN,
 ) -> dict[str, float]:
   """Evaluate one Elastic Net configuration using chronological cross-validation."""
   # TimeSeriesSplit prevents future rows from leaking into older validation folds.
@@ -69,10 +70,11 @@ def evaluate_elastic_net_config_with_time_series_cv(
       train_data=fold_train_data,
       alpha=config["alpha"],
       l1_ratio=config["l1_ratio"],
+      target_column=target_column,
     )
 
     fold_features = fold_validation_data[REGRESSION_FEATURE_COLUMNS]
-    fold_target = fold_validation_data[TARGET_COLUMN]
+    fold_target = fold_validation_data[target_column]
     # Align predictions with fold validation rows before calculating MAE and RMSE.
     fold_predictions = pd.Series(
       model.predict(fold_features),
@@ -88,7 +90,7 @@ def evaluate_elastic_net_config_with_time_series_cv(
   }
 
 
-def tune_elastic_net_config(train_data: pd.DataFrame) -> dict:
+def tune_elastic_net_config(train_data: pd.DataFrame, target_column: str = TARGET_COLUMN) -> dict:
   """Find the Elastic Net configuration with the lowest time-series CV MAE."""
   tuning_results = []
 
@@ -97,6 +99,7 @@ def tune_elastic_net_config(train_data: pd.DataFrame) -> dict:
     scores = evaluate_elastic_net_config_with_time_series_cv(
       train_data=train_data,
       config=config,
+      target_column=target_column,
     )
 
     tuning_results.append(
@@ -118,11 +121,13 @@ def build_tuned_elastic_net_result(
   best_config: dict,
   cv_mae: float,
   cv_rmse: float,
+  horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for tuned Elastic Net Regression."""
   return build_model_result_row(
     model_name="elastic_net_regression_tuned",
     task="regression",
+    horizon_hours=horizon_hours,
     split=split,
     evaluation_rows=row_count,
     metrics=scores,

@@ -6,6 +6,7 @@ import pandas as pd
 MODEL_RESULT_COLUMNS = [
   "model_name",
   "task",
+  "horizon_hours",
   "split",
   "evaluation_rows",
   "model_parameters",
@@ -25,6 +26,7 @@ def build_model_result_row(
   split: str,
   evaluation_rows: int,
   metrics: dict[str, float],
+  horizon_hours: int | None = None,
   model_parameters: str = "",
   notes: str = "",
 ) -> dict:
@@ -32,6 +34,7 @@ def build_model_result_row(
   result = {
     "model_name": model_name,
     "task": task,
+    "horizon_hours": horizon_hours,
     "split": split,
     "evaluation_rows": evaluation_rows,
     "model_parameters": model_parameters,
@@ -54,10 +57,10 @@ def build_model_result_row(
 
 def append_model_result(result: dict, output_path: Path) -> Path:
   """Append one model evaluation result to the shared summary file."""
-
   # Create the reports folder if this is the first model result.
   output_path.parent.mkdir(parents=True, exist_ok=True)
 
+  # Force a stable column order so the CSV remains easy to inspect.
   result_data = pd.DataFrame([result], columns=MODEL_RESULT_COLUMNS)
 
   if output_path.exists():
@@ -69,7 +72,6 @@ def append_model_result(result: dict, output_path: Path) -> Path:
   result_data.to_csv(output_path, index=False)
 
   return output_path
-
 
 
 def write_model_results(results: list[dict], output_path: Path) -> Path:

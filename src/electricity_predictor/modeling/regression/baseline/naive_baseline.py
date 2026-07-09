@@ -27,10 +27,13 @@ def load_training_dataset(file_path: Path) -> pd.DataFrame:
   return pd.read_csv(file_path)
 
 
-def evaluate_naive_baseline(data: pd.DataFrame) -> dict[str, float]:
-  """Evaluate a naive baseline that predicts price using the previous hour price."""
-  # The target is the real price, while the prediction is simply the previous hour price.
-  target = data[TARGET_COLUMN]
+def evaluate_naive_baseline(
+  data: pd.DataFrame,
+  target_column: str = TARGET_COLUMN,
+) -> dict[str, float]:
+  """Evaluate a naive baseline against one selected target column."""
+  # The target column controls which forecast horizon the baseline is evaluated against.
+  target = data[target_column]
   prediction = data[NAIVE_BASELINE_PREDICTION_COLUMN]
 
   # The baseline score becomes the benchmark future models must beat.
@@ -40,12 +43,17 @@ def evaluate_naive_baseline(data: pd.DataFrame) -> dict[str, float]:
   }
 
 
-def build_naive_baseline_result(scores: dict[str, float], row_count: int) -> dict:
+def build_naive_baseline_result(
+  scores: dict[str, float],
+  row_count: int,
+  horizon_hours: int | None = None,
+) -> dict:
   """Build the model result row for the naive regression baseline."""
   # Save the benchmark result so every learned model can be compared against it.
   return build_model_result_row(
     model_name="naive_baseline",
     task="regression",
+    horizon_hours=horizon_hours,
     split="test",
     evaluation_rows=row_count,
     metrics=scores,

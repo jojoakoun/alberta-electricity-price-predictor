@@ -30,11 +30,13 @@ def train_random_forest_model(
   max_depth: int | None = RANDOM_FOREST_MAX_DEPTH,
   min_samples_leaf: int = RANDOM_FOREST_MIN_SAMPLES_LEAF,
   random_state: int = RANDOM_FOREST_RANDOM_STATE,
+  target_column: str = TARGET_COLUMN,
 ) -> RandomForestRegressor:
-  """Train a Random Forest Regressor using the regression feature columns."""
+  """Train a Random Forest Regressor for one regression target column."""
   # Use the same input columns as the linear models for fair model comparison.
   features = train_data[REGRESSION_FEATURE_COLUMNS]
-  target = train_data[TARGET_COLUMN]
+  # The target column controls which future horizon this model learns to predict.
+  target = train_data[target_column]
 
   # Random Forest averages many decision trees to capture non-linear price patterns.
   model = RandomForestRegressor(
@@ -51,10 +53,12 @@ def train_random_forest_model(
 def evaluate_random_forest_model(
   model: RandomForestRegressor,
   evaluation_data: pd.DataFrame,
+  target_column: str = TARGET_COLUMN,
 ) -> dict[str, float]:
-  """Evaluate a trained Random Forest Regressor."""
+  """Evaluate a trained Random Forest Regressor against one target column."""
   features = evaluation_data[REGRESSION_FEATURE_COLUMNS]
-  target = evaluation_data[TARGET_COLUMN]
+  # The target column is the true future price for the selected horizon.
+  target = evaluation_data[target_column]
 
   # Keep predictions aligned with validation rows before scoring.
   predictions = pd.Series(model.predict(features), index=evaluation_data.index)
@@ -73,12 +77,14 @@ def build_random_forest_result(
   max_depth: int | None = RANDOM_FOREST_MAX_DEPTH,
   min_samples_leaf: int = RANDOM_FOREST_MIN_SAMPLES_LEAF,
   random_state: int = RANDOM_FOREST_RANDOM_STATE,
+  horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for Random Forest."""
   # Store tree parameters so different Random Forest runs can be compared.
   return build_model_result_row(
     model_name="random_forest_regressor",
     task="regression",
+    horizon_hours=horizon_hours,
     split=split,
     evaluation_rows=row_count,
     metrics=scores,

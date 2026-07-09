@@ -31,6 +31,7 @@ def evaluate_lasso_alpha_with_time_series_cv(
   train_data: pd.DataFrame,
   alpha: float,
   n_splits: int = LASSO_TUNING_SPLITS,
+  target_column: str = TARGET_COLUMN,
 ) -> dict[str, float]:
   """Evaluate one Lasso alpha using chronological cross-validation."""
   # TimeSeriesSplit keeps each validation fold newer than its training fold.
@@ -52,10 +53,11 @@ def evaluate_lasso_alpha_with_time_series_cv(
     model = train_lasso_regression_model(
       train_data=fold_train_data,
       alpha=alpha,
+      target_column=target_column,
     )
 
     fold_features = fold_validation_data[REGRESSION_FEATURE_COLUMNS]
-    fold_target = fold_validation_data[TARGET_COLUMN]
+    fold_target = fold_validation_data[target_column]
     # Align predictions with the fold validation rows before calculating errors.
     fold_predictions = pd.Series(
       model.predict(fold_features),
@@ -71,7 +73,7 @@ def evaluate_lasso_alpha_with_time_series_cv(
   }
 
 
-def tune_lasso_alpha(train_data: pd.DataFrame) -> dict:
+def tune_lasso_alpha(train_data: pd.DataFrame, target_column: str = TARGET_COLUMN) -> dict:
   """Find the Lasso alpha with the lowest time-series CV MAE."""
   tuning_results = []
 
@@ -80,6 +82,7 @@ def tune_lasso_alpha(train_data: pd.DataFrame) -> dict:
     scores = evaluate_lasso_alpha_with_time_series_cv(
       train_data=train_data,
       alpha=alpha,
+      target_column=target_column,
     )
 
     tuning_results.append(
@@ -101,11 +104,13 @@ def build_tuned_lasso_result(
   best_alpha: float,
   cv_mae: float,
   cv_rmse: float,
+  horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for tuned Lasso Regression."""
   return build_model_result_row(
     model_name="lasso_regression_tuned",
     task="regression",
+    horizon_hours=horizon_hours,
     split=split,
     evaluation_rows=row_count,
     metrics=scores,

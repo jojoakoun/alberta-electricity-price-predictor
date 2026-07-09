@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from electricity_predictor.config import load_configuration
+
 
 def load_current_historical_dataset(file_path: Path) -> pd.DataFrame:
   """Load the current historical dataset used as the source for feature engineering."""
@@ -15,6 +17,19 @@ def load_current_historical_dataset(file_path: Path) -> pd.DataFrame:
   data["datetime_local_time"] = pd.to_datetime(data["datetime_local_time"])
 
   return data
+
+
+def build_target_column_name(horizon_hours: int) -> str:
+  """Build the target column name for one forecast horizon."""
+  return f"actual_price_target_{horizon_hours}h"
+
+
+def build_target_column_names(horizons_hours: list[int]) -> list[str]:
+  """Build all target column names for the configured forecast horizons."""
+  return [
+    build_target_column_name(horizon_hours)
+    for horizon_hours in horizons_hours
+  ]
 
 
 def add_time_features(data: pd.DataFrame) -> pd.DataFrame:
@@ -71,23 +86,57 @@ def add_rolling_features(data: pd.DataFrame) -> pd.DataFrame:
   return data
 
 
-def build_basic_modeling_dataset(data: pd.DataFrame) -> pd.DataFrame:
-  """Build the first simple modeling dataset."""
+def add_horizon_target_features(
+  data: pd.DataFrame,
+  horizons_hours: list[int],
+) -> pd.DataFrame:
+  """Add future actual price targets for each forecast horizon."""
   data = data.copy()
 
-  # Supervised models need a finalized target value for training and evaluation.
+  # Sort first so shifting rows means moving forward in real chronological order.
+  data = data.sort_values("datetime_universal_time").reset_index(drop=True)
+
+  for horizon_hours in horizons_hours:
+    target_column = build_target_column_name(horizon_hours)
+
+    # A negative shift moves future prices onto the current decision row.
+    # Example: target_3h at time t equals actual_price at time t + 3.
+    data[target_column] = data["actual_price"].shift(-horizon_hours)
+
+  return data
+
+
+def build_basic_modeling_dataset(
+  data: pd.DataFrame,
+  horizons_hours: list[int] | None = None,
+) -> pd.DataFrame:
+  """Build the modeling dataset with features and future price targets."""
+  data = data.copy()
+
+  if horizons_hours is None:
+    horizons_hours = [1, 3, 6, 12, 24]
+
+  # Supervised models need finalized actual prices before we can create targets.
   data = data.dropna(subset=["actual_price"])
 
   # Add simple time features identified as useful during EDA.
   data = add_time_features(data)
 
-  # Add past price values without leaking the current target value.
+  # Add past price values without leaking the current or future target value.
   data = add_lag_features(data)
 
   # Add rolling summaries from past prices to describe recent market conditions.
   data = add_rolling_features(data)
 
-  # Keep only columns that are available now and useful for the first modeling dataset.
+  # Add future target prices for each horizon the app will eventually compare.
+  data = add_horizon_target_features(
+    data=data,
+    horizons_hours=horizons_hours,
+  )
+
+  target_columns = build_target_column_names(horizons_hours)
+
+  # Keep only columns that are available now and useful for the modeling dataset.
   modeling_columns = [
     "datetime_universal_time",
     "datetime_local_time",
@@ -103,6 +152,7 @@ def build_basic_modeling_dataset(data: pd.DataFrame) -> pd.DataFrame:
     "actual_price_rolling_24h_mean",
     "actual_price_rolling_24h_max",
     "actual_price_rolling_7d_mean",
+    *target_columns,
   ]
 
   return data[modeling_columns]
@@ -120,11 +170,17 @@ def write_modeling_dataset(data: pd.DataFrame, output_path: Path) -> Path:
 
 
 if __name__ == "__main__":
+  configuration = load_configuration()
+
   source_path = Path("data/interim/current_historical_prices_clean.csv")
   output_path = Path("data/processed/modeling_dataset.csv")
+  horizons_hours = configuration["modeling"]["horizons_hours"]
 
   data = load_current_historical_dataset(source_path)
-  modeling_data = build_basic_modeling_dataset(data)
+  modeling_data = build_basic_modeling_dataset(
+    data=data,
+    horizons_hours=horizons_hours,
+  )
   written_path = write_modeling_dataset(modeling_data, output_path)
 
   print(f"Modeling dataset written to: {written_path}")

@@ -28,11 +28,13 @@ def train_lasso_regression_model(
   train_data: pd.DataFrame,
   alpha: float = LASSO_ALPHA,
   max_iter: int = LASSO_MAX_ITER,
+  target_column: str = TARGET_COLUMN,
 ) -> Lasso:
-  """Train a Lasso Regression model using the regression feature columns."""
+  """Train a Lasso Regression model for one regression target column."""
   # Use the same regression feature set as the other models so comparisons stay fair.
   features = train_data[REGRESSION_FEATURE_COLUMNS]
-  target = train_data[TARGET_COLUMN]
+  # The target column controls which future horizon this model learns to predict.
+  target = train_data[target_column]
 
   # Lasso can shrink weak feature coefficients all the way to zero.
   model = Lasso(alpha=alpha, max_iter=max_iter)
@@ -47,10 +49,12 @@ def train_lasso_regression_model(
 def evaluate_lasso_regression_model(
   model: Lasso,
   evaluation_data: pd.DataFrame,
+  target_column: str = TARGET_COLUMN,
 ) -> dict[str, float]:
-  """Evaluate a trained Lasso Regression model."""
+  """Evaluate a trained Lasso Regression model against one target column."""
   features = evaluation_data[REGRESSION_FEATURE_COLUMNS]
-  target = evaluation_data[TARGET_COLUMN]
+  # The target column is the true future price for the selected horizon.
+  target = evaluation_data[target_column]
 
   # Keep the original index so predictions stay aligned with the validation rows.
   predictions = pd.Series(model.predict(features), index=evaluation_data.index)
@@ -67,12 +71,14 @@ def build_lasso_regression_result(
   split: str,
   alpha: float = LASSO_ALPHA,
   max_iter: int = LASSO_MAX_ITER,
+  horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for Lasso Regression."""
   # Store model parameters so the result can be reproduced later.
   return build_model_result_row(
     model_name="lasso_regression",
     task="regression",
+    horizon_hours=horizon_hours,
     split=split,
     evaluation_rows=row_count,
     metrics=scores,
