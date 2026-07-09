@@ -6,6 +6,7 @@ from sklearn.linear_model import LinearRegression
 from electricity_predictor.modeling.regression.save_selected_models import (
   build_model_artifact_filename,
   build_model_metadata_row,
+  build_naive_baseline_artifact,
   save_model_artifact,
 )
 
@@ -54,3 +55,25 @@ def test_build_model_metadata_row_returns_saved_model_summary() -> None:
   assert result["selection_metric"] == "mae"
   assert result["selection_rule"] == "lowest_validation_mae_within_horizon"
   assert result["model_parameters"] == "n_estimators=200; max_depth=20"
+
+
+def test_build_naive_baseline_artifact_returns_rule_summary() -> None:
+  selected_model = {
+    "model_name": "naive_baseline",
+    "horizon_hours": 3,
+    "model_parameters": "prediction_column=actual_price_lag_1h",
+  }
+
+  artifact = build_naive_baseline_artifact(
+    selected_model=selected_model,
+    target_column="actual_price_target_3h",
+  )
+
+  assert artifact == {
+    "model_name": "naive_baseline",
+    "model_type": "rule_baseline",
+    "horizon_hours": 3,
+    "target_column": "actual_price_target_3h",
+    "prediction_column": "actual_price_lag_1h",
+    "model_parameters": "prediction_column=actual_price_lag_1h",
+  }

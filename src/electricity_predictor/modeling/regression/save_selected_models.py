@@ -45,6 +45,28 @@ def save_model_artifact(model, output_path: Path) -> Path:
   return output_path
 
 
+def build_naive_baseline_artifact(
+  selected_model: dict,
+  target_column: str,
+) -> dict:
+  """Build a serializable artifact for the selected naive baseline rule."""
+  parameters = selected_model.get("model_parameters", "")
+  prediction_column = "actual_price_lag_1h"
+
+  for part in str(parameters).split(";"):
+    if part.strip().startswith("prediction_column="):
+      prediction_column = part.split("=", 1)[1].strip()
+
+  return {
+    "model_name": "naive_baseline",
+    "model_type": "rule_baseline",
+    "horizon_hours": int(selected_model["horizon_hours"]),
+    "target_column": target_column,
+    "prediction_column": prediction_column,
+    "model_parameters": parameters,
+  }
+
+
 def build_model_metadata_row(
   selected_model: dict,
   target_column: str,
@@ -100,18 +122,26 @@ def save_selected_regression_models(
     print(f"Model: {selected_model['model_name']}")
     print(f"Target column: {target_column}")
 
-    model = train_selected_regression_model(
-      selected_model=selected_model,
-      train_data=final_training_data,
-      target_column=target_column,
-    )
+    if selected_model["model_name"] == "naive_baseline":
+      # A naive baseline is a rule, not a trained sklearn model.
+      # We save the rule description so the selected horizon still has an artifact.
+      model_artifact = build_naive_baseline_artifact(
+        selected_model=selected_model,
+        target_column=target_column,
+      )
+    else:
+      model_artifact = train_selected_regression_model(
+        selected_model=selected_model,
+        train_data=final_training_data,
+        target_column=target_column,
+      )
 
     artifact_path = output_dir / build_model_artifact_filename(
       model_name=selected_model["model_name"],
       horizon_hours=horizon_hours,
     )
 
-    saved_path = save_model_artifact(model=model, output_path=artifact_path)
+    saved_path = save_model_artifact(model=model_artifact, output_path=artifact_path)
 
     metadata_rows.append(
       build_model_metadata_row(

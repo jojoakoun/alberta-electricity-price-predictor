@@ -46,19 +46,21 @@ def evaluate_naive_baseline(
 def build_naive_baseline_result(
   scores: dict[str, float],
   row_count: int,
+  split: str = "validation",
   horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for the naive regression baseline."""
-  # Save the benchmark result so every learned model can be compared against it.
+  # The split is explicit so baseline comparisons can use validation,
+  # while final protected evaluation can still use test later.
   return build_model_result_row(
     model_name="naive_baseline",
     task="regression",
     horizon_hours=horizon_hours,
-    split="test",
+    split=split,
     evaluation_rows=row_count,
     metrics=scores,
     model_parameters=f"prediction_column={NAIVE_BASELINE_PREDICTION_COLUMN}",
-    notes="Previous hour price baseline evaluated on the chronological test set.",
+    notes=f"Previous hour price baseline evaluated on the chronological {split} split.",
   )
 
 
@@ -90,12 +92,14 @@ if __name__ == "__main__":
     test_ratio=modeling_config["test_ratio"],
   )
 
-  # Evaluate on the newest split to estimate future-like baseline performance.
-  baseline_scores = evaluate_naive_baseline(test_data)
+  # Use validation for baseline comparison during model selection.
+  # The protected test split is reserved for final evaluation only.
+  baseline_scores = evaluate_naive_baseline(validation_data)
 
   baseline_result = build_naive_baseline_result(
     scores=baseline_scores,
-    row_count=len(test_data),
+    row_count=len(validation_data),
+    split="validation",
   )
 
   written_results_path = append_model_result(

@@ -103,15 +103,16 @@ def run_regression_models() -> Path:
     # The naive baseline does not learn. It predicts the future target using the
     # previous-hour actual price. This gives us a simple benchmark that learned
     # models should beat.
-    print("Evaluating Naive Baseline prediction_column=actual_price_lag_1h on test split")
+    print("Evaluating Naive Baseline prediction_column=actual_price_lag_1h on validation split")
     baseline_scores = evaluate_naive_baseline(
-      data=test_data,
+      data=validation_data,
       target_column=target_column,
     )
     results.append(
       build_naive_baseline_result(
         scores=baseline_scores,
-        row_count=len(test_data),
+        row_count=len(validation_data),
+        split="validation",
         horizon_hours=horizon_hours,
       )
     )

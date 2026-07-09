@@ -38,14 +38,15 @@ def test_build_naive_baseline_result_returns_model_summary_row():
   result = build_naive_baseline_result(
     scores=scores,
     row_count=8542,
+    split="validation",
   )
 
   assert result["model_name"] == "naive_baseline"
   assert result["task"] == "regression"
-  assert result["split"] == "test"
+  assert result["split"] == "validation"
   assert result["evaluation_rows"] == 8542
   assert result["model_parameters"] == "prediction_column=actual_price_lag_1h"
   assert result["mae"] == 17.92
   assert result["rmse"] == 70.89
-  assert result["notes"] == "Previous hour price baseline evaluated on the chronological test set."
+  assert result["notes"] == "Previous hour price baseline evaluated on the chronological validation split."
 
