@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from electricity_predictor.features.feature_engineering import (
   add_horizon_target_features,
@@ -163,3 +164,23 @@ def test_build_basic_modeling_dataset_adds_rolling_features():
   assert pd.isna(result.loc[23, "actual_price_rolling_24h_mean"])
   assert result.loc[24, "actual_price_rolling_24h_mean"] == 12.5
   assert result.loc[24, "actual_price_rolling_24h_max"] == 24.0
+
+
+def test_build_basic_modeling_dataset_rejects_missing_utc_hour():
+  data = pd.DataFrame({
+    "datetime_universal_time": pd.to_datetime([
+      "2026-01-01 07:00:00",
+      "2026-01-01 08:00:00",
+      "2026-01-01 10:00:00",
+    ]),
+    "datetime_local_time": pd.to_datetime([
+      "2026-01-01 00:00:00",
+      "2026-01-01 01:00:00",
+      "2026-01-01 03:00:00",
+    ]),
+    "actual_price": [30.0, 40.0, 60.0],
+    "forecast_price": [28.0, 38.0, 58.0],
+  })
+
+  with pytest.raises(ValueError, match="continuous hourly UTC timestamps"):
+    build_basic_modeling_dataset(data, horizons_hours=[1])

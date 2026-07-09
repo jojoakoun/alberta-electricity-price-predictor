@@ -32,6 +32,21 @@ def build_target_column_names(horizons_hours: list[int]) -> list[str]:
   ]
 
 
+def validate_continuous_hourly_utc_timestamps(data: pd.DataFrame) -> None:
+  """Validate that rows follow a continuous hourly UTC sequence."""
+  if len(data) <= 1:
+    return
+
+  sorted_timestamps = data["datetime_universal_time"].sort_values().reset_index(drop=True)
+
+  # Duplicate or skipped UTC hours would make row-based shifts unsafe.
+  expected_step = pd.Timedelta(hours=1)
+  observed_steps = sorted_timestamps.diff().dropna()
+
+  if not (observed_steps == expected_step).all():
+    raise ValueError("Feature engineering requires continuous hourly UTC timestamps.")
+
+
 def add_time_features(data: pd.DataFrame) -> pd.DataFrame:
   """Add simple local time features for modeling."""
   data = data.copy()
@@ -118,6 +133,9 @@ def build_basic_modeling_dataset(
 
   # Supervised models need finalized actual prices before we can create targets.
   data = data.dropna(subset=["actual_price"])
+
+  # Row-based lag and target shifts are only safe when every UTC hour is present.
+  validate_continuous_hourly_utc_timestamps(data)
 
   # Add simple time features identified as useful during EDA.
   data = add_time_features(data)
