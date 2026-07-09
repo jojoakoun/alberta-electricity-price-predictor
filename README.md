@@ -49,7 +49,7 @@ The project can currently:
 - split the data chronologically into train, validation, and test sets
 - train and compare multiple regression models
 - tune selected regression models with `TimeSeriesSplit`
-- select the best validation regression model automatically
+- select the best validation regression model separately for each forecast horizon
 
 A full status summary is available here:
 
@@ -61,26 +61,23 @@ Technical and product decisions are tracked here:
 
 ## Current Machine Learning Status
 
-The current best validation regression model is:
+The project now compares regression models across five forecast horizons:
 
-```text
-random_forest_regressor_tuned
-```
+- 1 hour
+- 3 hours
+- 6 hours
+- 12 hours
+- 24 hours
 
-The selection criterion is:
+The current best validation regression models are selected separately for each horizon using lowest validation MAE.
 
-```text
-lowest validation MAE
-```
-
-The current best parameters are:
-
-```text
-n_estimators=200
-max_depth=20
-min_samples_leaf=5
-random_state=42
-```
+| Horizon | Selected model | Validation MAE | Validation RMSE |
+|---:|---|---:|---:|
+| 1h | `random_forest_regressor_tuned` | 25.3681 | 69.9702 |
+| 3h | `lasso_regression_tuned` | 37.8507 | 90.7098 |
+| 6h | `lasso_regression_tuned` | 44.2625 | 94.5843 |
+| 12h | `lasso_regression_tuned` | 48.3116 | 96.7578 |
+| 24h | `lasso_regression_tuned` | 47.7392 | 97.0931 |
 
 The selected model summary is written to:
 
@@ -190,13 +187,13 @@ Some generated data files are local outputs and are not tracked by Git.
 | `data/processed/modeling_dataset.csv` | Full feature-engineered dataset with time, lag, and rolling features. |
 | `data/processed/training_dataset.csv` | Model-ready dataset with incomplete engineered feature rows removed. |
 | `reports/model_results.csv` | Regression model comparison summary with metrics and model parameters. |
-| `reports/best_regression_model.csv` | One-row summary of the selected best validation regression model. |
+| `reports/best_regression_model.csv` | Best validation regression model selected separately for each forecast horizon. |
 
 ## Planned Machine Learning Tasks
 
 This project solves two related problems:
 
-1. Regression: predict future electricity prices.
+1. Regression: predict future electricity prices for configured forecast horizons.
 2. Classification: estimate future spike risk.
 
 The decision layer will combine both outputs into a recommendation.

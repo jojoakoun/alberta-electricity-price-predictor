@@ -184,6 +184,24 @@ Initial feature groups may include:
 
 **Next:** Use `training_dataset.csv` as the input for Phase 3 baseline modeling.
 
+### P2-D05 — Create explicit future target columns for configured horizons
+
+**Decision:** Create future price target columns for the configured forecast horizons.
+
+Current target columns include:
+
+- `actual_price_target_1h`
+- `actual_price_target_3h`
+- `actual_price_target_6h`
+- `actual_price_target_12h`
+- `actual_price_target_24h`
+
+**Why:** The project needs to predict future electricity prices at multiple decision horizons. Explicit target columns make each prediction task clear.
+
+**Rejected:** Training models only against the current-row `actual_price`.
+
+**Next:** Use these target columns in Phase 3 regression modeling.
+
 ---
 
 ## Phase 3 — Modeling
@@ -200,13 +218,13 @@ Initial feature groups may include:
 
 ### P3-D02 — Start modeling with a naive regression baseline
 
-**Decision:** Start Phase 3 with a naive regression baseline that predicts `actual_price` using `actual_price_lag_1h`.
+**Decision:** Start Phase 3 with a naive regression baseline that predicts future target price using `actual_price_lag_1h`.
 
 **Why:** A baseline gives the project a simple benchmark. Future models are only useful if they beat this simple prediction. Since electricity prices are time-series data, the previous hour price is a reasonable first comparison point.
 
 **Rejected:** Starting directly with Linear Regression, Random Forest, Gradient Boosting, XGBoost, or Deep Learning before establishing a simple benchmark.
 
-**Next:** Build the naive baseline, evaluate it with MAE and RMSE, then compare later models against it.
+**Next:** Use the naive baseline as the comparison point for learned models across all horizons.
 
 ### P3-D03 — Use time-based splits for model evaluation
 
@@ -216,7 +234,7 @@ Initial feature groups may include:
 
 **Rejected:** Using a random train/test split for model evaluation.
 
-**Next:** Create a reusable split function for train, validation, and test datasets before training Linear Regression or other models.
+**Next:** Use chronological train, validation, and test splits for all regression and classification models.
 
 ### P3-D04 — Evaluate baseline models on the time-based test set
 
@@ -226,17 +244,17 @@ Initial feature groups may include:
 
 **Rejected:** Reporting the baseline score using all available training rows.
 
-**Next:** Use the same split strategy when evaluating Linear Regression and future regression models.
+**Next:** Keep the baseline as the simple benchmark while learned models are compared on validation data.
 
 ### P3-D05 — Track model evaluation results in a shared summary file
 
 **Decision:** Save model evaluation results in a shared results summary file.
 
-**Why:** The project will test multiple regression and classification models. A shared summary makes it easier to compare models and choose the best approach at the end.
+**Why:** The project tests multiple regression and classification models. A shared summary makes it easier to compare models and choose the best approach.
 
 **Rejected:** Keeping model scores only in terminal output.
 
-**Next:** Create a reusable model results writer before adding Linear Regression.
+**Next:** Continue using `reports/model_results.csv` as the main model comparison table.
 
 ### P3-D06 — Compare base and tuned regression models
 
@@ -259,7 +277,7 @@ Current regression models include:
 
 **Rejected:** Reporting only tuned models and losing the baseline comparison for each model family.
 
-**Next:** Use the validation results to choose the strongest regression candidate before final test-set evaluation.
+**Next:** Use validation results to choose the strongest regression candidate for each forecast horizon.
 
 ### P3-D07 — Use TimeSeriesSplit for regression hyperparameter tuning
 
@@ -294,17 +312,17 @@ Current regression structure includes:
 
 **Decision:** Use the validation split for comparing learned regression models and keep the test split protected until the final model is selected.
 
-**Why:** The test set should estimate future-like performance only once the modeling process has chosen a final candidate. Reusing the test set during model selection would make results less trustworthy.
+**Why:** The test set should estimate future-like performance only once the modeling process has chosen final candidates. Reusing the test set during model selection would make results less trustworthy.
 
 **Rejected:** Repeatedly using the test split to choose between learned models.
 
-**Next:** Select the best validation model, then evaluate the final chosen regression model on the protected test split.
+**Next:** Select the best validation model for each horizon, then evaluate selected models on the protected test split.
 
-### P3-D10 — Select the best regression model using validation MAE
+### P3-D10 — Select the best regression model using validation MAE within each horizon
 
-**Decision:** Select the best regression model from `reports/model_results.csv` using the lowest validation MAE.
+**Decision:** Select the best regression model separately for each forecast horizon using the lowest validation MAE.
 
-The selected model is written to:
+The selected models are written to:
 
 ```text
 reports/best_regression_model.csv
@@ -314,11 +332,47 @@ The current selection rule is:
 
 ```text
 selection_metric = mae
-selection_rule = lowest_validation_mae
+selection_rule = lowest_validation_mae_within_horizon
 ```
 
-**Why:** MAE is easy to interpret because it shows the average prediction error in dollars per MWh. The validation split is used for model selection so the protected test split remains untouched until final evaluation.
+**Why:** Each forecast horizon is a different prediction problem. A model that performs best for 1-hour predictions may not be the best model for 3-hour, 6-hour, 12-hour, or 24-hour predictions. Selecting one winner per horizon gives the project a more honest model comparison.
 
-**Rejected:** Selecting the best model using the test split, because that would leak final evaluation information into the model-selection process.
+**Rejected:** Selecting one global best regression model for all horizons.
 
-**Next:** Evaluate the selected regression model once on the protected test split, then save the final model artifact.
+**Next:** Use the selected horizon-specific models for final protected test evaluation.
+
+### P3-D11 — Train regression models against explicit future target columns
+
+**Decision:** Train regression models using explicit horizon target columns such as:
+
+- `actual_price_target_1h`
+- `actual_price_target_3h`
+- `actual_price_target_6h`
+- `actual_price_target_12h`
+- `actual_price_target_24h`
+
+**Why:** The project needs to predict future electricity prices, not simply reproduce the current row price. Explicit target columns make the prediction horizon clear and prevent confusion between input features and supervised-learning targets.
+
+**Rejected:** Continuing to train all regression models against only `actual_price`.
+
+**Next:** Use horizon-specific targets for final evaluation, model saving, and future recommendation logic.
+
+### P3-D12 — Store horizon information in model results
+
+**Decision:** Add `horizon_hours` to the shared model results schema.
+
+**Why:** A model score is not meaningful unless the forecast horizon is known. The same model can perform differently at 1h, 3h, 6h, 12h, and 24h. Adding `horizon_hours` makes `reports/model_results.csv` auditable and supports best-model selection per horizon.
+
+**Rejected:** Keeping a model results file that only stores model name, split, and metrics without horizon context.
+
+**Next:** Use the multi-horizon results table to compare model performance and support final protected test evaluation.
+
+### P3-D13 — Keep the full multi-horizon regression run as an end-of-block validation step
+
+**Decision:** Treat the full multi-horizon regression run as a heavier validation step rather than a command to run after every small code change.
+
+**Why:** The workflow now evaluates 10 model results across 5 horizons, producing 50 rows. Random Forest tuning is the slowest part, so running the full workflow too often slows development.
+
+**Rejected:** Running the full tuned regression workflow after every minor edit.
+
+**Next:** Use unit tests and targeted checks during development, then run the full regression workflow before committing major modeling changes.
