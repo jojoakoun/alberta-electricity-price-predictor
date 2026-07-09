@@ -1,4 +1,4 @@
-.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model full-pipeline
+.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation full-pipeline
 
 install:
 	# Install dependencies and register the local package.
@@ -102,6 +102,10 @@ select-best-regression-model:
 	# Select the best validation regression model from the model results summary.
 	python src/electricity_predictor/modeling/regression/best_model_selection.py
 
+final-regression-evaluation:
+	# Evaluate selected regression models on the protected test split.
+	python src/electricity_predictor/modeling/regression/final_test_evaluation.py
+
 full-pipeline:
 	# Run the complete current workflow from data refresh to model results and tests.
 	$(MAKE) pipeline
@@ -111,5 +115,6 @@ full-pipeline:
 	$(MAKE) training-data
 	$(MAKE) regression-models
 	$(MAKE) select-best-regression-model
+	$(MAKE) final-regression-evaluation
 	$(MAKE) test
 
