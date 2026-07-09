@@ -166,10 +166,34 @@ The protected test split is still reserved for final evaluation after the modeli
 
 The full multi-horizon regression workflow is slower than earlier single-target runs because it evaluates 10 model results across 5 horizons. Random Forest tuning is the most expensive part.
 
+## Final Protected Test Results
+
+| Horizon | Selected model | Test MAE | Test RMSE |
+|---:|---|---:|---:|
+| 1h | `random_forest_regressor_tuned` | 26.5252 | 78.8670 |
+| 3h | `lasso_regression_tuned` | 38.6983 | 100.7950 |
+| 6h | `lasso_regression_tuned` | 44.9226 | 104.8689 |
+| 12h | `lasso_regression_tuned` | 48.1701 | 105.4968 |
+| 24h | `lasso_regression_tuned` | 46.6238 | 103.7971 |
+
+## Saved Regression Model Artifacts
+
+Selected regression models can be trained and saved with:
+
+```bash
+make save-selected-regression-models
+```
+
+The generated artifacts are local outputs under:
+
+```text
+models/regression/
+```
+
+These artifacts are ignored by Git because they can be regenerated from the tracked code, data pipeline outputs, and selected model metadata.
+
 ## Next Steps
 
-1. Add final protected test evaluation for each selected horizon model.
-2. Save trained model artifacts for the selected horizon models.
-3. Add feature importance or model explanation outputs.
-4. Decide whether to optimize runtime by reducing expensive tuning during normal development.
-5. Start classification or recommendation-layer work after regression final evaluation is stable.
+1. Commit and merge the Phase 3 model-saving updates.
+2. Start Phase 4 — Classification and spike-risk modeling.
+3. Use regression predictions and classification outputs together later in the recommendation layer.

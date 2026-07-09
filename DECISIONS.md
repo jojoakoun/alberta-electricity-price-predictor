@@ -376,3 +376,23 @@ selection_rule = lowest_validation_mae_within_horizon
 **Rejected:** Running the full tuned regression workflow after every minor edit.
 
 **Next:** Use unit tests and targeted checks during development, then run the full regression workflow before committing major modeling changes.
+
+### P3-D14 — Evaluate selected regression models on the protected test split
+
+**Decision:** Evaluate the validation-selected regression model for each horizon on the protected chronological test split.
+
+**Why:** Validation data is used for model selection, but the protected test split gives the final future-like performance estimate after selection is complete.
+
+**Rejected:** Reporting validation scores as final model performance.
+
+**Next:** Use the final test results to close Phase 3 regression modeling and support the Phase 4 classification work.
+
+### P3-D15 — Save selected trained regression models as joblib artifacts
+
+**Decision:** Save the selected trained regression models as local `.joblib` artifacts under `models/regression/`.
+
+**Why:** The project needs reusable trained models for later prediction, serving, and recommendation logic. Joblib is a standard format for saving scikit-learn models.
+
+**Rejected:** Keeping trained models only in memory or requiring full retraining before every later prediction step.
+
+**Next:** Use the saved regression artifacts as inputs for future serving and recommendation workflows.

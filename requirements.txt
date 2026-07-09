@@ -6,3 +6,5 @@ PyYAML
 pytest
 scikit-learn
 matplotlib
+
+joblib

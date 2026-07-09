@@ -91,6 +91,40 @@ The full model comparison summary is written to:
 reports/model_results.csv
 ```
 
+## Final Regression Test Evaluation
+
+The validation-selected regression models have been evaluated on the protected chronological test split.
+
+| Horizon | Selected model | Test MAE | Test RMSE |
+|---:|---|---:|---:|
+| 1h | `random_forest_regressor_tuned` | 26.5252 | 78.8670 |
+| 3h | `lasso_regression_tuned` | 38.6983 | 100.7950 |
+| 6h | `lasso_regression_tuned` | 44.9226 | 104.8689 |
+| 12h | `lasso_regression_tuned` | 48.1701 | 105.4968 |
+| 24h | `lasso_regression_tuned` | 46.6238 | 103.7971 |
+
+The final test summary is written to:
+
+```text
+reports/final_regression_test_results.csv
+```
+
+## Saved Regression Model Artifacts
+
+Selected regression models can be saved locally with:
+
+```bash
+make save-selected-regression-models
+```
+
+The generated `.joblib` files are saved under:
+
+```text
+models/regression/
+```
+
+Model artifacts are ignored by Git because they are generated outputs.
+
 ## Current Regression Models
 
 | Model | Type | Tuning |
@@ -194,7 +228,7 @@ Some generated data files are local outputs and are not tracked by Git.
 This project solves two related problems:
 
 1. Regression: predict future electricity prices for configured forecast horizons.
-2. Classification: estimate future spike risk.
+2. Classification: estimate future spike risk. This is planned for Phase 4.
 
 The decision layer will combine both outputs into a recommendation.
 
