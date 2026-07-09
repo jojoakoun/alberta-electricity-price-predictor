@@ -47,7 +47,7 @@ def test_format_random_forest_parameters_returns_readable_string() -> None:
   )
 
   assert parameters == (
-    "n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42"
+    "n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1"
   )
 
 
@@ -110,7 +110,7 @@ def test_build_tuned_random_forest_result_returns_model_summary_row() -> None:
   assert result["split"] == "validation"
   assert result["evaluation_rows"] == 8544
   assert result["model_parameters"] == (
-    f"n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; "
+    f"n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1; "
     f"cv_splits={RANDOM_FOREST_TUNING_SPLITS}; "
     "cv_mae=28.490000; cv_rmse=62.070000"
   )

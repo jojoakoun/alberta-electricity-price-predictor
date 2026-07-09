@@ -22,6 +22,7 @@ RANDOM_FOREST_N_ESTIMATORS = 100
 RANDOM_FOREST_MAX_DEPTH = None
 RANDOM_FOREST_MIN_SAMPLES_LEAF = 1
 RANDOM_FOREST_RANDOM_STATE = 42
+RANDOM_FOREST_N_JOBS = -1
 
 
 def train_random_forest_model(
@@ -30,6 +31,7 @@ def train_random_forest_model(
   max_depth: int | None = RANDOM_FOREST_MAX_DEPTH,
   min_samples_leaf: int = RANDOM_FOREST_MIN_SAMPLES_LEAF,
   random_state: int = RANDOM_FOREST_RANDOM_STATE,
+  n_jobs: int = RANDOM_FOREST_N_JOBS,
   target_column: str = TARGET_COLUMN,
 ) -> RandomForestRegressor:
   """Train a Random Forest Regressor for one regression target column."""
@@ -44,6 +46,7 @@ def train_random_forest_model(
     max_depth=max_depth,
     min_samples_leaf=min_samples_leaf,
     random_state=random_state,
+    n_jobs=n_jobs,
   )
   model.fit(features, target)
 
@@ -77,6 +80,7 @@ def build_random_forest_result(
   max_depth: int | None = RANDOM_FOREST_MAX_DEPTH,
   min_samples_leaf: int = RANDOM_FOREST_MIN_SAMPLES_LEAF,
   random_state: int = RANDOM_FOREST_RANDOM_STATE,
+  n_jobs: int = RANDOM_FOREST_N_JOBS,
   horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for Random Forest."""
@@ -92,7 +96,8 @@ def build_random_forest_result(
       f"n_estimators={n_estimators}; "
       f"max_depth={max_depth}; "
       f"min_samples_leaf={min_samples_leaf}; "
-      f"random_state={random_state}"
+      f"random_state={random_state}; "
+      f"n_jobs={n_jobs}"
     ),
     notes="Random Forest Regressor trained on the chronological train set.",
   )
@@ -107,6 +112,7 @@ def print_random_forest_summary(
   max_depth: int | None = RANDOM_FOREST_MAX_DEPTH,
   min_samples_leaf: int = RANDOM_FOREST_MIN_SAMPLES_LEAF,
   random_state: int = RANDOM_FOREST_RANDOM_STATE,
+  n_jobs: int = RANDOM_FOREST_N_JOBS,
 ) -> None:
   """Print a readable summary of Random Forest performance."""
   print("Random Forest Regressor")
@@ -115,6 +121,7 @@ def print_random_forest_summary(
   print(f"Max depth: {max_depth}")
   print(f"Min samples leaf: {min_samples_leaf}")
   print(f"Random state: {random_state}")
+  print(f"N jobs: {n_jobs}")
   print(f"Evaluation split: {split}")
   print(f"Evaluation rows: {row_count:,}")
   print(f"MAE: {scores['mae']:.2f}")
@@ -144,6 +151,7 @@ if __name__ == "__main__":
     max_depth=RANDOM_FOREST_MAX_DEPTH,
     min_samples_leaf=RANDOM_FOREST_MIN_SAMPLES_LEAF,
     random_state=RANDOM_FOREST_RANDOM_STATE,
+    n_jobs=RANDOM_FOREST_N_JOBS,
   )
   validation_scores = evaluate_random_forest_model(
     model=random_forest_model,
@@ -158,6 +166,7 @@ if __name__ == "__main__":
     max_depth=RANDOM_FOREST_MAX_DEPTH,
     min_samples_leaf=RANDOM_FOREST_MIN_SAMPLES_LEAF,
     random_state=RANDOM_FOREST_RANDOM_STATE,
+    n_jobs=RANDOM_FOREST_N_JOBS,
   )
 
   written_results_path = append_model_result(
@@ -174,4 +183,5 @@ if __name__ == "__main__":
     max_depth=RANDOM_FOREST_MAX_DEPTH,
     min_samples_leaf=RANDOM_FOREST_MIN_SAMPLES_LEAF,
     random_state=RANDOM_FOREST_RANDOM_STATE,
+    n_jobs=RANDOM_FOREST_N_JOBS,
   )

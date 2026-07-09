@@ -6,6 +6,7 @@ from electricity_predictor.modeling.regression.random_forest.random_forest impor
   RANDOM_FOREST_MAX_DEPTH,
   RANDOM_FOREST_MIN_SAMPLES_LEAF,
   RANDOM_FOREST_RANDOM_STATE,
+  RANDOM_FOREST_N_JOBS,
   build_random_forest_result,
   evaluate_random_forest_model,
   train_random_forest_model,
@@ -42,6 +43,7 @@ def test_train_random_forest_model_returns_fitted_model() -> None:
   assert model.max_depth == RANDOM_FOREST_MAX_DEPTH
   assert model.min_samples_leaf == RANDOM_FOREST_MIN_SAMPLES_LEAF
   assert model.random_state == RANDOM_FOREST_RANDOM_STATE
+  assert model.n_jobs == RANDOM_FOREST_N_JOBS
 
 
 def test_evaluate_random_forest_model_returns_mae_and_rmse() -> None:
@@ -72,7 +74,7 @@ def test_build_random_forest_result_returns_model_summary_row() -> None:
   assert result["split"] == "validation"
   assert result["evaluation_rows"] == 8544
   assert result["model_parameters"] == (
-    "n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42"
+    "n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1"
   )
   assert result["mae"] == 12.5
   assert result["rmse"] == 20.0

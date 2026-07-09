@@ -16,6 +16,7 @@ from electricity_predictor.modeling.regression.baseline.naive_baseline import lo
 from electricity_predictor.modeling.regression.feature_columns import REGRESSION_FEATURE_COLUMNS
 from electricity_predictor.modeling.regression.random_forest.random_forest import (
   RANDOM_FOREST_RANDOM_STATE,
+  RANDOM_FOREST_N_JOBS,
   evaluate_random_forest_model,
   train_random_forest_model,
 )
@@ -34,13 +35,18 @@ RANDOM_FOREST_CONFIGS = [
 ]
 
 
-def format_random_forest_parameters(config: dict, random_state: int) -> str:
+def format_random_forest_parameters(
+  config: dict,
+  random_state: int,
+  n_jobs: int = RANDOM_FOREST_N_JOBS,
+) -> str:
   """Create a readable parameter string for model comparison."""
   return (
     f"n_estimators={config['n_estimators']}; "
     f"max_depth={config['max_depth']}; "
     f"min_samples_leaf={config['min_samples_leaf']}; "
-    f"random_state={random_state}"
+    f"random_state={random_state}; "
+    f"n_jobs={n_jobs}"
   )
 
 
@@ -76,6 +82,7 @@ def evaluate_random_forest_config_with_time_series_cv(
       max_depth=config["max_depth"],
       min_samples_leaf=config["min_samples_leaf"],
       random_state=RANDOM_FOREST_RANDOM_STATE,
+      n_jobs=RANDOM_FOREST_N_JOBS,
       target_column=target_column,
     )
 
@@ -178,6 +185,7 @@ if __name__ == "__main__":
     max_depth=best_config["max_depth"],
     min_samples_leaf=best_config["min_samples_leaf"],
     random_state=RANDOM_FOREST_RANDOM_STATE,
+    n_jobs=RANDOM_FOREST_N_JOBS,
   )
   validation_scores = evaluate_random_forest_model(
     model=tuned_model,
