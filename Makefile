@@ -1,4 +1,4 @@
-.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model full-pipeline
+.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model full-pipeline project-context-full-audit project-context-full-audit
 
 install:
 	# Install dependencies and register the local package.
@@ -113,3 +113,57 @@ full-pipeline:
 	$(MAKE) select-best-regression-model
 	$(MAKE) test
 
+
+project-context-full-audit:
+	# Export full project context for a serious external audit.
+	mkdir -p context_exports
+	{ \
+		echo "===== Git branch ====="; \
+		git branch --show-current; \
+		echo ""; \
+		echo "===== Git log ====="; \
+		git log --oneline -10; \
+		echo ""; \
+		echo "===== Git status ====="; \
+		git status --short; \
+		echo ""; \
+		echo "===== Source code, docs, config, and project files ====="; \
+		find . \
+			-path "./.git" -prune -o \
+			-path "./.venv" -prune -o \
+			-path "./data" -prune -o \
+			-path "./models" -prune -o \
+			-path "./context_exports" -prune -o \
+			-path "./__pycache__" -prune -o \
+			-path "./.pytest_cache" -prune -o \
+			-path "./.ipynb_checkpoints" -prune -o \
+			-name "*.pyc" -prune -o \
+			-type f \( \
+				-name "*.py" -o \
+				-name "*.md" -o \
+				-name "*.yaml" -o \
+				-name "*.yml" -o \
+				-name "*.toml" -o \
+				-name "Makefile" -o \
+				-name "requirements.txt" -o \
+				-name ".gitignore" \
+			\) -print | sort | while read file; do \
+				echo ""; \
+				echo "===== $$file ====="; \
+				cat "$$file"; \
+				echo ""; \
+			done; \
+		echo ""; \
+		echo "===== reports/model_results.csv preview ====="; \
+		if [ -f reports/model_results.csv ]; then sed -n '1,120p' reports/model_results.csv; else echo "Missing reports/model_results.csv"; fi; \
+		echo ""; \
+		echo "===== reports/best_regression_model.csv ====="; \
+		if [ -f reports/best_regression_model.csv ]; then cat reports/best_regression_model.csv; else echo "Missing reports/best_regression_model.csv"; fi; \
+		echo ""; \
+		echo "===== reports/final_regression_test_results.csv ====="; \
+		if [ -f reports/final_regression_test_results.csv ]; then cat reports/final_regression_test_results.csv; else echo "Missing reports/final_regression_test_results.csv"; fi; \
+		echo ""; \
+		echo "===== models/regression metadata ====="; \
+		if [ -f models/regression/selected_regression_model_metadata.csv ]; then cat models/regression/selected_regression_model_metadata.csv; else echo "Missing models/regression/selected_regression_model_metadata.csv"; fi; \
+	} > context_exports/project_context_full_audit.txt
+	@echo "Full audit context exported to context_exports/project_context_full_audit.txt"
