@@ -12,7 +12,7 @@ from electricity_predictor.modeling.model_results import (
   append_model_result,
   build_model_result_row,
 )
-from electricity_predictor.modeling.regression.baseline.naive_baseline import load_training_dataset
+from electricity_predictor.modeling.split import load_training_dataset
 from electricity_predictor.modeling.regression.elastic_net.elastic_net_regression import (
   ELASTIC_NET_MAX_ITER,
   evaluate_elastic_net_regression_model,

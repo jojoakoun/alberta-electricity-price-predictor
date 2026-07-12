@@ -11,20 +11,14 @@ from electricity_predictor.modeling.model_results import (
   append_model_result,
   build_model_result_row,
 )
-from electricity_predictor.modeling.split import split_time_series_data
+from electricity_predictor.modeling.split import (
+  load_training_dataset,
+  split_time_series_data,
+)
 
 
 TARGET_COLUMN = "actual_price"
 NAIVE_BASELINE_PREDICTION_COLUMN = "actual_price_lag_1h"
-
-
-def load_training_dataset(file_path: Path) -> pd.DataFrame:
-  """Load the model-ready training dataset."""
-  if not file_path.exists():
-    raise FileNotFoundError(f"Training dataset not found: {file_path}")
-
-  # This file is produced by the training-data step and contains complete model rows.
-  return pd.read_csv(file_path)
 
 
 def evaluate_naive_baseline(
@@ -109,6 +103,6 @@ if __name__ == "__main__":
 
   print_baseline_summary(
     scores=baseline_scores,
-    row_count=len(test_data),
+    row_count=len(validation_data),
     results_path=written_results_path,
   )
