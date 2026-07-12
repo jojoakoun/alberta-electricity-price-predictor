@@ -44,7 +44,6 @@ from electricity_predictor.modeling.split import split_time_series_data
 
 BEST_MODEL_PATH = Path("reports/best_regression_model.csv")
 FINAL_TEST_RESULTS_PATH = Path("reports/final_regression_test_results.csv")
-TRAINING_DATASET_PATH = Path("data/processed/training_dataset.csv")
 
 
 def parse_model_parameters(parameter_text: str) -> dict[str, str]:

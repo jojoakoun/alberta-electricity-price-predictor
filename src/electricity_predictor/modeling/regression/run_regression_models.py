@@ -62,7 +62,6 @@ def run_regression_models() -> Path:
   """Train, tune, evaluate, and summarize regression models for each horizon."""
   configuration = load_configuration()
 
-  training_dataset_path = Path("data/processed/training_dataset.csv")
   results_path = Path("reports/model_results.csv")
   modeling_config = configuration["modeling"]
 
@@ -73,7 +72,7 @@ def run_regression_models() -> Path:
   # This dataset is produced after feature engineering and training-data cleaning.
   # At this stage, rows with missing lags, rolling features, or horizon targets
   # have already been removed.
-  training_data = load_training_dataset(training_dataset_path)
+  training_data = load_training_dataset(TRAINING_DATASET_PATH)
 
   # The split must stay chronological because this is time-series data.
   # We do not shuffle rows: older data trains the models, newer data validates them,

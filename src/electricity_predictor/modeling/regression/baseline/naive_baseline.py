@@ -12,6 +12,7 @@ from electricity_predictor.modeling.model_results import (
   build_model_result_row,
 )
 from electricity_predictor.modeling.split import (
+  TRAINING_DATASET_PATH,
   load_training_dataset,
   split_time_series_data,
 )
@@ -73,11 +74,10 @@ def print_baseline_summary(scores: dict[str, float], row_count: int, results_pat
 if __name__ == "__main__":
   configuration = load_configuration()
 
-  training_dataset_path = Path("data/processed/training_dataset.csv")
   results_path = Path("reports/model_results.csv")
   modeling_config = configuration["modeling"]
 
-  training_data = load_training_dataset(training_dataset_path)
+  training_data = load_training_dataset(TRAINING_DATASET_PATH)
 
   train_data, validation_data, test_data = split_time_series_data(
     data=training_data,

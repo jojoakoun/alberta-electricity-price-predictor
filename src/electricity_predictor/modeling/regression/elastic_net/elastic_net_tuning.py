@@ -144,11 +144,10 @@ def build_tuned_elastic_net_result(
 if __name__ == "__main__":
   configuration = load_configuration()
 
-  training_dataset_path = Path("data/processed/training_dataset.csv")
   results_path = Path("reports/model_results.csv")
   modeling_config = configuration["modeling"]
 
-  training_data = load_training_dataset(training_dataset_path)
+  training_data = load_training_dataset(TRAINING_DATASET_PATH)
 
   train_data, validation_data, test_data = split_time_series_data(
     data=training_data,

@@ -6,6 +6,9 @@ from sklearn.model_selection import train_test_split
 from electricity_predictor.config import load_configuration
 
 
+TRAINING_DATASET_PATH = Path("data/processed/training_dataset.csv")
+
+
 def load_training_dataset(file_path: Path) -> pd.DataFrame:
   """Load the model-ready training dataset."""
   if not file_path.exists():
@@ -118,10 +121,9 @@ def print_split_summary(
 if __name__ == "__main__":
   configuration = load_configuration()
 
-  training_dataset_path = Path("data/processed/training_dataset.csv")
   modeling_config = configuration["modeling"]
 
-  training_data = load_training_dataset(training_dataset_path)
+  training_data = load_training_dataset(TRAINING_DATASET_PATH)
 
   train_data, validation_data, test_data = split_time_series_data(
     data=training_data,
