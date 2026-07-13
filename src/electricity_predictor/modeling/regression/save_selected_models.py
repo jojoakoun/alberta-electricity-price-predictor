@@ -5,16 +5,16 @@ import pandas as pd
 
 from electricity_predictor.config import load_configuration
 from electricity_predictor.features.feature_engineering import build_target_column_name
-from electricity_predictor.modeling.split import (
-  TRAINING_DATASET_PATH,
-  load_training_dataset,
-)
 from electricity_predictor.modeling.regression.final_test_evaluation import (
   BEST_MODEL_PATH,
   load_selected_regression_models,
   train_selected_regression_model,
 )
-from electricity_predictor.modeling.split import split_time_series_data
+from electricity_predictor.modeling.split import (
+  TRAINING_DATASET_PATH,
+  load_training_dataset,
+  split_time_series_data,
+)
 
 
 MODEL_OUTPUT_DIR = Path("models/regression")

@@ -7,7 +7,6 @@ from electricity_predictor.features.feature_engineering import build_target_colu
 from electricity_predictor.modeling.model_results import build_model_result_row, write_model_results
 from electricity_predictor.modeling.regression.baseline.naive_baseline import (
   evaluate_naive_baseline,
-  load_training_dataset,
 )
 from electricity_predictor.modeling.regression.elastic_net.elastic_net_regression import (
   ELASTIC_NET_ALPHA,
@@ -39,7 +38,11 @@ from electricity_predictor.modeling.regression.ridge.ridge_regression import (
   evaluate_ridge_regression_model,
   train_ridge_regression_model,
 )
-from electricity_predictor.modeling.split import split_time_series_data
+from electricity_predictor.modeling.split import (
+  TRAINING_DATASET_PATH,
+  load_training_dataset,
+  split_time_series_data,
+)
 
 
 BEST_MODEL_PATH = Path("reports/best_regression_model.csv")

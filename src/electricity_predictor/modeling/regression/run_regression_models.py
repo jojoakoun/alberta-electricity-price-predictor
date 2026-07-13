@@ -6,7 +6,6 @@ from electricity_predictor.modeling.model_results import write_model_results
 from electricity_predictor.modeling.regression.baseline.naive_baseline import (
   build_naive_baseline_result,
   evaluate_naive_baseline,
-  load_training_dataset,
 )
 from electricity_predictor.modeling.regression.elastic_net.elastic_net_regression import (
   build_elastic_net_regression_result,
@@ -55,7 +54,11 @@ from electricity_predictor.modeling.regression.ridge.ridge_tuning import (
   build_tuned_ridge_result,
   tune_ridge_alpha,
 )
-from electricity_predictor.modeling.split import split_time_series_data
+from electricity_predictor.modeling.split import (
+  TRAINING_DATASET_PATH,
+  load_training_dataset,
+  split_time_series_data,
+)
 
 
 def run_regression_models() -> Path:
