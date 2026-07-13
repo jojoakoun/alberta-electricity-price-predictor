@@ -56,6 +56,8 @@ The modeling workflow now produces:
 | Feature quality reporting | Complete | The project can inspect missing values introduced by lag, rolling, and horizon target creation. |
 | Training dataset preparation | Complete | The project creates a model-ready training dataset by removing rows with missing engineered features or horizon targets. |
 | Time-based splitting | Complete | The project creates chronological train, validation, and test splits for modeling. |
+| Shared training dataset loader | Complete | All modeling workflows reuse the shared `load_training_dataset()` helper from `modeling/split.py`. |
+| Shared training dataset path | Complete | All modeling workflows reuse the shared `TRAINING_DATASET_PATH` constant from `modeling/split.py`. |
 | Regression baseline | Complete | The project evaluates a naive baseline using the previous hour price against each horizon target. |
 | Linear Regression | Complete | The project trains and evaluates Linear Regression for each horizon target. |
 | Ridge Regression | Complete | The project trains a base Ridge model and tunes `alpha` with `TimeSeriesSplit`. |
@@ -128,7 +130,7 @@ Some generated data files are local outputs and are not tracked by Git.
 | `src/electricity_predictor/features/feature_columns.py` | Centralizes engineered feature and horizon target column names. |
 | `src/electricity_predictor/features/feature_quality.py` | Reports missing values created by feature engineering. |
 | `src/electricity_predictor/features/training_data.py` | Builds the model-ready training dataset from the modeling dataset. |
-| `src/electricity_predictor/modeling/split.py` | Creates chronological train, validation, and test splits. |
+| `src/electricity_predictor/modeling/split.py` | Defines the shared training dataset path, loads and chronologically sorts the training dataset, and creates chronological train, validation, and test splits. |
 | `src/electricity_predictor/modeling/metrics.py` | Provides reusable MAE and RMSE metric functions. |
 | `src/electricity_predictor/modeling/model_results.py` | Builds and writes reusable model result summaries with horizon context. |
 | `src/electricity_predictor/modeling/regression/run_regression_models.py` | Runs the multi-horizon regression model comparison workflow. |

@@ -418,3 +418,23 @@ Selected learned models are saved as fitted scikit-learn model objects. Selected
 **Rejected:** Refactoring the full multi-horizon workflow into process-level parallelism before the Phase 3 audit is stable.
 
 **Next:** Keep the current workflow simple, and consider horizon-level parallelism later only if runtime becomes a blocker.
+
+### P3-D18 — Centralize training dataset loading
+
+**Decision:** Keep `load_training_dataset()` in `src/electricity_predictor/modeling/split.py` as the single shared function for loading the model-ready training dataset.
+
+**Why:** Training dataset loading is shared modeling infrastructure, not baseline-specific logic. Centralizing it removes duplicated implementations and prevents regression models from depending on the naive baseline module.
+
+**Rejected:** Keeping separate training dataset loaders in both `modeling/split.py` and `regression/baseline/naive_baseline.py`.
+
+**Next:** Use the shared loader for regression, classification, final evaluation, and model artifact workflows.
+
+### P3-D19 — Centralize the training dataset path
+
+**Decision:** Keep `TRAINING_DATASET_PATH` in `src/electricity_predictor/modeling/split.py` as the single source of truth for the model-ready training dataset location.
+
+**Why:** The path `data/processed/training_dataset.csv` was repeated across regression scripts. A shared constant prevents path drift and allows the dataset location to be changed in one place.
+
+**Rejected:** Repeating the same hardcoded training dataset path in every model and orchestration script.
+
+**Next:** Reuse the shared path constant in future regression and classification workflows.
