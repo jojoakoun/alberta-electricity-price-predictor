@@ -124,3 +124,81 @@ def test_load_training_dataset_rejects_missing_file():
 
   with pytest.raises(FileNotFoundError):
     load_training_dataset(missing_file)
+
+def test_load_training_dataset_loads_and_sorts_by_utc_time(tmp_path):
+  import pandas as pd
+
+  from electricity_predictor.modeling.split import load_training_dataset
+
+  # Deliberately unsorted rows: the shared loader must fix the order itself.
+  data = pd.DataFrame({
+    "datetime_universal_time": [
+      "2026-01-01 10:00:00",
+      "2026-01-01 08:00:00",
+      "2026-01-01 09:00:00",
+    ],
+    "actual_price": [3.0, 1.0, 2.0],
+  })
+  file_path = tmp_path / "training_dataset.csv"
+  data.to_csv(file_path, index=False)
+
+  loaded = load_training_dataset(file_path)
+
+  # The loader owns two guarantees: real datetimes and chronological order.
+  assert str(loaded["datetime_universal_time"].dtype).startswith("datetime64")
+  assert loaded["datetime_universal_time"].is_monotonic_increasing
+  assert loaded["actual_price"].tolist() == [1.0, 2.0, 3.0]
+
+
+def test_split_time_series_data_splits_are_disjoint_and_cover_all_rows():
+  import pandas as pd
+
+  from electricity_predictor.modeling.split import split_time_series_data
+
+  data = pd.DataFrame({
+    "datetime_universal_time": pd.date_range("2026-01-01", periods=20, freq="h"),
+    "actual_price": range(20),
+  })
+
+  train, validation, test = split_time_series_data(
+    data=data,
+    train_ratio=0.7,
+    validation_ratio=0.15,
+    test_ratio=0.15,
+  )
+
+  # Coverage: no row lost, no row invented.
+  assert len(train) + len(validation) + len(test) == len(data)
+
+  # Disjoint: no timestamp appears in two splits.
+  train_times = set(train["datetime_universal_time"])
+  validation_times = set(validation["datetime_universal_time"])
+  test_times = set(test["datetime_universal_time"])
+  assert not train_times & validation_times
+  assert not validation_times & test_times
+  assert not train_times & test_times
+
+  # Ordered boundaries: past -> validation -> future.
+  assert train["datetime_universal_time"].max() < validation["datetime_universal_time"].min()
+  assert validation["datetime_universal_time"].max() < test["datetime_universal_time"].min()
+
+
+def test_split_time_series_data_rejects_invalid_ratios():
+  import pandas as pd
+  import pytest
+
+  from electricity_predictor.modeling.split import split_time_series_data
+
+  data = pd.DataFrame({
+    "datetime_universal_time": pd.date_range("2026-01-01", periods=10, freq="h"),
+    "actual_price": range(10),
+  })
+
+  # Ratios that do not sum to 1.0 must fail loudly, not truncate silently.
+  with pytest.raises(ValueError):
+    split_time_series_data(
+      data=data,
+      train_ratio=0.7,
+      validation_ratio=0.1,
+      test_ratio=0.1,
+    )
