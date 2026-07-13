@@ -37,6 +37,11 @@ def validate_continuous_hourly_utc_timestamps(data: pd.DataFrame) -> None:
   if len(data) <= 1:
     return
 
+  # NaT timestamps would silently vanish from the diff check below,
+  # so reject them explicitly before validating the hourly sequence.
+  if data["datetime_universal_time"].isna().any():
+    raise ValueError("Feature engineering requires non-missing UTC timestamps.")
+
   sorted_timestamps = data["datetime_universal_time"].sort_values().reset_index(drop=True)
 
   # Duplicate or skipped UTC hours would make row-based shifts unsafe.
