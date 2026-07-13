@@ -1,4 +1,4 @@
-.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context project-context-full-audit baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models full-pipeline
+.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context project-context-full-audit baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models classification-baseline logistic-regression logistic-tuning random-forest random-forest-tuning classification-models full-pipeline
 
 install:
 	# Install dependencies and register the local package.
@@ -110,6 +110,32 @@ save-selected-regression-models:
 	# Train and save the selected regression models as local joblib artifacts.
 	python src/electricity_predictor/modeling/regression/save_selected_models.py
 
+
+classification-baseline:
+	# Evaluate the naive spike baseline on the chronological validation split.
+	python src/electricity_predictor/modeling/classification/baseline.py
+
+logistic-regression:
+	# Train and evaluate base Logistic Regression for all forecast horizons.
+	python src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+
+logistic-tuning:
+	# Tune Logistic Regression with TimeSeriesSplit for all forecast horizons.
+	python src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+
+
+random-forest:
+	# Train and evaluate Random Forest for all forecast horizons.
+	python src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+
+random-forest-tuning:
+	# Tune Random Forest with TimeSeriesSplit for all forecast horizons.
+	python src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+
+classification-models:
+	# Run the current multi-horizon classification comparison workflow.
+	python src/electricity_predictor/modeling/classification/run_classification_models.py
+
 full-pipeline:
 	# Run the complete current workflow from data refresh to model results and tests.
 	$(MAKE) pipeline
@@ -121,6 +147,7 @@ full-pipeline:
 	$(MAKE) select-best-regression-model
 	$(MAKE) final-regression-evaluation
 	$(MAKE) save-selected-regression-models
+	$(MAKE) classification-models
 	$(MAKE) test
 
 
