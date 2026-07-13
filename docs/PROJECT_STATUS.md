@@ -6,11 +6,11 @@ This document summarizes the current state of the project.
 
 ## Current Phase
 
-Phase 3 — Regression Modeling
+Phase 4 — Classification and Spike-Risk Modeling
 
 ## Current Status
 
-The project now supports a multi-horizon regression workflow.
+The project now supports multi-horizon regression and has started Phase 4 classification development.
 
 The repository foundation, Phase 1 data engineering, Phase 2 feature engineering, ML preprocessing, and the current Phase 3 regression comparison workflow are complete.
 
@@ -68,6 +68,9 @@ The modeling workflow now produces:
 | Best predictor selection by horizon | Complete | The project selects one best validation predictor per horizon using lowest validation MAE. |
 | Regression model organization | Complete | Regression models are organized by model family under `modeling/regression/`. |
 | Full pipeline command | Complete | The project can run data refresh, quality checks, feature building, training data preparation, regression models, model selection, and tests with `make full-pipeline`. |
+| Classification spike definition | In progress | Candidate spike definitions are compared using thresholds learned from the chronological train split only. |
+| Classification target preparation | In progress | Binary spike targets are created after splitting so validation and test prices cannot influence the threshold. |
+| Classification baseline | In progress | The project evaluates a naive spike baseline using the previous-hour price against each forecast horizon. |
 | Automated tests | Complete | The current test suite passes successfully. |
 
 ## Current Validation Status
@@ -75,7 +78,7 @@ The modeling workflow now produces:
 Latest test result:
 
 ```text
-109 passed
+132 passed
 ```
 
 ## Current Forecast Horizons
@@ -131,7 +134,11 @@ Some generated data files are local outputs and are not tracked by Git.
 | `src/electricity_predictor/features/feature_quality.py` | Reports missing values created by feature engineering. |
 | `src/electricity_predictor/features/training_data.py` | Builds the model-ready training dataset from the modeling dataset. |
 | `src/electricity_predictor/modeling/split.py` | Defines the shared training dataset path, loads and chronologically sorts the training dataset, and creates chronological train, validation, and test splits. |
-| `src/electricity_predictor/modeling/metrics.py` | Provides reusable MAE and RMSE metric functions. |
+| `src/electricity_predictor/modeling/metrics.py` | Provides reusable regression and binary-classification metric functions. |
+| `src/electricity_predictor/modeling/classification/spike_definition.py` | Calculates and applies train-derived spike thresholds. |
+| `src/electricity_predictor/modeling/classification/analyze_spike_definition.py` | Compares candidate spike definitions across chronological splits. |
+| `src/electricity_predictor/modeling/classification/target_builder.py` | Creates horizon-specific binary spike targets using one frozen train threshold. |
+| `src/electricity_predictor/modeling/classification/baseline.py` | Evaluates the naive spike baseline on validation data. |
 | `src/electricity_predictor/modeling/model_results.py` | Builds and writes reusable model result summaries with horizon context. |
 | `src/electricity_predictor/modeling/regression/run_regression_models.py` | Runs the multi-horizon regression model comparison workflow. |
 | `src/electricity_predictor/modeling/regression/best_model_selection.py` | Selects the best validation regression model separately for each horizon. |
@@ -196,6 +203,7 @@ These artifacts are ignored by Git because they can be regenerated from the trac
 
 ## Next Steps
 
-1. Push the completed Phase 3 regression audit updates.
-2. Start Phase 4 — Classification and spike-risk modeling.
-3. Use regression predictions and classification outputs together later in the recommendation layer.
+1. Train Logistic Regression classifiers for each forecast horizon.
+2. Compare learned classifiers with the naive spike baseline on validation data.
+3. Select one classification predictor per horizon before protected test evaluation.
+4. Use regression and classification outputs together later in the recommendation layer.

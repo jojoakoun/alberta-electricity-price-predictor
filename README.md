@@ -34,9 +34,9 @@ The historical CSV supports data preparation, EDA, feature engineering, and mode
 
 ## Current Project Status
 
-Current phase: **Phase 3 — Regression Modeling**.
+Current phase: **Phase 4 — Classification and Spike-Risk Modeling**.
 
-The repository foundation, Phase 1 data engineering, Phase 2 feature engineering, ML preprocessing, and Phase 3 regression model comparison work are complete.
+The repository foundation, Phase 1 data engineering, Phase 2 feature engineering, ML preprocessing, and Phase 3 regression modeling are complete. Phase 4 classification development is in progress.
 
 The project can currently:
 
@@ -50,6 +50,9 @@ The project can currently:
 - train and compare multiple regression models
 - tune selected regression models with `TimeSeriesSplit`
 - select the best validation regression model separately for each forecast horizon
+- calculate spike thresholds from the chronological train split only
+- create horizon-specific binary spike targets without future-distribution leakage
+- evaluate a naive spike classification baseline on validation data
 
 A full status summary is available here:
 
@@ -228,7 +231,7 @@ Some generated data files are local outputs and are not tracked by Git.
 This project solves two related problems:
 
 1. Regression: predict future electricity prices for configured forecast horizons.
-2. Classification: estimate future spike risk. This is planned for Phase 4.
+2. Classification: estimate future spike risk. Phase 4 implementation is in progress.
 
 The decision layer will combine both outputs into a recommendation.
 
@@ -310,7 +313,11 @@ alberta-electricity-price-predictor/
 | `src/electricity_predictor/features/feature_quality.py` | Reports missing values created by lag and rolling feature windows. |
 | `src/electricity_predictor/features/training_data.py` | Builds the model-ready training dataset. |
 | `src/electricity_predictor/modeling/split.py` | Creates chronological train, validation, and test splits. |
-| `src/electricity_predictor/modeling/metrics.py` | Provides reusable MAE and RMSE metric functions. |
+| `src/electricity_predictor/modeling/metrics.py` | Provides reusable regression and binary-classification metrics. |
+| `src/electricity_predictor/modeling/classification/spike_definition.py` | Calculates and applies train-derived spike thresholds. |
+| `src/electricity_predictor/modeling/classification/analyze_spike_definition.py` | Compares candidate spike definitions across chronological splits. |
+| `src/electricity_predictor/modeling/classification/target_builder.py` | Creates binary spike targets for configured horizons. |
+| `src/electricity_predictor/modeling/classification/baseline.py` | Evaluates the naive spike classification baseline. |
 | `src/electricity_predictor/modeling/model_results.py` | Builds and writes reusable model result summaries. |
 | `src/electricity_predictor/modeling/regression/run_regression_models.py` | Runs the current regression model comparison workflow. |
 | `src/electricity_predictor/modeling/regression/best_model_selection.py` | Selects the best validation regression model using the lowest MAE. |
@@ -327,7 +334,7 @@ make test
 Current test status:
 
 ```text
-109 passed
+132 passed
 ```
 
 ## Main Commands

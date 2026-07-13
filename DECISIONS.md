@@ -14,7 +14,8 @@ Decision IDs are organized by phase:
 - `P0` = repository setup
 - `P1` = data engineering
 - `P2` = feature engineering
-- `P3` = modeling
+- `P3` = regression modeling
+- `P4` = classification and spike-risk modeling
 
 ---
 
@@ -438,3 +439,28 @@ Selected learned models are saved as fitted scikit-learn model objects. Selected
 **Rejected:** Repeating the same hardcoded training dataset path in every model and orchestration script.
 
 **Next:** Reuse the shared path constant in future regression and classification workflows.
+
+---
+
+## Phase 4 — Classification and Spike-Risk Modeling
+
+### P4-D01 — Define spikes from the chronological train split only
+
+**Decision:** Calculate one global IQR spike threshold from `actual_price` in the chronological train split. Apply the frozen threshold to every future horizon target in train, validation, and test data.
+
+**Why:** The threshold represents the historical price level considered unusually high. Learning it from train data only prevents validation and test price distributions from leaking into label construction. One shared threshold also keeps the spike definition consistent across forecast horizons.
+
+**Rejected:** Calculating separate thresholds from each future target column or recalculating thresholds on validation and test data.
+
+**Next:** Create `is_spike_target_1h`, `is_spike_target_3h`, `is_spike_target_6h`, `is_spike_target_12h`, and `is_spike_target_24h` after the chronological split.
+
+### P4-D02 — Use a previous-hour spike rule as the classification baseline
+
+**Decision:** Use `actual_price_lag_1h` with the frozen train-derived spike threshold as the naive classification predictor.
+
+**Why:** The rule tests whether recent spike persistence alone can predict a future spike. It provides a simple benchmark that learned classifiers must beat on the same validation split.
+
+**Rejected:** Using accuracy from an always-non-spike majority predictor as the main baseline. That approach would look strong because spikes are rare but would provide no useful spike detection.
+
+**Next:** Compare Logistic Regression with this baseline using precision, recall, and F1 for each forecast horizon.
+
