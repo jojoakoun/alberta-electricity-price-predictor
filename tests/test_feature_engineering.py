@@ -184,3 +184,68 @@ def test_build_basic_modeling_dataset_rejects_missing_utc_hour():
 
   with pytest.raises(ValueError, match="continuous hourly UTC timestamps"):
     build_basic_modeling_dataset(data, horizons_hours=[1])
+
+def test_build_basic_modeling_dataset_rejects_duplicate_utc_hour():
+  data = pd.DataFrame({
+    "datetime_universal_time": pd.to_datetime([
+      "2026-01-01 07:00:00",
+      "2026-01-01 08:00:00",
+      "2026-01-01 08:00:00",
+    ]),
+    "datetime_local_time": pd.to_datetime([
+      "2026-01-01 00:00:00",
+      "2026-01-01 01:00:00",
+      "2026-01-01 01:00:00",
+    ]),
+    "actual_price": [30.0, 40.0, 41.0],
+    "forecast_price": [28.0, 38.0, 39.0],
+  })
+
+  # A repeated hour makes shift(1) mean "same hour" instead of "previous hour".
+  with pytest.raises(ValueError, match="continuous hourly UTC timestamps"):
+    build_basic_modeling_dataset(data, horizons_hours=[1])
+
+
+def test_build_basic_modeling_dataset_rejects_gap_created_by_missing_actual_price():
+  data = pd.DataFrame({
+    "datetime_universal_time": pd.to_datetime([
+      "2026-01-01 07:00:00",
+      "2026-01-01 08:00:00",
+      "2026-01-01 09:00:00",
+    ]),
+    "datetime_local_time": pd.to_datetime([
+      "2026-01-01 00:00:00",
+      "2026-01-01 01:00:00",
+      "2026-01-01 02:00:00",
+    ]),
+    "actual_price": [30.0, None, 50.0],
+    "forecast_price": [28.0, 38.0, 48.0],
+  })
+
+  # Dropping the mid-series NaN row creates a hidden hourly gap.
+  # This test locks in the guard ordering: validation must run AFTER dropna,
+  # otherwise silently misaligned lags and targets come back (audit finding B3).
+  with pytest.raises(ValueError, match="continuous hourly UTC timestamps"):
+    build_basic_modeling_dataset(data, horizons_hours=[1])
+
+
+def test_build_basic_modeling_dataset_rejects_missing_utc_timestamp():
+  data = pd.DataFrame({
+    "datetime_universal_time": pd.to_datetime([
+      "2026-01-01 07:00:00",
+      "2026-01-01 08:00:00",
+      None,
+    ]),
+    "datetime_local_time": pd.to_datetime([
+      "2026-01-01 00:00:00",
+      "2026-01-01 01:00:00",
+      "2026-01-01 02:00:00",
+    ]),
+    "actual_price": [30.0, 40.0, 50.0],
+    "forecast_price": [28.0, 38.0, 48.0],
+  })
+
+  # NaT diffs would be silently dropped by the diff check, so the guard
+  # must reject missing timestamps explicitly.
+  with pytest.raises(ValueError, match="non-missing UTC timestamps"):
+    build_basic_modeling_dataset(data, horizons_hours=[1])
