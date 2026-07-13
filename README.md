@@ -69,15 +69,15 @@ The project now compares regression models across five forecast horizons:
 - 12 hours
 - 24 hours
 
-The current best validation regression models are selected separately for each horizon using lowest validation MAE.
+The current best validation predictors are selected separately for each horizon using the lowest validation MAE. A naive baseline remains eligible when it outperforms learned models.
 
-| Horizon | Selected model | Validation MAE | Validation RMSE |
+| Horizon | Selected predictor | Validation MAE | Validation RMSE |
 |---:|---|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 25.3681 | 69.9702 |
-| 3h | `lasso_regression_tuned` | 37.8507 | 90.7098 |
-| 6h | `lasso_regression_tuned` | 44.2625 | 94.5843 |
-| 12h | `lasso_regression_tuned` | 48.3116 | 96.7578 |
-| 24h | `lasso_regression_tuned` | 47.7392 | 97.0931 |
+| 1h | `random_forest_regressor_tuned` | 25.4158 | 70.0433 |
+| 3h | `naive_baseline` | 37.3273 | 114.5003 |
+| 6h | `naive_baseline` | 42.9455 | 125.1047 |
+| 12h | `naive_baseline` | 45.5370 | 128.0298 |
+| 24h | `naive_baseline` | 43.1670 | 122.0370 |
 
 The selected model summary is written to:
 
@@ -93,15 +93,15 @@ reports/model_results.csv
 
 ## Final Regression Test Evaluation
 
-The validation-selected regression models have been evaluated on the protected chronological test split.
+The validation-selected regression predictors have been evaluated on the protected chronological test split.
 
-| Horizon | Selected model | Test MAE | Test RMSE |
+| Horizon | Selected predictor | Test MAE | Test RMSE |
 |---:|---|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 26.5252 | 78.8670 |
-| 3h | `lasso_regression_tuned` | 38.6983 | 100.7950 |
-| 6h | `lasso_regression_tuned` | 44.9226 | 104.8689 |
-| 12h | `lasso_regression_tuned` | 48.1701 | 105.4968 |
-| 24h | `lasso_regression_tuned` | 46.6238 | 103.7971 |
+| 1h | `random_forest_regressor_tuned` | 26.4863 | 78.8549 |
+| 3h | `naive_baseline` | 38.9598 | 127.9055 |
+| 6h | `naive_baseline` | 44.7939 | 139.9731 |
+| 12h | `naive_baseline` | 47.7167 | 144.7407 |
+| 24h | `naive_baseline` | 44.0096 | 133.3663 |
 
 The final test summary is written to:
 
@@ -111,7 +111,7 @@ reports/final_regression_test_results.csv
 
 ## Saved Regression Model Artifacts
 
-Selected regression models can be saved locally with:
+Selected regression predictors can be saved locally with:
 
 ```bash
 make save-selected-regression-models
@@ -123,7 +123,7 @@ The generated `.joblib` files are saved under:
 models/regression/
 ```
 
-Model artifacts are ignored by Git because they are generated outputs.
+Learned predictors are saved as fitted model artifacts. Selected naive baselines are saved as rule artifacts. Generated artifacts are ignored by Git.
 
 ## Current Regression Models
 
@@ -327,7 +327,7 @@ make test
 Current test status:
 
 ```text
-81 passed
+109 passed
 ```
 
 ## Main Commands
@@ -342,9 +342,11 @@ Current test status:
 | `make features` | Builds the processed modeling dataset for machine learning. |
 | `make feature-quality` | Inspects missing values created by feature engineering. |
 | `make training-data` | Builds the model-ready training dataset. |
-| `make regression-models` | Runs the current regression model comparison workflow. |
-| `make select-best-regression-model` | Selects the best validation regression model from `reports/model_results.csv`. |
-| `make full-pipeline` | Runs the full current workflow from data refresh to tests. |
+| `make regression-models` | Runs the multi-horizon regression model comparison workflow. |
+| `make select-best-regression-model` | Selects the best validation predictor for each horizon. |
+| `make final-regression-evaluation` | Evaluates the selected predictors on the protected chronological test split. |
+| `make save-selected-regression-models` | Saves the selected fitted model or baseline rule artifact for each horizon. |
+| `make full-pipeline` | Runs the full workflow from data refresh through protected evaluation, artifact saving, and tests. |
 
 ## Environment Variables
 

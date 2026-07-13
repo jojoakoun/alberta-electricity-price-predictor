@@ -65,7 +65,7 @@ The modeling workflow now produces:
 | Elastic Net Regression | Complete | The project trains a base Elastic Net model and tunes `alpha` plus `l1_ratio` with `TimeSeriesSplit`. |
 | Random Forest Regression | Complete | The project trains a base Random Forest model and tunes tree parameters with `TimeSeriesSplit`. |
 | Multi-horizon regression results | Complete | The project writes one model result row per model per horizon to `reports/model_results.csv`. |
-| Best model selection by horizon | Complete | The project selects one best validation regression model per horizon using lowest validation MAE. |
+| Best predictor selection by horizon | Complete | The project selects one best validation predictor per horizon using lowest validation MAE. |
 | Regression model organization | Complete | Regression models are organized by model family under `modeling/regression/`. |
 | Full pipeline command | Complete | The project can run data refresh, quality checks, feature building, training data preparation, regression models, model selection, and tests with `make full-pipeline`. |
 | Automated tests | Complete | The current test suite passes successfully. |
@@ -75,7 +75,7 @@ The modeling workflow now produces:
 Latest test result:
 
 ```text
-98 passed
+109 passed
 ```
 
 ## Current Forecast Horizons
@@ -93,15 +93,15 @@ horizons_hours: [1, 3, 6, 12, 24]
 | `reports/model_results.csv` | Multi-horizon regression model comparison table. Current output: 50 rows. |
 | `reports/best_regression_model.csv` | One selected validation winner per forecast horizon. Current output: 5 rows. |
 
-## Current Best Regression Models
+## Current Best Regression Predictors
 
-| Horizon | Selected model | Validation MAE | Validation RMSE |
+| Horizon | Selected predictor | Validation MAE | Validation RMSE |
 |---:|---|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 25.3567 | 69.9769 |
-| 3h | `naive_baseline` | 37.3369 | 114.5681 |
-| 6h | `naive_baseline` | 42.9736 | 125.1813 |
-| 12h | `naive_baseline` | 45.5869 | 128.1175 |
-| 24h | `naive_baseline` | 43.1847 | 122.1118 |
+| 1h | `random_forest_regressor_tuned` | 25.4158 | 70.0433 |
+| 3h | `naive_baseline` | 37.3273 | 114.5003 |
+| 6h | `naive_baseline` | 42.9455 | 125.1047 |
+| 12h | `naive_baseline` | 45.5370 | 128.0298 |
+| 24h | `naive_baseline` | 43.1670 | 122.0370 |
 
 ## Current Data Outputs
 
@@ -170,17 +170,17 @@ The full multi-horizon regression workflow is slower than earlier single-target 
 
 ## Final Protected Test Results
 
-| Horizon | Selected model | Test MAE | Test RMSE |
+| Horizon | Selected predictor | Test MAE | Test RMSE |
 |---:|---|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 26.5646 | 78.8840 |
-| 3h | `naive_baseline` | 38.9532 | 127.9477 |
-| 6h | `naive_baseline` | 44.7902 | 140.0225 |
-| 12h | `naive_baseline` | 47.7140 | 144.7927 |
-| 24h | `naive_baseline` | 44.0298 | 133.4145 |
+| 1h | `random_forest_regressor_tuned` | 26.4863 | 78.8549 |
+| 3h | `naive_baseline` | 38.9598 | 127.9055 |
+| 6h | `naive_baseline` | 44.7939 | 139.9731 |
+| 12h | `naive_baseline` | 47.7167 | 144.7407 |
+| 24h | `naive_baseline` | 44.0096 | 133.3663 |
 
 ## Saved Regression Model Artifacts
 
-Selected regression models can be trained and saved with:
+Selected regression predictors can be generated with:
 
 ```bash
 make save-selected-regression-models

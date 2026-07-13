@@ -1,5 +1,4 @@
 .PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context project-context-full-audit baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models full-pipeline
-.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context project-context-full-audit baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models full-pipeline
 
 install:
 	# Install dependencies and register the local package.
