@@ -5,6 +5,12 @@ import pandas as pd
 from electricity_predictor.modeling.classification.baseline.naive_spike_baseline import (
   run_classification_baseline,
 )
+from electricity_predictor.modeling.classification.gradient_boosting.gradient_boosting_classifier import (
+  run_gradient_boosting_classifier,
+)
+from electricity_predictor.modeling.classification.gradient_boosting.gradient_boosting_tuning import (
+  run_tuned_gradient_boosting,
+)
 from electricity_predictor.modeling.classification.logistic.logistic_regression import (
   run_logistic_regression,
 )
@@ -86,6 +92,22 @@ def run_classification_models(
   print("Running tuned Random Forest Classifier")
   print("======================================")
   run_tuned_random_forest(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running Gradient Boosting Classifier")
+  print("====================================")
+  run_gradient_boosting_classifier(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running tuned Gradient Boosting Classifier")
+  print("==========================================")
+  run_tuned_gradient_boosting(
     training_dataset_path=training_dataset_path,
     results_path=results_path,
   )

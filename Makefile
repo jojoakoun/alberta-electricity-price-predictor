@@ -1,4 +1,4 @@
-.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context project-context-full-audit baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models classification-baseline logistic-regression logistic-tuning random-forest random-forest-tuning classification-models full-pipeline
+.PHONY: install test config-check pipeline data-quality features feature-quality training-data project-context project-context-full-audit baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models classification-baseline logistic-regression logistic-tuning random-forest random-forest-tuning gradient-boosting gradient-boosting-tuning classification-models full-pipeline select-best-classification-model final-classification-evaluation save-selected-classification-models
 
 install:
 	# Install dependencies and register the local package.
@@ -113,7 +113,7 @@ save-selected-regression-models:
 
 classification-baseline:
 	# Evaluate the naive spike baseline on the chronological validation split.
-	python src/electricity_predictor/modeling/classification/baseline.py
+	python src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
 
 logistic-regression:
 	# Train and evaluate base Logistic Regression for all forecast horizons.
@@ -132,9 +132,30 @@ random-forest-tuning:
 	# Tune Random Forest with TimeSeriesSplit for all forecast horizons.
 	python src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
 
+
+gradient-boosting:
+	# Train and evaluate Gradient Boosting for all forecast horizons.
+	python src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+
+gradient-boosting-tuning:
+	# Tune Gradient Boosting with TimeSeriesSplit for all forecast horizons.
+	python src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+
 classification-models:
 	# Run the current multi-horizon classification comparison workflow.
 	python src/electricity_predictor/modeling/classification/run_classification_models.py
+
+select-best-classification-model:
+	# Select the strongest validation classifier for each horizon.
+	python src/electricity_predictor/modeling/classification/best_model_selection.py
+
+final-classification-evaluation:
+	# Evaluate selected classifiers on the protected chronological test split.
+	python src/electricity_predictor/modeling/classification/final_test_evaluation.py
+
+save-selected-classification-models:
+	# Train and save selected classification models as joblib artifacts.
+	python src/electricity_predictor/modeling/classification/save_selected_models.py
 
 full-pipeline:
 	# Run the complete current workflow from data refresh to model results and tests.
@@ -148,6 +169,9 @@ full-pipeline:
 	$(MAKE) final-regression-evaluation
 	$(MAKE) save-selected-regression-models
 	$(MAKE) classification-models
+	$(MAKE) select-best-classification-model
+	$(MAKE) final-classification-evaluation
+	$(MAKE) save-selected-classification-models
 	$(MAKE) test
 
 

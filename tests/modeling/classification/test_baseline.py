@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from electricity_predictor.modeling.classification.baseline import (
+from electricity_predictor.modeling.classification.baseline.naive_spike_baseline import (
   build_classification_baseline_result,
   evaluate_classification_baseline,
   predict_spike_persistence,

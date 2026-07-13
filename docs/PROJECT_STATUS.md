@@ -207,3 +207,67 @@ These artifacts are ignored by Git because they can be regenerated from the trac
 2. Compare learned classifiers with the naive spike baseline on validation data.
 3. Select one classification predictor per horizon before protected test evaluation.
 4. Use regression and classification outputs together later in the recommendation layer.
+
+<!-- PHASE_4_FINAL_STATUS_START -->
+## Phase 4 completion
+
+Phase 4 is implemented end to end for the following forecast horizons:
+
+- 1 hour
+- 3 hours
+- 6 hours
+- 12 hours
+- 24 hours
+
+The project now includes:
+
+- chronological train, validation, and protected test splits;
+- multi-horizon regression;
+- train-only spike-threshold estimation;
+- horizon-specific spike classification targets;
+- naive baselines;
+- Logistic Regression;
+- Random Forest;
+- Gradient Boosting;
+- chronological hyperparameter tuning with `TimeSeriesSplit`;
+- one selected regression model per horizon;
+- one selected classification model per horizon;
+- final protected test evaluation;
+- saved model artifacts and metadata;
+- **165 passing automated tests**.
+
+### Final regression results
+
+Regression models are selected using the lowest validation MAE within each
+forecast horizon.
+
+| Horizon | Selected model | Validation MAE | Test MAE | Test RMSE |
+|---:|---|---:|---:|---:|
+| 1h | `random_forest_regressor_tuned` | 25.3714 | 26.4665 | 78.8523 |
+| 3h | `naive_baseline` | 37.2918 | 38.9494 | 127.8833 |
+| 6h | `naive_baseline` | 42.9041 | 44.7949 | 139.9497 |
+| 12h | `naive_baseline` | 45.5107 | 47.7019 | 144.7153 |
+| 24h | `naive_baseline` | 43.1519 | 43.9927 | 133.3420 |
+
+### Final classification results
+
+Classification models are selected using the highest validation F1 within each
+forecast horizon.
+
+| Horizon | Selected model | Validation F1 | Test precision | Test recall | Test F1 | Test accuracy |
+|---:|---|---:|---:|---:|---:|---:|
+| 1h | `logistic_regression` | 0.4659 | 0.4012 | 0.4891 | 0.4408 | 0.9603 |
+| 3h | `gradient_boosting_classifier` | 0.3025 | 0.2450 | 0.3139 | 0.2752 | 0.9471 |
+| 6h | `gradient_boosting_classifier_tuned` | 0.2610 | 0.1862 | 0.2372 | 0.2087 | 0.9424 |
+| 12h | `gradient_boosting_classifier` | 0.1755 | 0.1707 | 0.2810 | 0.2124 | 0.9333 |
+| 24h | `gradient_boosting_classifier` | 0.1714 | 0.1873 | 0.2810 | 0.2248 | 0.9380 |
+
+### Current stage
+
+Phase 4 implementation is complete.
+
+The project is now entering a dedicated **Phase 4 coherence and
+pre-deployment audit**. Phase 5 application development must not begin until
+the audit findings have been reviewed and all accepted blocker and
+high-severity findings have been corrected.
+<!-- PHASE_4_FINAL_STATUS_END -->

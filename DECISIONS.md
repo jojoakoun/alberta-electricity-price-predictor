@@ -464,3 +464,51 @@ Selected learned models are saved as fitted scikit-learn model objects. Selected
 
 **Next:** Compare Logistic Regression with this baseline using precision, recall, and F1 for each forecast horizon.
 
+### P4-D03 — Select one model per forecast horizon
+
+Each horizon is treated as a separate prediction problem. One validation
+winner is selected independently for 1h, 3h, 6h, 12h, and 24h.
+
+### P4-D04 — Use MAE for regression model selection
+
+Regression winners are selected using the lowest validation MAE. RMSE remains
+a secondary metric for understanding sensitivity to large errors.
+
+### P4-D05 — Use F1 for classification model selection
+
+Classification winners are selected using the highest validation F1 because
+spikes are rare and accuracy alone would be misleading.
+
+### P4-D06 — Learn the spike threshold from train data only
+
+The spike threshold is calculated from the chronological training split and
+then frozen for train, validation, and test target construction.
+
+### P4-D07 — Protect the chronological test split
+
+Hyperparameter tuning and model selection use train and validation data only.
+The test split is evaluated only after a model has been selected.
+
+### P4-D08 — Retrain on train plus validation
+
+After model selection, learned models are retrained using train plus validation
+before final protected test evaluation and artifact generation.
+
+### P4-D09 — Preserve naive baselines
+
+Regression and classification baselines remain part of the comparison. A more
+complex model must beat a credible simple rule before it can be considered
+valuable.
+
+### P4-D10 — Save parameters and reproducibility metadata
+
+Selected hyperparameters, ordered feature columns, training window, horizon,
+target column, scikit-learn version, selection rule, and artifact paths are
+saved for reproducibility.
+
+### P4-D11 — Require a rigorous audit before deployment
+
+Passing tests confirm implemented behavior, but they do not prove the absence
+of leakage, statistical weakness, distribution instability, or production
+risk. Deployment and Phase 5 application work remain blocked until the
+coherence audit is completed.
