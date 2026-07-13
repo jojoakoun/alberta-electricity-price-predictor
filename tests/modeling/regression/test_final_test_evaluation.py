@@ -1,10 +1,12 @@
 import pandas as pd
+import pytest
 
 from electricity_predictor.modeling.regression.final_test_evaluation import (
   build_final_test_result,
   evaluate_selected_regression_model,
   get_optional_int_parameter,
   parse_model_parameters,
+  train_selected_regression_model,
 )
 
 
@@ -100,3 +102,71 @@ def test_build_final_test_result_uses_test_split_and_horizon() -> None:
   assert result["notes"] == (
     "Final protected test evaluation after validation selection for the 24h horizon."
   )
+
+def test_evaluate_selected_regression_model_uses_baseline_without_training() -> None:
+  data = make_regression_data()
+  selected_model = {
+    "model_name": "naive_baseline",
+    "horizon_hours": 1,
+    "model_parameters": "prediction_column=actual_price_lag_1h",
+  }
+
+  # Empty train data proves the baseline path never trains anything:
+  # any attempt to fit a model on zero rows would raise.
+  scores = evaluate_selected_regression_model(
+    selected_model=selected_model,
+    train_data=data.iloc[0:0],
+    evaluation_data=data,
+    target_column="actual_price_target_1h",
+  )
+
+  assert set(scores.keys()) == {"mae", "rmse"}
+
+
+def test_evaluate_selected_regression_model_rejects_unknown_model() -> None:
+  data = make_regression_data()
+  selected_model = {
+    "model_name": "gradient_boosting",
+    "horizon_hours": 1,
+    "model_parameters": "",
+  }
+
+  with pytest.raises(ValueError, match="Unsupported selected regression model"):
+    evaluate_selected_regression_model(
+      selected_model=selected_model,
+      train_data=data,
+      evaluation_data=data,
+      target_column="actual_price_target_1h",
+    )
+
+
+def test_train_selected_regression_model_applies_tuned_ridge_alpha() -> None:
+  data = make_regression_data()
+  selected_model = {
+    "model_name": "ridge_regression_tuned",
+    "model_parameters": "best_alpha=100.0; cv_splits=3; cv_mae=54.8; cv_rmse=107.4",
+  }
+
+  model = train_selected_regression_model(
+    selected_model=selected_model,
+    train_data=data,
+    target_column="actual_price_target_1h",
+  )
+
+  # The retrained model must carry the selected alpha, not the default 1.0.
+  assert model.alpha == 100.0
+
+
+def test_train_selected_regression_model_rejects_tuned_model_without_tuned_parameters() -> None:
+  data = make_regression_data()
+  selected_model = {
+    "model_name": "ridge_regression_tuned",
+    "model_parameters": "cv_splits=3",
+  }
+
+  with pytest.raises(ValueError, match="missing required parameters"):
+    train_selected_regression_model(
+      selected_model=selected_model,
+      train_data=data,
+      target_column="actual_price_target_1h",
+    )
