@@ -2,9 +2,11 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
+import sklearn
 
 from electricity_predictor.config import load_configuration
 from electricity_predictor.features.feature_engineering import build_target_column_name
+from electricity_predictor.modeling.regression.feature_columns import REGRESSION_FEATURE_COLUMNS
 from electricity_predictor.modeling.regression.final_test_evaluation import (
   BEST_MODEL_PATH,
   load_selected_regression_models,
@@ -26,6 +28,10 @@ MODEL_METADATA_COLUMNS = [
   "target_column",
   "artifact_path",
   "training_rows",
+  "feature_columns",
+  "sklearn_version",
+  "training_start_utc",
+  "training_end_utc",
   "selection_metric",
   "selection_rule",
   "model_parameters",
@@ -74,6 +80,8 @@ def build_model_metadata_row(
   target_column: str,
   artifact_path: Path,
   training_rows: int,
+  training_start_utc: str = "",
+  training_end_utc: str = "",
 ) -> dict:
   """Build one metadata row for a saved selected model."""
   return {
@@ -82,6 +90,13 @@ def build_model_metadata_row(
     "target_column": target_column,
     "artifact_path": str(artifact_path),
     "training_rows": training_rows,
+    # The exact ordered feature list makes future inference reproducible
+    # even if REGRESSION_FEATURE_COLUMNS changes in a later phase.
+    "feature_columns": "|".join(REGRESSION_FEATURE_COLUMNS),
+    # Sklearn pickles are not portable across versions, so record it.
+    "sklearn_version": sklearn.__version__,
+    "training_start_utc": training_start_utc,
+    "training_end_utc": training_end_utc,
     "selection_metric": selected_model.get("selection_metric", ""),
     "selection_rule": selected_model.get("selection_rule", ""),
     "model_parameters": selected_model.get("model_parameters", ""),
@@ -111,6 +126,10 @@ def save_selected_regression_models(
   # After validation selection, the final model is trained on train + validation.
   # The test split remains excluded because it is only for final evaluation.
   final_training_data = pd.concat([train_data, validation_data], ignore_index=True)
+
+  # Record the training window so every artifact is traceable to its data.
+  training_start_utc = str(final_training_data["datetime_universal_time"].min())
+  training_end_utc = str(final_training_data["datetime_universal_time"].max())
 
   metadata_rows = []
 
@@ -151,6 +170,8 @@ def save_selected_regression_models(
         target_column=target_column,
         artifact_path=saved_path,
         training_rows=len(final_training_data),
+        training_start_utc=training_start_utc,
+        training_end_utc=training_end_utc,
       )
     )
 
