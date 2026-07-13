@@ -66,6 +66,30 @@ def parse_model_parameters(parameter_text: str) -> dict[str, str]:
   return parameters
 
 
+# Tuned models must be retrained with their selected parameters.
+# Falling back to defaults would silently evaluate a different model
+# than the one chosen during validation selection.
+TUNED_REQUIRED_PARAMETERS = {
+  "ridge_regression_tuned": ["best_alpha"],
+  "lasso_regression_tuned": ["best_alpha"],
+  "elastic_net_regression_tuned": ["alpha", "l1_ratio"],
+  "random_forest_regressor_tuned": ["n_estimators", "max_depth", "min_samples_leaf"],
+}
+
+
+def validate_tuned_model_parameters(model_name: str, parameters: dict[str, str]) -> None:
+  """Reject tuned models whose selected parameters are missing."""
+  required_names = TUNED_REQUIRED_PARAMETERS.get(model_name, [])
+
+  missing_names = [name for name in required_names if name not in parameters]
+
+  if missing_names:
+    raise ValueError(
+      f"Tuned model {model_name} is missing required parameters: {missing_names}. "
+      "Refusing to retrain with default hyperparameters."
+    )
+
+
 def get_parameter_value(
   parameters: dict[str, str],
   names: list[str],
@@ -155,6 +179,7 @@ def train_selected_regression_model(
   """Train the selected regression model for one horizon."""
   model_name = selected_model["model_name"]
   parameters = parse_model_parameters(selected_model.get("model_parameters", ""))
+  validate_tuned_model_parameters(model_name, parameters)
 
   if model_name == "linear_regression":
     return train_linear_regression_model(
