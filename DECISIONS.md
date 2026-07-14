@@ -512,3 +512,30 @@ Passing tests confirm implemented behavior, but they do not prove the absence
 of leakage, statistical weakness, distribution instability, or production
 risk. Deployment and Phase 5 application work remain blocked until the
 coherence audit is completed.
+
+### P4-D12 — Keep one frozen absolute spike threshold across time
+
+**Decision:** Retain the current train-derived IQR spike threshold as the project spike definition. The F-16 regime analysis supports keeping one stable business definition while addressing distribution shift through training and evaluation methodology rather than by redefining the label.
+
+**Why:** The spike label represents an unusually high absolute electricity price. The yearly regime analysis shows that the Alberta market moved from a highly volatile 2021–2023 regime to a much calmer 2024–2026 regime. The observed label shift reflects a change in the underlying market rather than a flaw in the threshold definition. A stable threshold therefore preserves one consistent business meaning across historical, validation, test, and future inference periods.
+
+The frozen threshold is currently:
+
+```text
+165.1 $/MWh
+```
+
+The regime analysis shows:
+
+- 2022 spike rate: 22.19%;
+- 2023 spike rate: 20.57%;
+- 2025 sub-period spike rates: 2.38% and 4.55%;
+- 2026 spike rate: 2.05%.
+
+The same periods also show large declines in mean price, price volatility, and the 95th percentile. This confirms genuine market non-stationarity.
+
+**Rejected:** Recalculating the threshold from a rolling recent window. That approach would change the meaning of a spike over time and could label moderate prices as spikes during calm market periods.
+
+**Rejected:** Defining spikes independently with a relative q95 or q99 threshold in each period. That approach would force a more stable positive-class rate but would make labels incomparable across years and disconnect them from a stable household price-risk interpretation.
+
+**Next:** Keep label definition separate from imbalance handling. Revisit class weighting, probability cutoff selection, PR-AUC, confidence intervals, and training-period representativeness without changing the frozen business label.
