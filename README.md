@@ -36,7 +36,7 @@ The historical CSV supports data preparation, EDA, feature engineering, and mode
 
 Current phase: **Phase 4 — Classification and Spike-Risk Modeling**.
 
-The repository foundation, Phase 1 data engineering, Phase 2 feature engineering, ML preprocessing, and Phase 3 regression modeling are complete. Phase 4 classification development is in progress.
+The repository foundation, Phase 1 data engineering, Phase 2 feature engineering, ML preprocessing, Phase 3 regression modeling, and Phase 4 classification implementation are complete. The project is currently undergoing a Phase 4 coherence and pre-deployment audit.
 
 The project can currently:
 
@@ -231,7 +231,7 @@ Some generated data files are local outputs and are not tracked by Git.
 This project solves two related problems:
 
 1. Regression: predict future electricity prices for configured forecast horizons.
-2. Classification: estimate future spike risk. Phase 4 implementation is in progress.
+2. Classification: estimate future spike risk. Phase 4 implementation is complete, but deployment remains blocked by the pre-deployment audit findings.
 
 The decision layer will combine both outputs into a recommendation.
 
@@ -317,7 +317,7 @@ alberta-electricity-price-predictor/
 | `src/electricity_predictor/modeling/classification/spike_definition.py` | Calculates and applies train-derived spike thresholds. |
 | `src/electricity_predictor/modeling/classification/analyze_spike_definition.py` | Compares candidate spike definitions across chronological splits. |
 | `src/electricity_predictor/modeling/classification/target_builder.py` | Creates binary spike targets for configured horizons. |
-| `src/electricity_predictor/modeling/classification/baseline.py` | Evaluates the naive spike classification baseline. |
+| `src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py` | Evaluates the naive spike classification baseline. |
 | `src/electricity_predictor/modeling/model_results.py` | Builds and writes reusable model result summaries. |
 | `src/electricity_predictor/modeling/regression/run_regression_models.py` | Runs the current regression model comparison workflow. |
 | `src/electricity_predictor/modeling/regression/best_model_selection.py` | Selects the best validation regression model using the lowest MAE. |
@@ -444,4 +444,91 @@ The project is now entering a dedicated **Phase 4 coherence and
 pre-deployment audit**. Phase 5 application development must not begin until
 the audit findings have been reviewed and all accepted blocker and
 high-severity findings have been corrected.
-<!-- PHASE_4_FINAL_STATUS_END -->
+
+### Current classification limitations
+
+The reported classification accuracy (~0.94) should not be interpreted in isolation.
+
+The chronological data shows a significant distribution shift in spike frequency:
+
+| Split | Spike rate |
+|------|-----------:|
+| Train | 13.64% |
+| Validation | 3.38% |
+| Test | 3.20% |
+
+Because spike events become much rarer after the training period, overall accuracy remains high even when spike detection is difficult. Precision, recall, and F1 therefore provide a more meaningful evaluation than accuracy alone.
+
+Current limitations identified during the pre-deployment audit include:
+
+- significant non-stationarity between training and evaluation periods;
+- chronological split boundaries still defined by dataset ratios instead of fixed dates;
+- no purge/gap between train, validation, and test horizons;
+- fixed probability cutoff of 0.5;
+- PR-AUC and bootstrap confidence intervals not yet reported;
+- confusion matrices not yet persisted as project artifacts;
+- no inference or monitoring pipeline yet exists for saved classification artifacts.
+
+These limitations are tracked as part of the Phase 4 pre-deployment audit and will be addressed before deployment.
+
+### Spike definition rationale
+
+Several candidate spike definitions were evaluated before selecting the project threshold.
+
+The current project uses the IQR-based threshold learned from the chronological training split only.
+
+| Definition | Approximate test spike rate |
+|-----------|----------------------------:|
+| IQR | 3.20% |
+| q95 | 1.58% |
+| q99 | 0.58% |
+
+The IQR definition was selected because it produces enough positive events to train and evaluate classification models while still identifying unusually high electricity prices.
+
+Higher thresholds such as q95 and q99 create much rarer events, making model evaluation less stable and increasing uncertainty in performance metrics.
+
+The threshold is learned once from the chronological training split and then frozen for validation, test, and future inference to avoid data leakage.
+
+### Classification artifacts
+
+Each selected classification model is saved together with reproducibility metadata.
+
+The metadata records:
+
+- forecast horizon;
+- selected model and hyperparameters;
+- ordered feature columns;
+- frozen spike threshold;
+- target column;
+- training window;
+- scikit-learn version;
+- selection rule;
+- artifact path.
+
+Classification artifacts are generated with:
+
+```bash
+make save-selected-classification-models
+```
+
+The generated files are stored under:
+
+```text
+models/classification/
+```
+
+At the current project stage, no inference pipeline, monitoring, logging, or drift-detection component consumes these artifacts. Deployment remains blocked until the pre-deployment audit findings are resolved.
+
+### Historical CSV provenance
+
+The historical dataset is loaded locally from:
+
+```text
+data/raw/Hourly_Metered_Volumes_and_Pool_Price_and_AIL_2020-Jul2025.csv
+```
+
+The repository export confirms the filename and its role in the data pipeline, but it does not contain the original download URL, download date, dataset version, or source publication record.
+
+Cannot verify from project_context_full_audit.txt.
+
+This provenance information must be recorded before deployment.

@@ -10,7 +10,7 @@ Phase 4 — Classification and Spike-Risk Modeling
 
 ## Current Status
 
-The project now supports multi-horizon regression and has started Phase 4 classification development.
+The project now supports complete multi-horizon regression and Phase 4 classification implementation. The repository is currently undergoing a Phase 4 coherence and pre-deployment audit.
 
 The repository foundation, Phase 1 data engineering, Phase 2 feature engineering, ML preprocessing, and the current Phase 3 regression comparison workflow are complete.
 
@@ -68,9 +68,9 @@ The modeling workflow now produces:
 | Best predictor selection by horizon | Complete | The project selects one best validation predictor per horizon using lowest validation MAE. |
 | Regression model organization | Complete | Regression models are organized by model family under `modeling/regression/`. |
 | Full pipeline command | Complete | The project can run data refresh, quality checks, feature building, training data preparation, regression models, model selection, and tests with `make full-pipeline`. |
-| Classification spike definition | In progress | Candidate spike definitions are compared using thresholds learned from the chronological train split only. |
-| Classification target preparation | In progress | Binary spike targets are created after splitting so validation and test prices cannot influence the threshold. |
-| Classification baseline | In progress | The project evaluates a naive spike baseline using the previous-hour price against each forecast horizon. |
+| Classification spike definition | Complete | Candidate spike definitions are compared using thresholds learned from the chronological train split only. |
+| Classification target preparation | Complete | Binary spike targets are created after splitting so validation and test prices cannot influence the threshold. |
+| Classification baseline | Complete | The project evaluates a naive spike baseline using the previous-hour price against each forecast horizon. |
 | Automated tests | Complete | The current test suite passes successfully. |
 
 ## Current Validation Status
@@ -138,7 +138,7 @@ Some generated data files are local outputs and are not tracked by Git.
 | `src/electricity_predictor/modeling/classification/spike_definition.py` | Calculates and applies train-derived spike thresholds. |
 | `src/electricity_predictor/modeling/classification/analyze_spike_definition.py` | Compares candidate spike definitions across chronological splits. |
 | `src/electricity_predictor/modeling/classification/target_builder.py` | Creates horizon-specific binary spike targets using one frozen train threshold. |
-| `src/electricity_predictor/modeling/classification/baseline.py` | Evaluates the naive spike baseline on validation data. |
+| `src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py` | Evaluates the naive spike baseline on validation data. |
 | `src/electricity_predictor/modeling/model_results.py` | Builds and writes reusable model result summaries with horizon context. |
 | `src/electricity_predictor/modeling/regression/run_regression_models.py` | Runs the multi-horizon regression model comparison workflow. |
 | `src/electricity_predictor/modeling/regression/best_model_selection.py` | Selects the best validation regression model separately for each horizon. |
@@ -270,4 +270,36 @@ The project is now entering a dedicated **Phase 4 coherence and
 pre-deployment audit**. Phase 5 application development must not begin until
 the audit findings have been reviewed and all accepted blocker and
 high-severity findings have been corrected.
-<!-- PHASE_4_FINAL_STATUS_END -->
+
+### Classification artifacts
+
+Selected classification models and their reproducibility metadata are saved under:
+
+```text
+models/classification/
+```
+
+The metadata includes the forecast horizon, selected model, hyperparameters, ordered feature columns, frozen spike threshold, target column, training window, scikit-learn version, selection rule, and artifact path.
+
+The artifacts can be generated with:
+
+```bash
+make save-selected-classification-models
+```
+
+No inference, monitoring, logging, or drift-detection workflow currently consumes these artifacts. This remains a deployment blocker tracked by the Phase 4 pre-deployment audit.
+
+
+### Historical CSV provenance
+
+The historical source is currently stored locally at:
+
+```text
+data/raw/Hourly_Metered_Volumes_and_Pool_Price_and_AIL_2020-Jul2025.csv
+```
+
+The current audit export does not include the original download URL, download date, dataset version, or publication record.
+
+Cannot verify from project_context_full_audit.txt.
+
+Complete provenance must be documented before deployment.
