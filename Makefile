@@ -179,52 +179,80 @@ project-context-full-audit:
 	# Export full project context for a serious external audit.
 	mkdir -p context_exports
 	{ \
-		echo "===== Git branch ====="; \
-		git branch --show-current; \
-		echo ""; \
-		echo "===== Git log ====="; \
-		git log --oneline -10; \
-		echo ""; \
-		echo "===== Git status ====="; \
-		git status --short; \
-		echo ""; \
-		echo "===== Source code, docs, config, and project files ====="; \
-		find . \
-			-path "./.git" -prune -o \
-			-path "./.venv" -prune -o \
-			-path "./data" -prune -o \
-			-path "./models" -prune -o \
-			-path "./context_exports" -prune -o \
-			-path "./__pycache__" -prune -o \
-			-path "./.pytest_cache" -prune -o \
-			-path "./.ipynb_checkpoints" -prune -o \
-			-name "*.pyc" -prune -o \
-			-type f \( \
-				-name "*.py" -o \
-				-name "*.md" -o \
-				-name "*.yaml" -o \
-				-name "*.yml" -o \
-				-name "*.toml" -o \
-				-name "Makefile" -o \
-				-name "requirements.txt" -o \
-				-name ".gitignore" \
-			\) -print | sort | while read file; do \
-				echo ""; \
-				echo "===== $$file ====="; \
-				cat "$$file"; \
-				echo ""; \
-			done; \
-		echo ""; \
-		echo "===== reports/model_results.csv preview ====="; \
-		if [ -f reports/model_results.csv ]; then sed -n '1,120p' reports/model_results.csv; else echo "Missing reports/model_results.csv"; fi; \
-		echo ""; \
-		echo "===== reports/best_regression_model.csv ====="; \
-		if [ -f reports/best_regression_model.csv ]; then cat reports/best_regression_model.csv; else echo "Missing reports/best_regression_model.csv"; fi; \
-		echo ""; \
-		echo "===== reports/final_regression_test_results.csv ====="; \
-		if [ -f reports/final_regression_test_results.csv ]; then cat reports/final_regression_test_results.csv; else echo "Missing reports/final_regression_test_results.csv"; fi; \
-		echo ""; \
-		echo "===== models/regression metadata ====="; \
-		if [ -f models/regression/selected_regression_model_metadata.csv ]; then cat models/regression/selected_regression_model_metadata.csv; else echo "Missing models/regression/selected_regression_model_metadata.csv"; fi; \
+	    echo "===== Git branch ====="; \
+	    git branch --show-current; \
+	    echo ""; \
+	    echo "===== Git log ====="; \
+	    git log --oneline -10; \
+	    echo ""; \
+	    echo "===== Git status ====="; \
+	    git status --short; \
+	    echo ""; \
+	    echo "===== Branch relationship with main ====="; \
+	    echo "Main HEAD:"; \
+	    git log main --oneline -1; \
+	    echo ""; \
+	    echo "Commits on current branch not in main:"; \
+	    git log --oneline main..HEAD; \
+	    echo ""; \
+	    echo "Commits on main not in current branch:"; \
+	    git log --oneline HEAD..main; \
+	    echo ""; \
+	    echo "Merge base:"; \
+	    git merge-base HEAD main; \
+	    echo ""; \
+	    echo "===== Source code, docs, config, and project files ====="; \
+	    find . \
+	        -path "./.git" -prune -o \
+	        -path "./.venv" -prune -o \
+	        -path "./data" -prune -o \
+	        -path "./models" -prune -o \
+	        -path "./context_exports" -prune -o \
+	        -path "./__pycache__" -prune -o \
+	        -path "./.pytest_cache" -prune -o \
+	        -path "./.ipynb_checkpoints" -prune -o \
+	        -name "*.pyc" -prune -o \
+	        -type f \( \
+	            -name "*.py" -o \
+	            -name "*.md" -o \
+	            -name "*.yaml" -o \
+	            -name "*.yml" -o \
+	            -name "*.toml" -o \
+	            -name "Makefile" -o \
+	            -name "requirements.txt" -o \
+	            -name ".gitignore" \
+	        \) -print | sort | while read file; do \
+	            echo ""; \
+	            echo "===== $$file ====="; \
+	            cat "$$file"; \
+	            echo ""; \
+	        done; \
+	    echo ""; \
+	    echo "===== reports/model_results.csv preview ====="; \
+	    if [ -f reports/model_results.csv ]; then sed -n '1,160p' reports/model_results.csv; else echo "Missing reports/model_results.csv"; fi; \
+	    echo ""; \
+	    echo "===== reports/best_regression_model.csv ====="; \
+	    if [ -f reports/best_regression_model.csv ]; then cat reports/best_regression_model.csv; else echo "Missing reports/best_regression_model.csv"; fi; \
+	    echo ""; \
+	    echo "===== reports/final_regression_test_results.csv ====="; \
+	    if [ -f reports/final_regression_test_results.csv ]; then cat reports/final_regression_test_results.csv; else echo "Missing reports/final_regression_test_results.csv"; fi; \
+	    echo ""; \
+	    echo "===== models/regression metadata ====="; \
+	    if [ -f models/regression/selected_regression_model_metadata.csv ]; then cat models/regression/selected_regression_model_metadata.csv; else echo "Missing models/regression/selected_regression_model_metadata.csv"; fi; \
+	    echo ""; \
+	    echo "===== reports/spike_definition_analysis.csv ====="; \
+	    if [ -f reports/spike_definition_analysis.csv ]; then cat reports/spike_definition_analysis.csv; else echo "Missing reports/spike_definition_analysis.csv"; fi; \
+	    echo ""; \
+	    echo "===== reports/best_classification_model.csv ====="; \
+	    if [ -f reports/best_classification_model.csv ]; then cat reports/best_classification_model.csv; else echo "Missing reports/best_classification_model.csv"; fi; \
+	    echo ""; \
+	    echo "===== reports/final_classification_test_results.csv ====="; \
+	    if [ -f reports/final_classification_test_results.csv ]; then cat reports/final_classification_test_results.csv; else echo "Missing reports/final_classification_test_results.csv"; fi; \
+	    echo ""; \
+	    echo "===== models/classification metadata ====="; \
+	    if [ -f models/classification/selected_classification_model_metadata.csv ]; then cat models/classification/selected_classification_model_metadata.csv; else echo "Missing models/classification/selected_classification_model_metadata.csv"; fi; \
+	    echo ""; \
+	    echo "===== Classification artifact inventory ====="; \
+	    if [ -d models/classification ]; then find models/classification -maxdepth 1 -type f -print | sort; else echo "Missing models/classification directory"; fi; \
 	} > context_exports/project_context_full_audit.txt
 	@echo "Full audit context exported to context_exports/project_context_full_audit.txt"
