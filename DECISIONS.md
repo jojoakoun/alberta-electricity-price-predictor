@@ -522,7 +522,7 @@ coherence audit is completed.
 The frozen threshold is currently:
 
 ```text
-165.1 $/MWh
+170.77 $/MWh
 ```
 
 The regime analysis shows:
@@ -539,3 +539,110 @@ The same periods also show large declines in mean price, price volatility, and t
 **Rejected:** Defining spikes independently with a relative q95 or q99 threshold in each period. That approach would force a more stable positive-class rate but would make labels incomparable across years and disconnect them from a stable household price-risk interpretation.
 
 **Next:** Keep label definition separate from imbalance handling. Revisit class weighting, probability cutoff selection, PR-AUC, confidence intervals, and training-period representativeness without changing the frozen business label.
+
+### P4-D13 — Use fixed evaluation dates and 24-hour purged boundaries
+
+**Decision:** Replace ratio-based train, validation, and test splits with fixed UTC date boundaries. Remove the final 24 hours from train and validation, and use `TimeSeriesSplit(gap=24)` during hyperparameter tuning.
+
+The fixed evaluation protocol is:
+
+- train: 2020-01-08 07:00:00 through 2023-12-30 23:00:00;
+- validation: 2024-01-01 00:00:00 through 2024-12-30 23:00:00;
+- test: 2025-01-01 00:00:00 through 2026-06-30 23:00:00.
+
+**Why:** Ratio-based boundaries moved whenever new AESO observations were added, making model runs incomparable. The 24-hour purge prevents the longest forecast target from crossing train-to-validation or validation-to-test boundaries. The same 24-hour gap is required inside cross-validation folds.
+
+**Rejected:** Continuing to use 70/15/15 ratios on a growing dataset.
+
+**Rejected:** Using adjacent chronological splits without purging future targets at the boundaries.
+
+**Next:** Use this fixed protocol for model selection, protected test evaluation, artifact generation, and future audit comparisons.
+
+### P4-D14 — Select classification probability cutoffs on validation data
+
+**Decision:** Select one probability cutoff per forecast horizon using validation data only. Freeze the selected cutoff before evaluating the protected test split.
+
+**Why:** A fixed cutoff of `0.5` is not always suitable for rare spike events. Validation-based cutoff selection balances precision and recall without using protected test outcomes.
+
+The current selected cutoffs are:
+
+- 1h: `0.45`
+- 3h: `0.45`
+- 6h: `0.45`
+- 12h: `0.45`
+- 24h: `0.50`
+
+**Rejected:** Selecting or adjusting a cutoff after reviewing protected test results.
+
+**Next:** Store each cutoff with its classification artifact and apply it during inference.
+
+### P4-D15 — Report PR-AUC for spike classification
+
+**Decision:** Report Precision-Recall AUC for learned classification models.
+
+**Why:** Spike events are rare. Accuracy can remain high while a model misses most spikes. PR-AUC evaluates probability ranking with emphasis on the positive class.
+
+**Rejected:** Using accuracy as the primary classification metric.
+
+**Next:** Continue selecting models by validation F1 while reporting PR-AUC as an additional evaluation metric.
+
+### P4-D16 — Persist confusion matrices for protected test results
+
+**Decision:** Save one confusion matrix per forecast horizon after protected test evaluation.
+
+The report is written to:
+
+    reports/final_classification_confusion_matrices.csv
+
+**Why:** Precision, recall, and F1 do not expose the exact counts of true positives, false positives, false negatives, and true negatives.
+
+**Rejected:** Keeping confusion-matrix counts only in terminal output.
+
+**Next:** Use the persisted counts to audit classification errors.
+
+### P4-D17 — Estimate F1 uncertainty with block bootstrap
+
+**Decision:** Estimate a 95% confidence interval for F1 using a 24-hour block bootstrap.
+
+The report is written to:
+
+    reports/final_classification_confidence_intervals.csv
+
+**Why:** Hourly electricity prices are time dependent. A block bootstrap preserves short-term temporal structure better than resampling individual rows.
+
+**Rejected:** Reporting a single F1 value without uncertainty.
+
+**Rejected:** Using independent-row bootstrap sampling.
+
+**Next:** Use confidence intervals to judge whether performance differences are statistically meaningful.
+
+### P4-D18 — Save decision thresholds with classification artifacts
+
+**Decision:** Store the selected decision threshold in the classification model metadata.
+
+The metadata is written to:
+
+    models/classification/selected_classification_model_metadata.csv
+
+**Why:** The deployed classifier must use the same probability cutoff selected during validation. Saving the fitted model alone is not sufficient.
+
+**Rejected:** Assuming every deployed classifier should use the default threshold of `0.5`.
+
+**Next:** Load the fitted model, feature list, spike threshold, and decision threshold together during inference.
+
+
+### P4-D19 — Document cutoff refitting and cross-validation label approximations
+
+**Decision:** Keep the current validation-selected probability cutoffs and the current full-train spike threshold during Phase 4. Document both approximations rather than redesigning the workflow after protected test evaluation.
+
+**Why:** Classification cutoffs are selected from validation predictions produced by models fitted on train data. Final selected models are then refitted on train plus validation before protected test evaluation and artifact generation. The workflow assumes that each selected cutoff remains suitable after refitting.
+
+Classification labels inside tuning folds also use the spike threshold calculated from the complete chronological train period. The threshold does not use validation or test prices, but it is not recalculated independently inside each cross-validation fold.
+
+These choices preserve one stable business definition and avoid using protected test data. They remain methodological approximations and must stay visible in the documentation.
+
+**Rejected:** Recalibrating probability cutoffs after reviewing protected test outcomes.
+
+**Rejected:** Changing the frozen spike definition after model evaluation.
+
+**Next:** Consider nested cutoff calibration and fold-local threshold sensitivity analysis in a future modeling revision. Do not include them in the current Phase 4 remediation.

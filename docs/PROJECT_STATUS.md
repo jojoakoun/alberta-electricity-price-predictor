@@ -78,7 +78,7 @@ The modeling workflow now produces:
 Latest test result:
 
 ```text
-132 passed
+199 passed
 ```
 
 ## Current Forecast Horizons
@@ -100,11 +100,11 @@ horizons_hours: [1, 3, 6, 12, 24]
 
 | Horizon | Selected predictor | Validation MAE | Validation RMSE |
 |---:|---|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 25.4158 | 70.0433 |
-| 3h | `naive_baseline` | 37.3273 | 114.5003 |
-| 6h | `naive_baseline` | 42.9455 | 125.1047 |
-| 12h | `naive_baseline` | 45.5370 | 128.0298 |
-| 24h | `naive_baseline` | 43.1670 | 122.0370 |
+| 1h | `lasso_regression_tuned` | 33.3837 | 80.2968 |
+| 3h | `random_forest_regressor_tuned` | 46.7901 | 98.5419 |
+| 6h | `lasso_regression_tuned` | 55.6364 | 110.0355 |
+| 12h | `lasso_regression_tuned` | 59.8615 | 114.3262 |
+| 24h | `naive_baseline` | 55.7267 | 136.6736 |
 
 ## Current Data Outputs
 
@@ -179,11 +179,11 @@ The full multi-horizon regression workflow is slower than earlier single-target 
 
 | Horizon | Selected predictor | Test MAE | Test RMSE |
 |---:|---|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 26.4863 | 78.8549 |
-| 3h | `naive_baseline` | 38.9598 | 127.9055 |
-| 6h | `naive_baseline` | 44.7939 | 139.9731 |
-| 12h | `naive_baseline` | 47.7167 | 144.7407 |
-| 24h | `naive_baseline` | 44.0096 | 133.3663 |
+| 1h | `lasso_regression_tuned` | 26.5647 | 80.3551 |
+| 3h | `random_forest_regressor_tuned` | 42.4166 | 96.5281 |
+| 6h | `lasso_regression_tuned` | 44.3965 | 100.3084 |
+| 12h | `lasso_regression_tuned` | 48.1140 | 101.4838 |
+| 24h | `naive_baseline` | 42.7081 | 127.9325 |
 
 ## Saved Regression Model Artifacts
 
@@ -211,95 +211,102 @@ These artifacts are ignored by Git because they can be regenerated from the trac
 <!-- PHASE_4_FINAL_STATUS_START -->
 ## Phase 4 completion
 
-Phase 4 is implemented end to end for the following forecast horizons:
+Phase 4 implements regression and spike-risk classification for five forecast horizons.
 
-- 1 hour
-- 3 hours
-- 6 hours
-- 12 hours
-- 24 hours
+## Fixed evaluation protocol
 
-The project now includes:
+| Split | Period | Rows |
+|---|---|---:|
+| Train | `2020-01-08 07:00:00` to `2023-12-30 23:00:00` | 34,865 |
+| Validation | `2024-01-01 00:00:00` to `2024-12-30 23:00:00` | 8,760 |
+| Test | `2025-01-01 00:00:00` to `2026-06-30 23:00:00` | 13,104 |
 
-- chronological train, validation, and protected test splits;
-- multi-horizon regression;
-- train-only spike-threshold estimation;
-- horizon-specific spike classification targets;
-- naive baselines;
-- Logistic Regression;
-- Random Forest;
-- Gradient Boosting;
-- chronological hyperparameter tuning with `TimeSeriesSplit`;
-- one selected regression model per horizon;
-- one selected classification model per horizon;
-- final protected test evaluation;
-- saved model artifacts and metadata;
-- **165 passing automated tests**.
+The workflow removes the final 24 hours of train and validation. All seven tuning modules use `TimeSeriesSplit(gap=24)`.
 
-### Final regression results
+## Spike definition
 
-Regression models are selected using the lowest validation MAE within each
-forecast horizon.
+The frozen train-derived IQR threshold is:
 
-| Horizon | Selected model | Validation MAE | Test MAE | Test RMSE |
-|---:|---|---:|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 25.3714 | 26.4665 | 78.8523 |
-| 3h | `naive_baseline` | 37.2918 | 38.9494 | 127.8833 |
-| 6h | `naive_baseline` | 42.9041 | 44.7949 | 139.9497 |
-| 12h | `naive_baseline` | 45.5107 | 47.7019 | 144.7153 |
-| 24h | `naive_baseline` | 43.1519 | 43.9927 | 133.3420 |
+    170.77 $/MWh
 
-### Final classification results
+Observed spike rates:
 
-Classification models are selected using the highest validation F1 within each
-forecast horizon.
+| Split | Spike rate |
+|---|---:|
+| Train | 13.98% |
+| Validation | 6.83% |
+| Test | 2.92% |
 
-| Horizon | Selected model | Validation F1 | Test precision | Test recall | Test F1 | Test accuracy |
-|---:|---|---:|---:|---:|---:|---:|
-| 1h | `logistic_regression` | 0.4659 | 0.4012 | 0.4891 | 0.4408 | 0.9603 |
-| 3h | `gradient_boosting_classifier` | 0.3025 | 0.2450 | 0.3139 | 0.2752 | 0.9471 |
-| 6h | `gradient_boosting_classifier_tuned` | 0.2610 | 0.1862 | 0.2372 | 0.2087 | 0.9424 |
-| 12h | `gradient_boosting_classifier` | 0.1755 | 0.1707 | 0.2810 | 0.2124 | 0.9333 |
-| 24h | `gradient_boosting_classifier` | 0.1714 | 0.1873 | 0.2810 | 0.2248 | 0.9380 |
+The documented market-regime shift explains why protected test classification performance is substantially lower than validation performance.
 
-### Current stage
+## Current regression winners
 
-Phase 4 implementation is complete.
+| Horizon | Validation winner | Validation MAE | Test MAE |
+|---:|---|---:|---:|
+| 1h | `lasso_regression_tuned` | 33.3837 | 26.5647 |
+| 3h | `random_forest_regressor_tuned` | 46.7901 | 42.4166 |
+| 6h | `lasso_regression_tuned` | 55.6364 | 44.3965 |
+| 12h | `lasso_regression_tuned` | 59.8615 | 48.1140 |
+| 24h | `naive_baseline` | 55.7267 | 42.7081 |
 
-The project is now entering a dedicated **Phase 4 coherence and
-pre-deployment audit**. Phase 5 application development must not begin until
-the audit findings have been reviewed and all accepted blocker and
-high-severity findings have been corrected.
+The baseline remains the selected 24-hour predictor. Improvements over baselines are modest at several horizons.
 
-### Classification artifacts
+## Current classification winners
 
-Selected classification models and their reproducibility metadata are saved under:
+`random_forest_classifier_tuned` is selected for all five horizons.
 
-```text
-models/classification/
-```
+| Horizon | Validation F1 | Test F1 | Test PR-AUC | Cutoff |
+|---:|---:|---:|---:|---:|
+| 1h | 0.6009 | 0.2679 | 0.3055 | 0.45 |
+| 3h | 0.5025 | 0.2310 | 0.1739 | 0.45 |
+| 6h | 0.3971 | 0.1586 | 0.1016 | 0.45 |
+| 12h | 0.3652 | 0.1202 | 0.0716 | 0.45 |
+| 24h | 0.3524 | 0.1284 | 0.0955 | 0.50 |
 
-The metadata includes the forecast horizon, selected model, hyperparameters, ordered feature columns, frozen spike threshold, target column, training window, scikit-learn version, selection rule, and artifact path.
+The 24-hour validation improvement over the baseline is only about `0.019` F1 and should not be presented as decisive.
 
-The artifacts can be generated with:
+## Classification confidence intervals
 
-```bash
-make save-selected-classification-models
-```
+| Horizon | Test F1 | 95% confidence interval |
+|---:|---:|---:|
+| 1h | 0.2679 | 0.2058 to 0.3275 |
+| 3h | 0.2310 | 0.1588 to 0.2998 |
+| 6h | 0.1586 | 0.0935 to 0.2283 |
+| 12h | 0.1202 | 0.0678 to 0.1757 |
+| 24h | 0.1284 | 0.0771 to 0.1827 |
 
-No inference, monitoring, logging, or drift-detection workflow currently consumes these artifacts. This remains a deployment blocker tracked by the Phase 4 pre-deployment audit.
+## Documented approximations
 
+Probability cutoffs are selected before final models are refitted on train plus validation. The workflow assumes the selected cutoffs remain suitable after refitting.
 
-### Historical CSV provenance
+Cross-validation labels use the spike threshold calculated from the complete train period. The threshold does not use validation or test data, but it is not recalculated independently inside each fold.
 
-The historical source is currently stored locally at:
+## Verification
 
-```text
-data/raw/Hourly_Metered_Volumes_and_Pool_Price_and_AIL_2020-Jul2025.csv
-```
+Current automated result:
 
-The current audit export does not include the original download URL, download date, dataset version, or publication record.
+    199 passed
 
-Cannot verify from project_context_full_audit.txt.
+Source compilation passes.
 
-Complete provenance must be documented before deployment.
+## Known technical debt
+
+Deferred items include:
+
+- configuration loading at tuning-module import time;
+- repository-relative serving paths;
+- inference dtype and `classes_` edge cases;
+- permissive audit-export handling of optional files;
+- modest margins over baselines;
+- repeated horizon orchestration;
+- feature-column coupling;
+- the `actual_price_lag_1h` baseline at the 24-hour horizon;
+- regularization values at search-grid boundaries;
+- duplicated standalone workflow code;
+- incomplete historical-data provenance.
+
+## Current audit status
+
+Phase 4 will close after the baseline-inference edge case is corrected, final verification passes, the audit export is regenerated, and the branch is pushed and merged.
+
+Historical data provenance remains required before public publication.
