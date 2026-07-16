@@ -154,13 +154,6 @@ def predict_classification_value(
   """Generate spike probability and binary decision."""
   decision_threshold = metadata_row.get("decision_threshold")
 
-  if pd.isna(decision_threshold):
-    raise ValueError(
-      "Classification metadata is missing decision_threshold."
-    )
-
-  decision_threshold = float(decision_threshold)
-
   if isinstance(artifact, dict):
     if artifact.get("model_type") != "rule_baseline":
       raise ValueError("Unsupported classification artifact dictionary.")
@@ -177,10 +170,22 @@ def predict_classification_value(
       float(feature_row.iloc[0][prediction_column]) > spike_threshold
     )
 
-    # A rule baseline has no calibrated probability.
+    # Rule baselines produce binary output, so 0.5 is the display convention.
+    if pd.isna(decision_threshold):
+      decision_threshold = 0.5
+    else:
+      decision_threshold = float(decision_threshold)
+
     spike_probability = float(is_spike)
 
     return spike_probability, decision_threshold, is_spike
+
+  if pd.isna(decision_threshold):
+    raise ValueError(
+      "Classification metadata is missing decision_threshold."
+    )
+
+  decision_threshold = float(decision_threshold)
 
   if not hasattr(artifact, "predict_proba"):
     raise ValueError(

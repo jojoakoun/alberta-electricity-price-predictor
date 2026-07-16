@@ -190,3 +190,66 @@ def test_predict_horizon_rejects_unknown_horizon(tmp_path: Path):
       regression_metadata_path=regression_metadata_path,
       classification_metadata_path=classification_metadata_path,
     )
+
+
+def test_predict_horizon_supports_classification_rule_without_cutoff(
+  tmp_path: Path,
+):
+  regression_artifact_path = tmp_path / "regression_baseline.joblib"
+  classification_artifact_path = (
+    tmp_path / "classification_baseline.joblib"
+  )
+
+  joblib.dump(
+    {
+      "model_type": "rule_baseline",
+      "prediction_column": "actual_price_lag_1h",
+    },
+    regression_artifact_path,
+  )
+  joblib.dump(
+    {
+      "model_type": "rule_baseline",
+      "prediction_column": "actual_price_lag_1h",
+      "spike_threshold": 170.77,
+    },
+    classification_artifact_path,
+  )
+
+  regression_metadata_path = tmp_path / "regression_metadata.csv"
+  classification_metadata_path = tmp_path / "classification_metadata.csv"
+
+  pd.DataFrame([
+    {
+      "model_name": "naive_baseline",
+      "horizon_hours": 24,
+      "artifact_path": regression_artifact_path,
+      "feature_columns": "|".join(FEATURE_COLUMNS),
+    }
+  ]).to_csv(regression_metadata_path, index=False)
+
+  pd.DataFrame([
+    {
+      "model_name": "naive_spike_baseline",
+      "horizon_hours": 24,
+      "artifact_path": classification_artifact_path,
+      "feature_columns": "|".join(FEATURE_COLUMNS),
+      "spike_threshold": 170.77,
+      "decision_threshold": None,
+    }
+  ]).to_csv(classification_metadata_path, index=False)
+
+  result = predict_horizon(
+    horizon_hours=24,
+    features={
+      "forecast_price": 190.0,
+      "actual_price_lag_1h": 180.0,
+    },
+    regression_metadata_path=regression_metadata_path,
+    classification_metadata_path=classification_metadata_path,
+  )
+
+  assert result["classification_model"] == "naive_spike_baseline"
+  assert result["spike_probability"] == pytest.approx(1.0)
+  assert result["decision_threshold"] == pytest.approx(0.5)
+  assert result["is_spike"] is True
