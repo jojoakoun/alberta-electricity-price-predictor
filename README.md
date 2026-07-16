@@ -328,7 +328,7 @@ make test
 Current test status:
 
 ```text
-199 passed
+200 passed
 ```
 
 ## Main Commands
@@ -471,7 +471,7 @@ Classification labels inside tuning folds use the spike threshold calculated fro
 
 The current automated verification result is:
 
-    199 passed
+    200 passed
 
 Source compilation also passes.
 

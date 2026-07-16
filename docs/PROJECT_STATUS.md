@@ -78,7 +78,7 @@ The modeling workflow now produces:
 Latest test result:
 
 ```text
-199 passed
+200 passed
 ```
 
 ## Current Forecast Horizons
@@ -285,7 +285,7 @@ Cross-validation labels use the spike threshold calculated from the complete tra
 
 Current automated result:
 
-    199 passed
+    200 passed
 
 Source compilation passes.
 
