@@ -63,7 +63,7 @@ def test_evaluate_random_forest_classifier_returns_metrics():
     target_column="is_spike_target_1h",
   )
 
-  assert set(scores) == {"accuracy", "precision", "recall", "f1"}
+  assert set(scores) == {"accuracy", "precision", "recall", "f1", "pr_auc"}
   assert all(0.0 <= value <= 1.0 for value in scores.values())
 
 

@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 
 from electricity_predictor.config import load_configuration
+from electricity_predictor.modeling.split import get_time_series_cv_gap_hours
 from electricity_predictor.modeling.classification.logistic.logistic_regression import (
   evaluate_logistic_regression_model,
   train_logistic_regression_model,
@@ -23,12 +24,15 @@ from electricity_predictor.modeling.regression.feature_columns import (
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
   load_training_dataset,
-  split_time_series_data,
+  split_time_series_data_from_config,
 )
 
 
 LOGISTIC_C_VALUES = [0.01, 0.1, 1.0, 10.0, 100.0]
 LOGISTIC_TUNING_SPLITS = 3
+TIME_SERIES_CV_GAP_HOURS = get_time_series_cv_gap_hours(
+  load_configuration()["modeling"]
+)
 MODEL_RESULTS_PATH = Path("reports/model_results.csv")
 
 
@@ -39,12 +43,16 @@ def evaluate_logistic_c_with_time_series_cv(
   n_splits: int = LOGISTIC_TUNING_SPLITS,
 ) -> dict[str, float]:
   """Evaluate one Logistic Regression C value with chronological CV."""
-  time_series_split = TimeSeriesSplit(n_splits=n_splits)
+  time_series_split = TimeSeriesSplit(
+    n_splits=n_splits,
+    gap=TIME_SERIES_CV_GAP_HOURS,
+  )
 
   fold_accuracy_scores = []
   fold_precision_scores = []
   fold_recall_scores = []
   fold_f1_scores = []
+  fold_pr_auc_scores = []
 
   for fold_number, (train_index, validation_index) in enumerate(
     time_series_split.split(train_data),
@@ -64,22 +72,26 @@ def evaluate_logistic_c_with_time_series_cv(
     fold_features = fold_validation_data[REGRESSION_FEATURE_COLUMNS]
     fold_target = fold_validation_data[target_column]
     fold_prediction = model.predict(fold_features)
+    fold_probability = model.predict_proba(fold_features)[:, 1]
 
     scores = calculate_classification_metrics(
       target=fold_target,
       prediction=fold_prediction,
+      probability=fold_probability,
     )
 
     fold_accuracy_scores.append(scores["accuracy"])
     fold_precision_scores.append(scores["precision"])
     fold_recall_scores.append(scores["recall"])
     fold_f1_scores.append(scores["f1"])
+    fold_pr_auc_scores.append(scores["pr_auc"])
 
   return {
     "cv_accuracy": sum(fold_accuracy_scores) / len(fold_accuracy_scores),
     "cv_precision": sum(fold_precision_scores) / len(fold_precision_scores),
     "cv_recall": sum(fold_recall_scores) / len(fold_recall_scores),
     "cv_f1": sum(fold_f1_scores) / len(fold_f1_scores),
+    "cv_pr_auc": sum(fold_pr_auc_scores) / len(fold_pr_auc_scores),
   }
 
 
@@ -157,12 +169,10 @@ def run_tuned_logistic_regression(
 
   training_data = load_training_dataset(training_dataset_path)
 
-  train_data, validation_data, test_data = split_time_series_data(
+  train_data, validation_data, test_data = split_time_series_data_from_config(
     data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
+    modeling_config=modeling_config,
+)
 
   prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
     train_data=train_data,

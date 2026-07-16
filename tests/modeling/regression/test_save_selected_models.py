@@ -94,8 +94,13 @@ def test_save_selected_regression_models_round_trip(tmp_path: Path) -> None:
   for hour in range(40):
     rows.append(
       {
-        "datetime_universal_time": pd.Timestamp("2026-01-01 00:00:00")
-        + pd.Timedelta(hours=hour),
+        "datetime_universal_time": (
+          pd.Timestamp("2023-12-01 00:00:00") + pd.Timedelta(hours=hour)
+          if hour < 20
+          else pd.Timestamp("2024-06-01 00:00:00") + pd.Timedelta(hours=hour - 20)
+          if hour < 30
+          else pd.Timestamp("2025-06-01 00:00:00") + pd.Timedelta(hours=hour - 30)
+        ),
         "actual_price": 30.0 + hour,
         "forecast_price": 29.0 + hour,
         "hour": hour % 24,
@@ -150,8 +155,8 @@ def test_save_selected_regression_models_round_trip(tmp_path: Path) -> None:
   metadata = pd.read_csv(written_path)
   assert len(metadata) == 2
 
-  # 40 rows -> 28 train + 6 validation = 34 final training rows, test excluded.
-  assert metadata["training_rows"].tolist() == [34, 34]
+  # Fixed-date synthetic data -> 20 train + 10 validation = 30 final training rows, test excluded.
+  assert metadata["training_rows"].tolist() == [30, 30]
   assert metadata["sklearn_version"].notna().all()
   assert metadata.loc[0, "feature_columns"].split("|")[0] == "forecast_price"
   assert metadata["training_start_utc"].notna().all()

@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 
 from electricity_predictor.config import load_configuration
+from electricity_predictor.modeling.split import get_time_series_cv_gap_hours
 from electricity_predictor.modeling.metrics import (
   mean_absolute_error_value,
   root_mean_squared_error_value,
@@ -19,11 +20,14 @@ from electricity_predictor.modeling.regression.lasso.lasso_regression import (
   evaluate_lasso_regression_model,
   train_lasso_regression_model,
 )
-from electricity_predictor.modeling.split import split_time_series_data
+from electricity_predictor.modeling.split import split_time_series_data_from_config
 
 
 LASSO_ALPHAS = [0.001, 0.01, 0.1, 1.0, 10.0]
 LASSO_TUNING_SPLITS = 3
+TIME_SERIES_CV_GAP_HOURS = get_time_series_cv_gap_hours(
+  load_configuration()["modeling"]
+)
 TARGET_COLUMN = "actual_price"
 
 
@@ -35,7 +39,10 @@ def evaluate_lasso_alpha_with_time_series_cv(
 ) -> dict[str, float]:
   """Evaluate one Lasso alpha using chronological cross-validation."""
   # TimeSeriesSplit keeps each validation fold newer than its training fold.
-  time_series_split = TimeSeriesSplit(n_splits=n_splits)
+  time_series_split = TimeSeriesSplit(
+    n_splits=n_splits,
+    gap=TIME_SERIES_CV_GAP_HOURS,
+  )
 
   fold_mae_scores = []
   fold_rmse_scores = []
@@ -133,12 +140,10 @@ if __name__ == "__main__":
 
   training_data = load_training_dataset(TRAINING_DATASET_PATH)
 
-  train_data, validation_data, test_data = split_time_series_data(
+  train_data, validation_data, test_data = split_time_series_data_from_config(
     data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
+    modeling_config=modeling_config,
+)
 
   best_result = tune_lasso_alpha(train_data)
   best_alpha = best_result["alpha"]

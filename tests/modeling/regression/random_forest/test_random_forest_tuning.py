@@ -13,7 +13,7 @@ def make_random_forest_tuning_data() -> pd.DataFrame:
   """Create enough chronological rows for TimeSeriesSplit tuning."""
   rows = []
 
-  for hour in range(36):
+  for hour in range(200):
     rows.append(
       {
         "actual_price": 25.0 + (hour * 0.5),

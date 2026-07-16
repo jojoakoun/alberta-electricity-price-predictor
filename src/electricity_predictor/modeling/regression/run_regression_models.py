@@ -57,7 +57,7 @@ from electricity_predictor.modeling.regression.ridge.ridge_tuning import (
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
   load_training_dataset,
-  split_time_series_data,
+  split_time_series_data_from_config,
 )
 
 
@@ -80,12 +80,10 @@ def run_regression_models() -> Path:
   # The split must stay chronological because this is time-series data.
   # We do not shuffle rows: older data trains the models, newer data validates them,
   # and the newest block remains the protected test split.
-  train_data, validation_data, test_data = split_time_series_data(
+  train_data, validation_data, test_data = split_time_series_data_from_config(
     data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
+    modeling_config=modeling_config,
+)
 
   # Each model result is stored in memory first.
   # At the end, we rewrite reports/model_results.csv once so repeated runs do not

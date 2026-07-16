@@ -19,7 +19,7 @@ from electricity_predictor.modeling.regression.feature_columns import (
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
   load_training_dataset,
-  split_time_series_data,
+  split_time_series_data_from_config,
 )
 
 
@@ -67,10 +67,12 @@ def evaluate_random_forest_classifier(
   features = evaluation_data[CLASSIFICATION_FEATURE_COLUMNS]
   target = evaluation_data[target_column]
   prediction = model.predict(features)
+  probability = model.predict_proba(features)[:, 1]
 
   return calculate_classification_metrics(
     target=target,
     prediction=prediction,
+    probability=probability,
   )
 
 
@@ -115,12 +117,10 @@ def run_random_forest_classifier(
 
   training_data = load_training_dataset(training_dataset_path)
 
-  train_data, validation_data, test_data = split_time_series_data(
+  train_data, validation_data, test_data = split_time_series_data_from_config(
     data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
+    modeling_config=modeling_config,
+)
 
   prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
     train_data=train_data,

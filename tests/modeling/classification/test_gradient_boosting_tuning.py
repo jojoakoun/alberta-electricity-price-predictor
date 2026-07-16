@@ -11,7 +11,7 @@ from electricity_predictor.modeling.regression.feature_columns import (
 )
 
 
-def make_time_series_classification_data(row_count: int = 40) -> pd.DataFrame:
+def make_time_series_classification_data(row_count: int = 200) -> pd.DataFrame:
   """Create ordered classification data with every required feature."""
   data = pd.DataFrame({
     column: [float(index % 10) for index in range(row_count)]
@@ -43,9 +43,11 @@ def test_evaluate_gradient_boosting_parameters_returns_expected_metrics():
     "cv_precision",
     "cv_recall",
     "cv_f1",
+    "cv_pr_auc",
   }
 
   assert all(0.0 <= value <= 1.0 for value in scores.values())
+  assert 0.0 <= scores["cv_pr_auc"] <= 1.0
 
 
 def test_tune_gradient_boosting_returns_best_parameter_set(monkeypatch):

@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 
 from electricity_predictor.config import load_configuration
+from electricity_predictor.modeling.split import get_time_series_cv_gap_hours
 from electricity_predictor.modeling.metrics import (
   mean_absolute_error_value,
   root_mean_squared_error_value,
@@ -19,7 +20,7 @@ from electricity_predictor.modeling.regression.elastic_net.elastic_net_regressio
   train_elastic_net_regression_model,
 )
 from electricity_predictor.modeling.regression.feature_columns import REGRESSION_FEATURE_COLUMNS
-from electricity_predictor.modeling.split import split_time_series_data
+from electricity_predictor.modeling.split import split_time_series_data_from_config
 
 
 ELASTIC_NET_CONFIGS = [
@@ -35,6 +36,9 @@ ELASTIC_NET_CONFIGS = [
   {"alpha": 1.0, "l1_ratio": 0.5},
 ]
 ELASTIC_NET_TUNING_SPLITS = 3
+TIME_SERIES_CV_GAP_HOURS = get_time_series_cv_gap_hours(
+  load_configuration()["modeling"]
+)
 TARGET_COLUMN = "actual_price"
 
 
@@ -51,7 +55,10 @@ def evaluate_elastic_net_config_with_time_series_cv(
 ) -> dict[str, float]:
   """Evaluate one Elastic Net configuration using chronological cross-validation."""
   # TimeSeriesSplit prevents future rows from leaking into older validation folds.
-  time_series_split = TimeSeriesSplit(n_splits=n_splits)
+  time_series_split = TimeSeriesSplit(
+    n_splits=n_splits,
+    gap=TIME_SERIES_CV_GAP_HOURS,
+  )
 
   fold_mae_scores = []
   fold_rmse_scores = []
@@ -149,12 +156,10 @@ if __name__ == "__main__":
 
   training_data = load_training_dataset(TRAINING_DATASET_PATH)
 
-  train_data, validation_data, test_data = split_time_series_data(
+  train_data, validation_data, test_data = split_time_series_data_from_config(
     data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
+    modeling_config=modeling_config,
+)
 
   best_result = tune_elastic_net_config(train_data)
   best_config = best_result["config"]
