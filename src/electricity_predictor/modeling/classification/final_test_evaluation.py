@@ -1,10 +1,18 @@
 from pathlib import Path
 
 import pandas as pd
+from sklearn.metrics import confusion_matrix
 
 from electricity_predictor.config import load_configuration
+from electricity_predictor.modeling.block_bootstrap import (
+  calculate_f1_block_bootstrap_interval,
+)
 from electricity_predictor.modeling.classification.baseline.naive_spike_baseline import (
   evaluate_classification_baseline,
+)
+from electricity_predictor.modeling.classification.decision_threshold import (
+  apply_decision_threshold,
+  select_f1_decision_threshold,
 )
 from electricity_predictor.modeling.classification.gradient_boosting.gradient_boosting_classifier import (
   evaluate_gradient_boosting_classifier,
@@ -22,20 +30,30 @@ from electricity_predictor.modeling.classification.target_builder import (
   build_spike_target_column_name,
   prepare_classification_splits,
 )
+from electricity_predictor.modeling.metrics import calculate_classification_metrics
 from electricity_predictor.modeling.model_results import (
   build_model_result_row,
   write_model_results,
 )
+from electricity_predictor.modeling.regression.feature_columns import (
+  REGRESSION_FEATURE_COLUMNS,
+)
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
   load_training_dataset,
-  split_time_series_data,
+  split_time_series_data_from_config,
 )
 
 
 BEST_MODEL_PATH = Path("reports/best_classification_model.csv")
 FINAL_TEST_RESULTS_PATH = Path(
   "reports/final_classification_test_results.csv"
+)
+FINAL_CONFUSION_MATRICES_PATH = Path(
+  "reports/final_classification_confusion_matrices.csv"
+)
+FINAL_CONFIDENCE_INTERVALS_PATH = Path(
+  "reports/final_classification_confidence_intervals.csv"
 )
 
 
@@ -299,33 +317,195 @@ def evaluate_trained_classification_model(
   )
 
 
-def evaluate_selected_classification_model(
+def select_model_decision_threshold(
   selected_model: dict,
   train_data: pd.DataFrame,
-  evaluation_data: pd.DataFrame,
+  validation_data: pd.DataFrame,
   target_column: str,
-  threshold: float,
 ) -> dict[str, float]:
-  """Evaluate one selected model on the protected test split."""
-  if selected_model["model_name"] == "naive_spike_baseline":
-    return evaluate_classification_baseline(
-      data=evaluation_data,
-      target_column=target_column,
-      threshold=threshold,
-    )
-
+  """Select a probability cutoff using validation data only."""
   model = train_selected_classification_model(
     selected_model=selected_model,
     train_data=train_data,
     target_column=target_column,
   )
 
-  return evaluate_trained_classification_model(
+  validation_features = validation_data[REGRESSION_FEATURE_COLUMNS]
+  validation_probability = model.predict_proba(
+    validation_features
+  )[:, 1]
+
+  return select_f1_decision_threshold(
+    target=validation_data[target_column],
+    probability=validation_probability,
+  )
+
+
+def evaluate_selected_classification_model(
+  selected_model: dict,
+  train_data: pd.DataFrame,
+  validation_data: pd.DataFrame,
+  evaluation_data: pd.DataFrame,
+  target_column: str,
+  threshold: float,
+) -> tuple[dict[str, float | None], pd.Series, float | None]:
+  """Select a validation cutoff and evaluate once on protected test data."""
+  target = evaluation_data[target_column]
+
+  if selected_model["model_name"] == "naive_spike_baseline":
+    prediction = (
+      evaluation_data["actual_price_lag_1h"] > threshold
+    ).astype(int)
+
+    scores = calculate_classification_metrics(
+      target=target,
+      prediction=prediction,
+    )
+
+    return scores, prediction, None
+
+  threshold_result = select_model_decision_threshold(
     selected_model=selected_model,
-    model=model,
-    evaluation_data=evaluation_data,
+    train_data=train_data,
+    validation_data=validation_data,
     target_column=target_column,
   )
+  decision_threshold = threshold_result["decision_threshold"]
+
+  final_training_data = pd.concat(
+    [train_data, validation_data],
+    ignore_index=True,
+  )
+
+  model = train_selected_classification_model(
+    selected_model=selected_model,
+    train_data=final_training_data,
+    target_column=target_column,
+  )
+
+  features = evaluation_data[REGRESSION_FEATURE_COLUMNS]
+  probability = pd.Series(
+    model.predict_proba(features)[:, 1],
+    index=evaluation_data.index,
+  )
+  prediction = pd.Series(
+    apply_decision_threshold(
+      probability=probability,
+      threshold=decision_threshold,
+    ),
+    index=evaluation_data.index,
+  )
+
+  scores = calculate_classification_metrics(
+    target=target,
+    prediction=prediction,
+    probability=probability,
+  )
+
+  return scores, prediction, decision_threshold
+
+
+def build_confusion_matrix_row(
+  selected_model: dict,
+  target: pd.Series,
+  prediction: pd.Series,
+) -> dict:
+  """Build one auditable binary confusion-matrix row."""
+  true_negative, false_positive, false_negative, true_positive = (
+    confusion_matrix(
+      target,
+      prediction,
+      labels=[0, 1],
+    ).ravel()
+  )
+
+  return {
+    "model_name": selected_model["model_name"],
+    "horizon_hours": int(selected_model["horizon_hours"]),
+    "split": "test",
+    "true_negative": int(true_negative),
+    "false_positive": int(false_positive),
+    "false_negative": int(false_negative),
+    "true_positive": int(true_positive),
+  }
+
+
+def write_confusion_matrices(
+  rows: list[dict],
+  output_path: Path = FINAL_CONFUSION_MATRICES_PATH,
+) -> Path:
+  """Persist final confusion matrices for every forecast horizon."""
+  output_path.parent.mkdir(parents=True, exist_ok=True)
+
+  columns = [
+    "model_name",
+    "horizon_hours",
+    "split",
+    "true_negative",
+    "false_positive",
+    "false_negative",
+    "true_positive",
+  ]
+
+  pd.DataFrame(rows, columns=columns).to_csv(
+    output_path,
+    index=False,
+  )
+
+  return output_path
+
+
+def build_f1_confidence_interval_row(
+  selected_model: dict,
+  target: pd.Series,
+  prediction: pd.Series,
+) -> dict:
+  """Build one block-bootstrap F1 confidence-interval row."""
+  interval = calculate_f1_block_bootstrap_interval(
+    target=target,
+    prediction=prediction,
+  )
+
+  return {
+    "model_name": selected_model["model_name"],
+    "horizon_hours": int(selected_model["horizon_hours"]),
+    "split": "test",
+    "metric": interval["metric"],
+    "estimate": interval["estimate"],
+    "confidence_level": interval["confidence_level"],
+    "ci_lower": interval["ci_lower"],
+    "ci_upper": interval["ci_upper"],
+    "block_size": interval["block_size"],
+    "iterations": interval["iterations"],
+  }
+
+
+def write_confidence_intervals(
+  rows: list[dict],
+  output_path: Path = FINAL_CONFIDENCE_INTERVALS_PATH,
+) -> Path:
+  """Persist block-bootstrap confidence intervals by horizon."""
+  output_path.parent.mkdir(parents=True, exist_ok=True)
+
+  columns = [
+    "model_name",
+    "horizon_hours",
+    "split",
+    "metric",
+    "estimate",
+    "confidence_level",
+    "ci_lower",
+    "ci_upper",
+    "block_size",
+    "iterations",
+  ]
+
+  pd.DataFrame(rows, columns=columns).to_csv(
+    output_path,
+    index=False,
+  )
+
+  return output_path
 
 
 def build_final_classification_test_result(
@@ -363,12 +543,10 @@ def run_final_classification_test_evaluation() -> Path:
   selected_models = load_selected_classification_models()
   training_data = load_training_dataset(TRAINING_DATASET_PATH)
 
-  train_data, validation_data, test_data = split_time_series_data(
+  train_data, validation_data, test_data = split_time_series_data_from_config(
     data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
+    modeling_config=modeling_config,
+)
 
   (
     prepared_train,
@@ -382,14 +560,10 @@ def run_final_classification_test_evaluation() -> Path:
     horizons_hours=horizons_hours,
   )
 
-  # Keep the original train-derived threshold frozen.
-  # Train and validation labels were both created with this threshold.
-  final_training_data = pd.concat(
-    [prepared_train, prepared_validation],
-    ignore_index=True,
-  )
-
+  # Validation selects the probability cutoff before final retraining.
   final_results = []
+  confusion_matrix_rows = []
+  confidence_interval_rows = []
 
   for selected_model in selected_models.to_dict(orient="records"):
     horizon_hours = int(selected_model["horizon_hours"])
@@ -402,12 +576,37 @@ def run_final_classification_test_evaluation() -> Path:
     print(f"Target column: {target_column}")
     print(f"Frozen spike threshold: {threshold:.4f}")
 
-    scores = evaluate_selected_classification_model(
-      selected_model=selected_model,
-      train_data=final_training_data,
-      evaluation_data=prepared_test,
-      target_column=target_column,
-      threshold=threshold,
+    scores, prediction, decision_threshold = (
+      evaluate_selected_classification_model(
+        selected_model=selected_model,
+        train_data=prepared_train,
+        validation_data=prepared_validation,
+        evaluation_data=prepared_test,
+        target_column=target_column,
+        threshold=threshold,
+      )
+    )
+
+    if decision_threshold is not None:
+      selected_model["model_parameters"] = (
+        f"{selected_model.get('model_parameters', '')}; "
+        f"decision_threshold={decision_threshold:.4f}"
+      ).strip("; ")
+
+    confusion_matrix_rows.append(
+      build_confusion_matrix_row(
+        selected_model=selected_model,
+        target=prepared_test[target_column],
+        prediction=prediction,
+      )
+    )
+
+    confidence_interval_rows.append(
+      build_f1_confidence_interval_row(
+        selected_model=selected_model,
+        target=prepared_test[target_column],
+        prediction=prediction,
+      )
     )
 
     final_results.append(
@@ -418,10 +617,20 @@ def run_final_classification_test_evaluation() -> Path:
       )
     )
 
-  return write_model_results(
+  results_path = write_model_results(
     results=final_results,
     output_path=FINAL_TEST_RESULTS_PATH,
   )
+
+  write_confusion_matrices(
+    rows=confusion_matrix_rows,
+  )
+
+  write_confidence_intervals(
+    rows=confidence_interval_rows,
+  )
+
+  return results_path
 
 
 def print_final_classification_test_summary(

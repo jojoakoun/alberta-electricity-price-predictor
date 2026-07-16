@@ -20,11 +20,14 @@ from electricity_predictor.modeling.regression.feature_columns import (
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
   load_training_dataset,
-  split_time_series_data,
+  split_time_series_data_from_config,
 )
 
 
 MODEL_OUTPUT_DIR = Path("models/classification")
+FINAL_TEST_RESULTS_PATH = Path(
+  "reports/final_classification_test_results.csv"
+)
 MODEL_METADATA_PATH = (
   MODEL_OUTPUT_DIR / "selected_classification_model_metadata.csv"
 )
@@ -34,6 +37,7 @@ MODEL_METADATA_COLUMNS = [
   "horizon_hours",
   "target_column",
   "spike_threshold",
+  "decision_threshold",
   "artifact_path",
   "training_rows",
   "feature_columns",
@@ -89,6 +93,7 @@ def build_model_metadata_row(
   selected_model: dict,
   target_column: str,
   threshold: float,
+  decision_threshold: float | None,
   artifact_path: Path,
   training_rows: int,
   training_start_utc: str,
@@ -100,6 +105,7 @@ def build_model_metadata_row(
     "horizon_hours": int(selected_model["horizon_hours"]),
     "target_column": target_column,
     "spike_threshold": threshold,
+    "decision_threshold": decision_threshold,
     "artifact_path": str(artifact_path),
     "training_rows": training_rows,
     "feature_columns": "|".join(
@@ -123,11 +129,44 @@ def build_model_metadata_row(
   }
 
 
+def load_final_decision_thresholds(
+  file_path: Path = FINAL_TEST_RESULTS_PATH,
+) -> dict[int, float]:
+  """Load validation-selected decision thresholds by horizon."""
+  if not file_path.exists():
+    raise FileNotFoundError(
+      f"Final classification results not found: {file_path}"
+    )
+
+  results = pd.read_csv(file_path)
+  thresholds = {}
+
+  for row in results.to_dict(orient="records"):
+    parameters = str(row.get("model_parameters", ""))
+    decision_threshold = None
+
+    for part in parameters.split(";"):
+      if "=" not in part:
+        continue
+
+      key, value = part.split("=", 1)
+
+      if key.strip() == "decision_threshold":
+        decision_threshold = float(value.strip())
+        break
+
+    if decision_threshold is not None:
+      thresholds[int(row["horizon_hours"])] = decision_threshold
+
+  return thresholds
+
+
 def save_selected_classification_models(
   best_model_path: Path = BEST_MODEL_PATH,
   training_dataset_path: Path = TRAINING_DATASET_PATH,
   output_dir: Path = MODEL_OUTPUT_DIR,
   metadata_path: Path = MODEL_METADATA_PATH,
+  final_results_path: Path = FINAL_TEST_RESULTS_PATH,
 ) -> Path:
   """Train and save the selected classifier for each horizon."""
   configuration = load_configuration()
@@ -137,16 +176,17 @@ def save_selected_classification_models(
   selected_models = load_selected_classification_models(
     best_model_path
   )
+  decision_thresholds = load_final_decision_thresholds(
+    final_results_path
+  )
   training_data = load_training_dataset(
     training_dataset_path
   )
 
-  train_data, validation_data, test_data = split_time_series_data(
+  train_data, validation_data, test_data = split_time_series_data_from_config(
     data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
+    modeling_config=modeling_config,
+)
 
   (
     prepared_train,
@@ -216,6 +256,7 @@ def save_selected_classification_models(
         selected_model=selected_model,
         target_column=target_column,
         threshold=threshold,
+        decision_threshold=decision_thresholds.get(horizon_hours),
         artifact_path=saved_path,
         training_rows=len(final_training_data),
         training_start_utc=training_start_utc,

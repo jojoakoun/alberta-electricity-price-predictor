@@ -16,6 +16,7 @@ MODEL_RESULT_COLUMNS = [
   "precision",
   "recall",
   "f1",
+  "pr_auc",
   "notes",
 ]
 
@@ -44,6 +45,7 @@ def build_model_result_row(
     "precision": None,
     "recall": None,
     "f1": None,
+    "pr_auc": None,
     "notes": notes,
   }
 

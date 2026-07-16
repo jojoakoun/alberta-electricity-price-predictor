@@ -26,3 +26,22 @@ def test_calculate_classification_metrics_handles_no_positive_predictions():
   assert metrics["precision"] == 0.0
   assert metrics["recall"] == 0.0
   assert metrics["f1"] == 0.0
+
+
+def test_calculate_classification_metrics_returns_pr_auc_from_probabilities():
+  metrics = calculate_classification_metrics(
+    target=[1, 0, 1, 0],
+    prediction=[1, 0, 0, 0],
+    probability=[0.9, 0.2, 0.6, 0.1],
+  )
+
+  assert metrics["pr_auc"] == pytest.approx(1.0)
+
+
+def test_calculate_classification_metrics_returns_none_without_probabilities():
+  metrics = calculate_classification_metrics(
+    target=[1, 0, 1, 0],
+    prediction=[1, 0, 0, 0],
+  )
+
+  assert metrics["pr_auc"] is None

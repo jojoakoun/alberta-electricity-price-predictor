@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import (
   accuracy_score,
+  average_precision_score,
   f1_score,
   precision_score,
   recall_score,
@@ -37,8 +38,15 @@ def root_mean_squared_error_value(
 def calculate_classification_metrics(
   target,
   prediction,
-) -> dict[str, float]:
+  probability=None,
+) -> dict[str, float | None]:
   """Calculate reusable binary classification metrics."""
+  pr_auc = None
+
+  # PR-AUC requires continuous positive-class scores, not only 0/1 labels.
+  if probability is not None:
+    pr_auc = float(average_precision_score(target, probability))
+
   return {
     "accuracy": float(accuracy_score(target, prediction)),
     "precision": float(
@@ -62,4 +70,5 @@ def calculate_classification_metrics(
         zero_division=0,
       )
     ),
+    "pr_auc": pr_auc,
   }

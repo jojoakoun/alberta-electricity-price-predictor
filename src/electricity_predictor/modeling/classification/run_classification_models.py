@@ -43,9 +43,12 @@ def remove_existing_classification_results(results_path: Path) -> None:
   # Keep regression results while removing old classification rows.
   regression_results = results[results["task"] != "classification"].copy()
 
+  regression_results = regression_results.reindex(
+    columns=MODEL_RESULT_COLUMNS,
+  )
+
   regression_results.to_csv(
     results_path,
-    columns=MODEL_RESULT_COLUMNS,
     index=False,
   )
 
