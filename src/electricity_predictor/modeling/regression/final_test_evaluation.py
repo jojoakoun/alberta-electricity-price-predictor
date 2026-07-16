@@ -41,7 +41,7 @@ from electricity_predictor.modeling.regression.ridge.ridge_regression import (
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
   load_training_dataset,
-  split_time_series_data,
+  split_time_series_data_from_config,
 )
 
 
@@ -349,12 +349,10 @@ def run_final_regression_test_evaluation() -> Path:
   selected_models = load_selected_regression_models(BEST_MODEL_PATH)
   training_data = load_training_dataset(TRAINING_DATASET_PATH)
 
-  train_data, validation_data, test_data = split_time_series_data(
+  train_data, validation_data, test_data = split_time_series_data_from_config(
     data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
+    modeling_config=modeling_config,
+)
 
   # After model selection, train on train + validation before the one-time test evaluation.
   final_training_data = pd.concat([train_data, validation_data], ignore_index=True)

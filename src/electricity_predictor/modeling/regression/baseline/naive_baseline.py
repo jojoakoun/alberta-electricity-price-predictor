@@ -14,7 +14,7 @@ from electricity_predictor.modeling.model_results import (
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
   load_training_dataset,
-  split_time_series_data,
+  split_time_series_data_from_config,
 )
 
 
@@ -79,12 +79,10 @@ if __name__ == "__main__":
 
   training_data = load_training_dataset(TRAINING_DATASET_PATH)
 
-  train_data, validation_data, test_data = split_time_series_data(
+  train_data, validation_data, test_data = split_time_series_data_from_config(
     data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
+    modeling_config=modeling_config,
+)
 
   # Use validation for baseline comparison during model selection.
   # The protected test split is reserved for final evaluation only.

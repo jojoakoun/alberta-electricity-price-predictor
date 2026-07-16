@@ -12,7 +12,7 @@ from electricity_predictor.modeling.regression.elastic_net.elastic_net_tuning im
 def make_elastic_net_tuning_data() -> pd.DataFrame:
   rows = []
 
-  for hour in range(24):
+  for hour in range(200):
     rows.append(
       {
         "actual_price": 25.0 + hour,

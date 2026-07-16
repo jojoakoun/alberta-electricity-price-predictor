@@ -1,87 +1,134 @@
 from pathlib import Path
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
-
-from electricity_predictor.config import load_configuration
 
 
 TRAINING_DATASET_PATH = Path("data/processed/training_dataset.csv")
+DATETIME_COLUMN = "datetime_universal_time"
 
 
-def load_training_dataset(file_path: Path) -> pd.DataFrame:
-  """Load the model-ready training dataset."""
+def load_training_dataset(file_path: Path = TRAINING_DATASET_PATH) -> pd.DataFrame:
+  """Load and chronologically sort the model-ready training dataset."""
   if not file_path.exists():
     raise FileNotFoundError(f"Training dataset not found: {file_path}")
 
   data = pd.read_csv(file_path)
 
-  # Convert UTC time before sorting and printing split date ranges.
-  data["datetime_universal_time"] = pd.to_datetime(data["datetime_universal_time"])
+  if DATETIME_COLUMN not in data.columns:
+    raise ValueError(f"Missing required datetime column: {DATETIME_COLUMN}")
 
-  # Time-series splits only make sense when rows are ordered from oldest to newest.
-  data = data.sort_values("datetime_universal_time").reset_index(drop=True)
+  data[DATETIME_COLUMN] = pd.to_datetime(
+    data[DATETIME_COLUMN],
+    errors="coerce",
+  )
 
-  return data
+  if data[DATETIME_COLUMN].isna().any():
+    raise ValueError("Training dataset contains invalid UTC timestamps.")
+
+  # Every modeling workflow must receive the same chronological row order.
+  return data.sort_values(DATETIME_COLUMN).reset_index(drop=True)
 
 
-def validate_split_ratios(
-  train_ratio: float,
-  validation_ratio: float,
-  test_ratio: float,
-) -> None:
-  """Validate train, validation, and test ratios."""
-  ratios = [train_ratio, validation_ratio, test_ratio]
+def validate_fixed_split_configuration(
+  train_start_utc: str,
+  validation_start_utc: str,
+  test_start_utc: str,
+  test_end_utc: str,
+  purge_hours: int,
+) -> tuple[pd.Timestamp, pd.Timestamp, pd.Timestamp, pd.Timestamp]:
+  """Validate and normalize fixed chronological split boundaries."""
+  if purge_hours < 0:
+    raise ValueError("Purge hours must be greater than or equal to 0.")
 
-  # Each split must receive data so training, tuning, and final testing all exist.
-  if any(ratio <= 0 for ratio in ratios):
-    raise ValueError("Train, validation, and test ratios must be greater than 0.")
+  timestamps = pd.to_datetime(
+    [
+      train_start_utc,
+      validation_start_utc,
+      test_start_utc,
+      test_end_utc,
+    ],
+    errors="coerce",
+  )
 
-  total_ratio = sum(ratios)
-  difference_from_one = abs(total_ratio - 1.0)
+  if timestamps.isna().any():
+    raise ValueError("Fixed split boundaries must be valid UTC timestamps.")
 
-  # Use a small tolerance so valid decimal ratios are not rejected by floating-point math.
-  if difference_from_one > 1e-9:
-    raise ValueError("Train, validation, and test ratios must sum to 1.0.")
+  train_start, validation_start, test_start, test_end = timestamps
+
+  if not train_start < validation_start < test_start <= test_end:
+    raise ValueError(
+      "Fixed split boundaries must follow "
+      "train_start < validation_start < test_start <= test_end."
+    )
+
+  return train_start, validation_start, test_start, test_end
 
 
 def split_time_series_data(
   data: pd.DataFrame,
-  train_ratio: float,
-  validation_ratio: float,
-  test_ratio: float,
+  train_start_utc: str,
+  validation_start_utc: str,
+  test_start_utc: str,
+  test_end_utc: str,
+  purge_hours: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-  """Split ordered time-series data into train, validation, and test sets."""
+  """Create fixed chronological splits with a purge before each next period."""
   if data.empty:
     raise ValueError("Cannot split an empty dataset.")
-  
 
+  if DATETIME_COLUMN not in data.columns:
+    raise ValueError(f"Missing required datetime column: {DATETIME_COLUMN}")
 
-
-  validate_split_ratios(
-    train_ratio=train_ratio,
-    validation_ratio=validation_ratio,
-    test_ratio=test_ratio,
+  working_data = data.copy()
+  working_data[DATETIME_COLUMN] = pd.to_datetime(
+    working_data[DATETIME_COLUMN],
+    errors="coerce",
   )
 
-  # Use shuffle=False so the model trains on older rows before seeing newer rows.
-  train_data, temporary_data = train_test_split(
-    data,
-    train_size=train_ratio,
-    shuffle=False,
+  if working_data[DATETIME_COLUMN].isna().any():
+    raise ValueError("Cannot split data with invalid UTC timestamps.")
+
+  working_data = working_data.sort_values(DATETIME_COLUMN).reset_index(drop=True)
+
+  (
+    train_start,
+    validation_start,
+    test_start,
+    test_end,
+  ) = validate_fixed_split_configuration(
+    train_start_utc=train_start_utc,
+    validation_start_utc=validation_start_utc,
+    test_start_utc=test_start_utc,
+    test_end_utc=test_end_utc,
+    purge_hours=purge_hours,
   )
 
-  temporary_ratio = validation_ratio + test_ratio
+  purge_delta = pd.Timedelta(hours=purge_hours)
 
-  # The second split only sees the remaining validation + test block.
-  validation_share_of_temporary_data = validation_ratio / temporary_ratio
+  # The purge removes labels whose future horizon could cross the next boundary.
+  train_end_exclusive = validation_start - purge_delta
+  validation_end_exclusive = test_start - purge_delta
 
-  # Keep validation before test so the final test set represents the newest data.
-  validation_data, test_data = train_test_split(
-    temporary_data,
-    train_size=validation_share_of_temporary_data,
-    shuffle=False,
-  )
+  train_data = working_data[
+    (working_data[DATETIME_COLUMN] >= train_start)
+    & (working_data[DATETIME_COLUMN] < train_end_exclusive)
+  ]
+
+  validation_data = working_data[
+    (working_data[DATETIME_COLUMN] >= validation_start)
+    & (working_data[DATETIME_COLUMN] < validation_end_exclusive)
+  ]
+
+  test_data = working_data[
+    (working_data[DATETIME_COLUMN] >= test_start)
+    & (working_data[DATETIME_COLUMN] <= test_end)
+  ]
+
+  if train_data.empty or validation_data.empty or test_data.empty:
+    raise ValueError(
+      "Fixed split configuration must produce non-empty "
+      "train, validation, and test sets."
+    )
 
   return (
     train_data.reset_index(drop=True),
@@ -90,50 +137,73 @@ def split_time_series_data(
   )
 
 
+def split_time_series_data_from_config(
+  data: pd.DataFrame,
+  modeling_config: dict,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+  """Create fixed chronological splits from the shared modeling configuration."""
+  required_keys = {
+    "train_start_utc",
+    "validation_start_utc",
+    "test_start_utc",
+    "test_end_utc",
+    "purge_hours",
+  }
+  missing_keys = required_keys - set(modeling_config)
+
+  if missing_keys:
+    raise ValueError(
+      f"Missing fixed split configuration keys: {sorted(missing_keys)}"
+    )
+
+  # One helper prevents modeling workflows from interpreting boundaries differently.
+  return split_time_series_data(
+    data=data,
+    train_start_utc=modeling_config["train_start_utc"],
+    validation_start_utc=modeling_config["validation_start_utc"],
+    test_start_utc=modeling_config["test_start_utc"],
+    test_end_utc=modeling_config["test_end_utc"],
+    purge_hours=modeling_config["purge_hours"],
+  )
+
+
+def get_time_series_cv_gap_hours(modeling_config: dict) -> int:
+  """Read and validate the shared cross-validation gap."""
+  if "time_series_cv_gap_hours" not in modeling_config:
+    raise ValueError("Missing time_series_cv_gap_hours in modeling configuration.")
+
+  gap_hours = modeling_config["time_series_cv_gap_hours"]
+
+  if not isinstance(gap_hours, int) or gap_hours < 0:
+    raise ValueError(
+      "time_series_cv_gap_hours must be a non-negative integer."
+    )
+
+  return gap_hours
+
+
 def print_split_summary(
   train_data: pd.DataFrame,
   validation_data: pd.DataFrame,
   test_data: pd.DataFrame,
 ) -> None:
-  """Print a readable summary of the time-based split."""
-  print("Time-based modeling split")
-  print("=========================")
+  """Print a readable summary of the fixed chronological split."""
+  print("Fixed time-based modeling split")
+  print("===============================")
   print(f"Train rows: {len(train_data):,}")
   print(f"Validation rows: {len(validation_data):,}")
   print(f"Test rows: {len(test_data):,}")
 
   print("\nTime ranges")
   print("-----------")
-  print(
-    f"Train: {train_data['datetime_universal_time'].min()} "
-    f"to {train_data['datetime_universal_time'].max()}"
-  )
-  print(
-    f"Validation: {validation_data['datetime_universal_time'].min()} "
-    f"to {validation_data['datetime_universal_time'].max()}"
-  )
-  print(
-    f"Test: {test_data['datetime_universal_time'].min()} "
-    f"to {test_data['datetime_universal_time'].max()}"
-  )
 
-
-if __name__ == "__main__":
-  configuration = load_configuration()
-
-  modeling_config = configuration["modeling"]
-
-  training_data = load_training_dataset(TRAINING_DATASET_PATH)
-
-  train_data, validation_data, test_data = split_time_series_data(
-    data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
-
-  print_split_summary(
-    train_data=train_data,
-    validation_data=validation_data,
-    test_data=test_data,
-  )
+  for split_name, split_data in [
+    ("Train", train_data),
+    ("Validation", validation_data),
+    ("Test", test_data),
+  ]:
+    print(
+      f"{split_name}: "
+      f"{split_data[DATETIME_COLUMN].min()} "
+      f"to {split_data[DATETIME_COLUMN].max()}"
+    )

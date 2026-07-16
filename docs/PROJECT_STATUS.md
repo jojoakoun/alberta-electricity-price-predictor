@@ -6,11 +6,11 @@ This document summarizes the current state of the project.
 
 ## Current Phase
 
-Phase 3 — Regression Modeling
+Phase 4 — Classification and Spike-Risk Modeling
 
 ## Current Status
 
-The project now supports a multi-horizon regression workflow.
+The project now supports complete multi-horizon regression and Phase 4 classification implementation. The repository is currently undergoing a Phase 4 coherence and pre-deployment audit.
 
 The repository foundation, Phase 1 data engineering, Phase 2 feature engineering, ML preprocessing, and the current Phase 3 regression comparison workflow are complete.
 
@@ -68,6 +68,9 @@ The modeling workflow now produces:
 | Best predictor selection by horizon | Complete | The project selects one best validation predictor per horizon using lowest validation MAE. |
 | Regression model organization | Complete | Regression models are organized by model family under `modeling/regression/`. |
 | Full pipeline command | Complete | The project can run data refresh, quality checks, feature building, training data preparation, regression models, model selection, and tests with `make full-pipeline`. |
+| Classification spike definition | Complete | Candidate spike definitions are compared using thresholds learned from the chronological train split only. |
+| Classification target preparation | Complete | Binary spike targets are created after splitting so validation and test prices cannot influence the threshold. |
+| Classification baseline | Complete | The project evaluates a naive spike baseline using the previous-hour price against each forecast horizon. |
 | Automated tests | Complete | The current test suite passes successfully. |
 
 ## Current Validation Status
@@ -75,7 +78,7 @@ The modeling workflow now produces:
 Latest test result:
 
 ```text
-109 passed
+200 passed
 ```
 
 ## Current Forecast Horizons
@@ -97,11 +100,11 @@ horizons_hours: [1, 3, 6, 12, 24]
 
 | Horizon | Selected predictor | Validation MAE | Validation RMSE |
 |---:|---|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 25.4158 | 70.0433 |
-| 3h | `naive_baseline` | 37.3273 | 114.5003 |
-| 6h | `naive_baseline` | 42.9455 | 125.1047 |
-| 12h | `naive_baseline` | 45.5370 | 128.0298 |
-| 24h | `naive_baseline` | 43.1670 | 122.0370 |
+| 1h | `lasso_regression_tuned` | 33.3837 | 80.2968 |
+| 3h | `random_forest_regressor_tuned` | 46.7901 | 98.5419 |
+| 6h | `lasso_regression_tuned` | 55.6364 | 110.0355 |
+| 12h | `lasso_regression_tuned` | 59.8615 | 114.3262 |
+| 24h | `naive_baseline` | 55.7267 | 136.6736 |
 
 ## Current Data Outputs
 
@@ -131,7 +134,11 @@ Some generated data files are local outputs and are not tracked by Git.
 | `src/electricity_predictor/features/feature_quality.py` | Reports missing values created by feature engineering. |
 | `src/electricity_predictor/features/training_data.py` | Builds the model-ready training dataset from the modeling dataset. |
 | `src/electricity_predictor/modeling/split.py` | Defines the shared training dataset path, loads and chronologically sorts the training dataset, and creates chronological train, validation, and test splits. |
-| `src/electricity_predictor/modeling/metrics.py` | Provides reusable MAE and RMSE metric functions. |
+| `src/electricity_predictor/modeling/metrics.py` | Provides reusable regression and binary-classification metric functions. |
+| `src/electricity_predictor/modeling/classification/spike_definition.py` | Calculates and applies train-derived spike thresholds. |
+| `src/electricity_predictor/modeling/classification/analyze_spike_definition.py` | Compares candidate spike definitions across chronological splits. |
+| `src/electricity_predictor/modeling/classification/target_builder.py` | Creates horizon-specific binary spike targets using one frozen train threshold. |
+| `src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py` | Evaluates the naive spike baseline on validation data. |
 | `src/electricity_predictor/modeling/model_results.py` | Builds and writes reusable model result summaries with horizon context. |
 | `src/electricity_predictor/modeling/regression/run_regression_models.py` | Runs the multi-horizon regression model comparison workflow. |
 | `src/electricity_predictor/modeling/regression/best_model_selection.py` | Selects the best validation regression model separately for each horizon. |
@@ -172,11 +179,11 @@ The full multi-horizon regression workflow is slower than earlier single-target 
 
 | Horizon | Selected predictor | Test MAE | Test RMSE |
 |---:|---|---:|---:|
-| 1h | `random_forest_regressor_tuned` | 26.4863 | 78.8549 |
-| 3h | `naive_baseline` | 38.9598 | 127.9055 |
-| 6h | `naive_baseline` | 44.7939 | 139.9731 |
-| 12h | `naive_baseline` | 47.7167 | 144.7407 |
-| 24h | `naive_baseline` | 44.0096 | 133.3663 |
+| 1h | `lasso_regression_tuned` | 26.5647 | 80.3551 |
+| 3h | `random_forest_regressor_tuned` | 42.4166 | 96.5281 |
+| 6h | `lasso_regression_tuned` | 44.3965 | 100.3084 |
+| 12h | `lasso_regression_tuned` | 48.1140 | 101.4838 |
+| 24h | `naive_baseline` | 42.7081 | 127.9325 |
 
 ## Saved Regression Model Artifacts
 
@@ -196,6 +203,110 @@ These artifacts are ignored by Git because they can be regenerated from the trac
 
 ## Next Steps
 
-1. Push the completed Phase 3 regression audit updates.
-2. Start Phase 4 — Classification and spike-risk modeling.
-3. Use regression predictions and classification outputs together later in the recommendation layer.
+1. Train Logistic Regression classifiers for each forecast horizon.
+2. Compare learned classifiers with the naive spike baseline on validation data.
+3. Select one classification predictor per horizon before protected test evaluation.
+4. Use regression and classification outputs together later in the recommendation layer.
+
+<!-- PHASE_4_FINAL_STATUS_START -->
+## Phase 4 completion
+
+Phase 4 implements regression and spike-risk classification for five forecast horizons.
+
+## Fixed evaluation protocol
+
+| Split | Period | Rows |
+|---|---|---:|
+| Train | `2020-01-08 07:00:00` to `2023-12-30 23:00:00` | 34,865 |
+| Validation | `2024-01-01 00:00:00` to `2024-12-30 23:00:00` | 8,760 |
+| Test | `2025-01-01 00:00:00` to `2026-06-30 23:00:00` | 13,104 |
+
+The workflow removes the final 24 hours of train and validation. All seven tuning modules use `TimeSeriesSplit(gap=24)`.
+
+## Spike definition
+
+The frozen train-derived IQR threshold is:
+
+    170.77 $/MWh
+
+Observed spike rates:
+
+| Split | Spike rate |
+|---|---:|
+| Train | 13.98% |
+| Validation | 6.83% |
+| Test | 2.92% |
+
+The documented market-regime shift explains why protected test classification performance is substantially lower than validation performance.
+
+## Current regression winners
+
+| Horizon | Validation winner | Validation MAE | Test MAE |
+|---:|---|---:|---:|
+| 1h | `lasso_regression_tuned` | 33.3837 | 26.5647 |
+| 3h | `random_forest_regressor_tuned` | 46.7901 | 42.4166 |
+| 6h | `lasso_regression_tuned` | 55.6364 | 44.3965 |
+| 12h | `lasso_regression_tuned` | 59.8615 | 48.1140 |
+| 24h | `naive_baseline` | 55.7267 | 42.7081 |
+
+The baseline remains the selected 24-hour predictor. Improvements over baselines are modest at several horizons.
+
+## Current classification winners
+
+`random_forest_classifier_tuned` is selected for all five horizons.
+
+| Horizon | Validation F1 | Test F1 | Test PR-AUC | Cutoff |
+|---:|---:|---:|---:|---:|
+| 1h | 0.6009 | 0.2679 | 0.3055 | 0.45 |
+| 3h | 0.5025 | 0.2310 | 0.1739 | 0.45 |
+| 6h | 0.3971 | 0.1586 | 0.1016 | 0.45 |
+| 12h | 0.3652 | 0.1202 | 0.0716 | 0.45 |
+| 24h | 0.3524 | 0.1284 | 0.0955 | 0.50 |
+
+The 24-hour validation improvement over the baseline is only about `0.019` F1 and should not be presented as decisive.
+
+## Classification confidence intervals
+
+| Horizon | Test F1 | 95% confidence interval |
+|---:|---:|---:|
+| 1h | 0.2679 | 0.2058 to 0.3275 |
+| 3h | 0.2310 | 0.1588 to 0.2998 |
+| 6h | 0.1586 | 0.0935 to 0.2283 |
+| 12h | 0.1202 | 0.0678 to 0.1757 |
+| 24h | 0.1284 | 0.0771 to 0.1827 |
+
+## Documented approximations
+
+Probability cutoffs are selected before final models are refitted on train plus validation. The workflow assumes the selected cutoffs remain suitable after refitting.
+
+Cross-validation labels use the spike threshold calculated from the complete train period. The threshold does not use validation or test data, but it is not recalculated independently inside each fold.
+
+## Verification
+
+Current automated result:
+
+    200 passed
+
+Source compilation passes.
+
+## Known technical debt
+
+Deferred items include:
+
+- configuration loading at tuning-module import time;
+- repository-relative serving paths;
+- inference dtype and `classes_` edge cases;
+- permissive audit-export handling of optional files;
+- modest margins over baselines;
+- repeated horizon orchestration;
+- feature-column coupling;
+- the `actual_price_lag_1h` baseline at the 24-hour horizon;
+- regularization values at search-grid boundaries;
+- duplicated standalone workflow code;
+- incomplete historical-data provenance.
+
+## Current audit status
+
+Phase 4 will close after the baseline-inference edge case is corrected, final verification passes, the audit export is regenerated, and the branch is pushed and merged.
+
+Historical data provenance remains required before public publication.

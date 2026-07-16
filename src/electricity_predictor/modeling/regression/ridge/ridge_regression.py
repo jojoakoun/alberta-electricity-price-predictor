@@ -14,7 +14,7 @@ from electricity_predictor.modeling.model_results import (
 )
 from electricity_predictor.modeling.split import load_training_dataset
 from electricity_predictor.modeling.regression.feature_columns import REGRESSION_FEATURE_COLUMNS
-from electricity_predictor.modeling.split import split_time_series_data
+from electricity_predictor.modeling.split import split_time_series_data_from_config
 
 
 TARGET_COLUMN = "actual_price"
@@ -105,12 +105,10 @@ if __name__ == "__main__":
 
   training_data = load_training_dataset(TRAINING_DATASET_PATH)
 
-  train_data, validation_data, test_data = split_time_series_data(
+  train_data, validation_data, test_data = split_time_series_data_from_config(
     data=training_data,
-    train_ratio=modeling_config["train_ratio"],
-    validation_ratio=modeling_config["validation_ratio"],
-    test_ratio=modeling_config["test_ratio"],
-  )
+    modeling_config=modeling_config,
+)
 
   ridge_regression_model = train_ridge_regression_model(
     train_data=train_data,

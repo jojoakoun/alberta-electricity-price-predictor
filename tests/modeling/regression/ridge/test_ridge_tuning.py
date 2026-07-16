@@ -12,7 +12,7 @@ def make_ridge_tuning_data() -> pd.DataFrame:
   """Create enough chronological rows for TimeSeriesSplit tuning."""
   rows = []
 
-  for hour in range(24):
+  for hour in range(200):
     rows.append(
       {
         "actual_price": 25.0 + hour,
