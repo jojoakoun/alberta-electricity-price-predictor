@@ -46,3 +46,5 @@ dist/
 build/
 context_exports/
 *.egg-info/
+
+app/server/node_modules/
