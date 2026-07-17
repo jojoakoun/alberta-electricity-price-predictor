@@ -1,4 +1,4 @@
-.PHONY: install test compile-check config-check pipeline data-quality features feature-quality training-data audit baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models spike-definition-analysis spike-regime-analysis classification-baseline logistic-regression logistic-tuning random-forest random-forest-tuning gradient-boosting gradient-boosting-tuning classification-models select-best-classification-model final-classification-evaluation save-selected-classification-models inference-check full-pipeline
+.PHONY: install test compile-check config-check pipeline data-quality features feature-quality training-data audit baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models spike-definition-analysis spike-regime-analysis classification-baseline logistic-regression logistic-tuning random-forest random-forest-tuning gradient-boosting gradient-boosting-tuning classification-models select-best-classification-model final-classification-evaluation save-selected-classification-models inference-check ml-pipeline application-pipeline pipelines
 
 install:
 	# Install dependencies and register the local package.
@@ -143,8 +143,8 @@ inference-check:
 	# Run serving and inference tests.
 	pytest -q tests/serving
 
-full-pipeline:
-	# Rebuild data, reports, selected artifacts, and final verification.
+ml-pipeline:
+	# Rebuild ML data, reports, selected artifacts, and run verification.
 	$(MAKE) config-check
 	$(MAKE) pipeline
 	$(MAKE) data-quality
@@ -165,6 +165,14 @@ full-pipeline:
 	$(MAKE) inference-check
 	$(MAKE) test
 
+application-pipeline:
+	# Synchronize PostgreSQL, generate predictions, and save results.
+	python -m electricity_predictor.application_pipeline
+
+pipelines:
+	# Run the ML pipeline, then the application pipeline.
+	$(MAKE) ml-pipeline
+	$(MAKE) application-pipeline
 
 audit:
 	# Export complete source code, reports, artifacts, Git state, and verification evidence.
