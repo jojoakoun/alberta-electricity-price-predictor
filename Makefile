@@ -1,4 +1,4 @@
-.PHONY: install test compile-check config-check pipeline data-quality features feature-quality training-data baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models spike-definition-analysis spike-regime-analysis classification-baseline logistic-regression logistic-tuning random-forest random-forest-tuning gradient-boosting gradient-boosting-tuning classification-models select-best-classification-model final-classification-evaluation save-selected-classification-models inference-check ml-pipeline application-pipeline pipelines project-context project-zip project-export production-pipeline decision-window-analysis decision-regime-analysis decision-policy-backtest decision-policy-calibration predicted-decision-stress-test decision-analysis
+.PHONY: install test app-dev app-stop compile-check config-check pipeline data-quality features feature-quality training-data baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models spike-definition-analysis spike-regime-analysis classification-baseline logistic-regression logistic-tuning random-forest random-forest-tuning gradient-boosting gradient-boosting-tuning classification-models select-best-classification-model final-classification-evaluation save-selected-classification-models inference-check ml-pipeline application-pipeline pipelines project-context project-zip project-export production-pipeline decision-window-analysis decision-regime-analysis decision-policy-backtest decision-policy-calibration predicted-decision-stress-test decision-analysis
 
 install:
 	# Install dependencies and register the local package.
@@ -267,3 +267,9 @@ project-export:
 	$(MAKE) project-context
 	$(MAKE) project-zip
 
+app-dev:
+	./scripts/dev-app.sh
+
+app-stop:
+	pkill -f nodemon || true
+	pkill -f vite || true

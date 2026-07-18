@@ -1,5 +1,6 @@
 const { createApp } = require("./app");
 const { env } = require("./config/env");
+const { pool } = require("./db/pool");
 
 const app = createApp();
 
@@ -7,12 +8,29 @@ const server = app.listen(env.port, env.host, () => {
   console.log(`WattWise API listening on http://${env.host}:${env.port}`);
 });
 
-function shutdown(signal) {
-  console.log(`${signal} received. Closing HTTP server.`);
+let isShuttingDown = false;
 
-  server.close((error) => {
-    if (error) {
-      console.error("HTTP server shutdown failed.", error);
+async function shutdown(signal) {
+  if (isShuttingDown) {
+    return;
+  }
+
+  isShuttingDown = true;
+
+  console.log(`${signal} received. Closing WattWise API.`);
+
+  server.close(async (serverError) => {
+    try {
+      // Close database connections before Nodemon restarts the process.
+      await pool.end();
+    } catch (poolError) {
+      console.error("PostgreSQL pool shutdown failed.", poolError);
+      process.exitCode = 1;
+      return;
+    }
+
+    if (serverError) {
+      console.error("HTTP server shutdown failed.", serverError);
       process.exitCode = 1;
       return;
     }
@@ -21,5 +39,10 @@ function shutdown(signal) {
   });
 }
 
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => {
+  void shutdown("SIGINT");
+});
+
+process.on("SIGTERM", () => {
+  void shutdown("SIGTERM");
+});
