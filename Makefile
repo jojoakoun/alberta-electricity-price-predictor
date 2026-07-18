@@ -225,6 +225,15 @@ project-context:
 		echo "===== GIT STATUS ====="; \
 		git status --short; \
 		echo ""; \
+		echo "===== GIT DIFF STAT ====="; \
+		git diff --stat; \
+		echo ""; \
+		echo "===== GIT DIFF ====="; \
+		git diff -- . ':(exclude)reports/*.csv'; \
+		echo ""; \
+		echo "===== RECENT COMMITS ====="; \
+		git log --oneline -10; \
+		echo ""; \
 		echo "===== FILE INVENTORY ====="; \
 		cat context_exports/.project_files.txt; \
 		echo ""; \

@@ -258,6 +258,7 @@ Current application limitations:
 - manual execution
 - no scheduling
 - no production monitoring
+- 24-hour recommendations currently rely on the naive regression baseline and therefore exhibit a higher false recommendation rate than shorter forecast horizons.
 
 ---
 

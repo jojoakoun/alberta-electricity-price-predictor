@@ -435,12 +435,18 @@ Store every prediction together with its future observed price.
 
 Backfill actual prices automatically once they become available.
 
+The `confidence` field is intentionally reserved for a future production confidence score. During Phase 5 it is stored as `NULL` until a deterministic confidence estimation strategy is introduced.
+
 ## Consequences
 
 Benefits:
 
 - continuous production evaluation;
 - future monitoring support.
+
+Trade-offs:
+
+- production confidence estimation is deferred to Phase 6.
 
 ---
 
