@@ -7,6 +7,7 @@ const { env } = require("./config/env");
 const { errorHandler } = require("./middleware/error-handler");
 const { notFoundHandler } = require("./middleware/not-found");
 const { healthRouter } = require("./routes/health");
+const { nowRouter } = require("./routes/now");
 
 function createApp() {
   const app = express();
@@ -35,6 +36,7 @@ function createApp() {
   app.use(express.json({ limit: "16kb" }));
 
   app.use("/api/v1", healthRouter);
+  app.use("/api/v1", nowRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

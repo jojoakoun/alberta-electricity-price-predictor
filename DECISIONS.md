@@ -699,3 +699,48 @@ Benefits:
 Trade-offs:
 
 - the API must maintain a compatibility mapping for the Phase 5 explanation sentences.
+
+---
+
+# P6-D04 — Public Now Presentation Keys
+
+## Status
+
+Accepted
+
+## Context
+
+The product specification requires `contextKey`, `actionKey`, and Alberta-local target times for the public Now response.
+
+The specification does not define the exact key names or the current-price context algorithm.
+
+## Decision
+
+The API classifies the current finalized price against the first and third quartiles of the latest 720 finalized hourly prices:
+
+- at or below Q1 → `lower_than_usual`;
+- at or above Q3 → `higher_than_usual`;
+- otherwise → `about_average`.
+
+This market context is supporting presentation data. It does not alter the frozen Phase 5 recommendation.
+
+Public action keys are:
+
+- `recommended` → `run_heavy_appliances`;
+- `acceptable` → `use_if_needed`;
+- `avoid` → `wait_if_possible`.
+
+Local target times are formatted by the API using `America/Edmonton`.
+
+## Consequences
+
+Benefits:
+
+- the current price has an empirically grounded consumer context;
+- frontend copy remains centralized and i18n-ready;
+- all local-time conversion happens at the API boundary;
+- the Phase 5 decision layer remains unchanged.
+
+Trade-offs:
+
+- the API maintains presentation mappings that are not persisted by the worker.
