@@ -56,3 +56,6 @@ reports/predicted_decision_stress_test.csv
 # Application frontend
 app/client/node_modules/
 app/client/dist/
+
+# Local database administration scripts
+local/
