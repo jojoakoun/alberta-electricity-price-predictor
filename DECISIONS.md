@@ -658,3 +658,44 @@ Trade-offs:
 
 - the API uses `success` rather than `ok`;
 - historical threshold values cannot be reconstructed from stored prediction rows alone.
+
+---
+
+# P6-D03 — Public Explanation Keys
+
+## Status
+
+Accepted
+
+## Context
+
+The Phase 5 worker persists complete English explanation sentences.
+
+The WattWise public API contract requires stable explanation keys so frontend copy remains centralized and i18n-ready.
+
+The Phase 5 worker and decision layer are frozen.
+
+## Decision
+
+The API maps the known Phase 5 explanation sentences to stable public keys:
+
+- `Predicted price is favorable compared with the recent market.` → `lower_than_usual`
+- `Predicted price is acceptable but market risk is increasing.` → `acceptable_market_risk`
+- `Predicted price is high compared with the recent market.` → `higher_than_usual`
+
+The mapping is implemented in one API utility.
+
+An unknown persisted explanation is treated as an internal contract error and is never exposed directly.
+
+## Consequences
+
+Benefits:
+
+- the frozen Phase 5 worker remains unchanged;
+- frontend copy remains centralized;
+- public payloads expose keys rather than internal English sentences;
+- unexpected persistence values fail deterministically.
+
+Trade-offs:
+
+- the API must maintain a compatibility mapping for the Phase 5 explanation sentences.
