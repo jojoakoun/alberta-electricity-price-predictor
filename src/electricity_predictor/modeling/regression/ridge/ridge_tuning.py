@@ -14,7 +14,7 @@ from electricity_predictor.modeling.model_results import (
   build_model_result_row,
 )
 from electricity_predictor.modeling.split import load_training_dataset
-from electricity_predictor.modeling.regression.feature_columns import REGRESSION_FEATURE_COLUMNS
+from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
 from electricity_predictor.modeling.regression.ridge.ridge_regression import (
   evaluate_ridge_regression_model,
   train_ridge_regression_model,
@@ -62,7 +62,7 @@ def evaluate_ridge_alpha_with_time_series_cv(
       target_column=target_column,
     )
 
-    fold_features = fold_validation_data[REGRESSION_FEATURE_COLUMNS]
+    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
     fold_target = fold_validation_data[target_column]
     # Align predictions with the fold validation rows before calculating metrics.
     fold_predictions = pd.Series(

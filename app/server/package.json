@@ -1,0 +1,17 @@
+{
+  "name": "wattwise-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "migrate": "dotenv -e ../../.env -- node-pg-migrate up --migrations-dir migrations",
+    "migrate:down": "dotenv -e ../../.env -- node-pg-migrate down --migrations-dir migrations"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^10.0.0",
+    "node-pg-migrate": "^8.0.3"
+  }
+}

@@ -14,8 +14,8 @@ from electricity_predictor.modeling.classification.target_builder import (
   build_spike_target_column_name,
   prepare_classification_splits,
 )
-from electricity_predictor.modeling.regression.feature_columns import (
-  REGRESSION_FEATURE_COLUMNS,
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
 )
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
@@ -109,7 +109,7 @@ def build_model_metadata_row(
     "artifact_path": str(artifact_path),
     "training_rows": training_rows,
     "feature_columns": "|".join(
-      REGRESSION_FEATURE_COLUMNS
+      MODEL_FEATURE_COLUMNS
     ),
     "sklearn_version": sklearn.__version__,
     "training_start_utc": training_start_utc,

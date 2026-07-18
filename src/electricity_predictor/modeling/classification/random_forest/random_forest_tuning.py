@@ -19,8 +19,8 @@ from electricity_predictor.modeling.model_results import (
   append_model_result,
   build_model_result_row,
 )
-from electricity_predictor.modeling.regression.feature_columns import (
-  REGRESSION_FEATURE_COLUMNS,
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
 )
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
@@ -81,7 +81,7 @@ def evaluate_random_forest_parameters_with_time_series_cv(
       min_samples_leaf=min_samples_leaf,
     )
 
-    fold_features = fold_validation_data[REGRESSION_FEATURE_COLUMNS]
+    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
     fold_target = fold_validation_data[target_column]
     fold_prediction = model.predict(fold_features)
     fold_probability = model.predict_proba(fold_features)[:, 1]

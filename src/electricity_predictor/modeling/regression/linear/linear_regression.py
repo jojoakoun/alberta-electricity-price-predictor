@@ -13,7 +13,7 @@ from electricity_predictor.modeling.model_results import (
   build_model_result_row,
 )
 from electricity_predictor.modeling.split import load_training_dataset
-from electricity_predictor.modeling.regression.feature_columns import REGRESSION_FEATURE_COLUMNS
+from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
 from electricity_predictor.modeling.split import split_time_series_data_from_config
 
 
@@ -26,7 +26,7 @@ def train_linear_regression_model(
 ) -> LinearRegression:
   """Train a Linear Regression model for one regression target column."""
   # Use the shared regression feature list so model comparisons stay fair.
-  features = train_data[REGRESSION_FEATURE_COLUMNS]
+  features = train_data[MODEL_FEATURE_COLUMNS]
   # The target column controls which future horizon this model learns to predict.
   target = train_data[target_column]
 
@@ -43,7 +43,7 @@ def evaluate_linear_regression_model(
   target_column: str = TARGET_COLUMN,
 ) -> dict[str, float]:
   """Evaluate a trained Linear Regression model against one target column."""
-  features = evaluation_data[REGRESSION_FEATURE_COLUMNS]
+  features = evaluation_data[MODEL_FEATURE_COLUMNS]
   # The target column is the true future price for the selected horizon.
   target = evaluation_data[target_column]
 

@@ -1,10 +1,10 @@
-from electricity_predictor.modeling.regression.feature_columns import (
-  REGRESSION_FEATURE_COLUMNS,
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
 )
 
 
 def test_regression_feature_columns_include_expected_model_inputs():
-  assert REGRESSION_FEATURE_COLUMNS == [
+  assert MODEL_FEATURE_COLUMNS == [
     "forecast_price",
     "hour",
     "day_of_week",

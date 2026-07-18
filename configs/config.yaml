@@ -32,3 +32,5 @@ modeling:
   test_end_utc: "2026-06-30 23:00:00"
   purge_hours: 24
   time_series_cv_gap_hours: 24
+decision:
+  window_hours: 720

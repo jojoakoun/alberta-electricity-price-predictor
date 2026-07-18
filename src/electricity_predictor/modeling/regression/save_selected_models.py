@@ -6,7 +6,7 @@ import sklearn
 
 from electricity_predictor.config import load_configuration
 from electricity_predictor.features.feature_engineering import build_target_column_name
-from electricity_predictor.modeling.regression.feature_columns import REGRESSION_FEATURE_COLUMNS
+from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
 from electricity_predictor.modeling.regression.final_test_evaluation import (
   BEST_MODEL_PATH,
   load_selected_regression_models,
@@ -91,8 +91,8 @@ def build_model_metadata_row(
     "artifact_path": str(artifact_path),
     "training_rows": training_rows,
     # The exact ordered feature list makes future inference reproducible
-    # even if REGRESSION_FEATURE_COLUMNS changes in a later phase.
-    "feature_columns": "|".join(REGRESSION_FEATURE_COLUMNS),
+    # even if MODEL_FEATURE_COLUMNS changes in a later phase.
+    "feature_columns": "|".join(MODEL_FEATURE_COLUMNS),
     # Sklearn pickles are not portable across versions, so record it.
     "sklearn_version": sklearn.__version__,
     "training_start_utc": training_start_utc,

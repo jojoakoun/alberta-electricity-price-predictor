@@ -7,6 +7,15 @@ ENGINEERED_FEATURE_COLUMNS = [
   "actual_price_rolling_7d_mean",
 ]
 
+MODEL_FEATURE_COLUMNS = [
+  "forecast_price",
+  "hour",
+  "day_of_week",
+  "month",
+  "is_weekend",
+  *ENGINEERED_FEATURE_COLUMNS,
+]
+
 HORIZON_TARGET_COLUMNS = [
   "actual_price_target_1h",
   "actual_price_target_3h",

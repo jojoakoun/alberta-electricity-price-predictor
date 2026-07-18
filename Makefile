@@ -1,4 +1,4 @@
-.PHONY: install test compile-check config-check pipeline data-quality features feature-quality training-data audit baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models spike-definition-analysis spike-regime-analysis classification-baseline logistic-regression logistic-tuning random-forest random-forest-tuning gradient-boosting gradient-boosting-tuning classification-models select-best-classification-model final-classification-evaluation save-selected-classification-models inference-check full-pipeline
+.PHONY: install test compile-check config-check pipeline data-quality features feature-quality training-data baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models spike-definition-analysis spike-regime-analysis classification-baseline logistic-regression logistic-tuning random-forest random-forest-tuning gradient-boosting gradient-boosting-tuning classification-models select-best-classification-model final-classification-evaluation save-selected-classification-models inference-check ml-pipeline application-pipeline pipelines project-context project-zip project-export production-pipeline decision-window-analysis decision-regime-analysis decision-policy-backtest decision-policy-calibration predicted-decision-stress-test decision-analysis
 
 install:
 	# Install dependencies and register the local package.
@@ -143,8 +143,8 @@ inference-check:
 	# Run serving and inference tests.
 	pytest -q tests/serving
 
-full-pipeline:
-	# Rebuild data, reports, selected artifacts, and final verification.
+ml-pipeline:
+	# Rebuild ML data, reports, selected artifacts, and run verification.
 	$(MAKE) config-check
 	$(MAKE) pipeline
 	$(MAKE) data-quality
@@ -161,159 +161,109 @@ full-pipeline:
 	$(MAKE) select-best-classification-model
 	$(MAKE) final-classification-evaluation
 	$(MAKE) save-selected-classification-models
+	$(MAKE) decision-analysis
 	$(MAKE) compile-check
 	$(MAKE) inference-check
 	$(MAKE) test
 
+decision-window-analysis:
+	# Compare 72h, 168h, 336h, and 720h rolling windows and write detailed and summary stability reports.
+	python -m electricity_predictor.modeling.decision.analyze_decision_windows
 
-audit:
-	# Export complete source code, reports, artifacts, Git state, and verification evidence.
+decision-regime-analysis:
+	# Compare decision-window stability across the 2020-2023 and 2024-2026 market regimes.
+	python -m electricity_predictor.modeling.decision.analyze_decision_regimes
+
+decision-policy-backtest:
+	# Backtest the 336h and 720h decision windows and summarize recommendation-label stability.
+	python -m electricity_predictor.modeling.decision.backtest_decision_windows
+
+decision-policy-calibration:
+	# Evaluate candidate recommendation quantiles and avoid-threshold multipliers on calibration and holdout periods.
+	python -m electricity_predictor.modeling.decision.calibrate_decision_policy
+
+predicted-decision-stress-test:
+	# Compare predicted recommendations with labels derived from actual future prices across all forecast horizons.
+	python -m electricity_predictor.modeling.decision.stress_test_predicted_decisions
+
+decision-analysis:
+	# Regenerate all reproducible decision-policy reports in dependency order.
+	$(MAKE) decision-window-analysis
+	$(MAKE) decision-regime-analysis
+	$(MAKE) decision-policy-backtest
+	$(MAKE) decision-policy-calibration
+	$(MAKE) predicted-decision-stress-test
+
+application-pipeline:
+	# Synchronize PostgreSQL, generate predictions, and save results.
+	python -m electricity_predictor.application_pipeline
+
+
+production-pipeline:
+	# Refresh AESO data, synchronize PostgreSQL, and generate predictions.
+	$(MAKE) pipeline
+	$(MAKE) application-pipeline
+
+pipelines:
+	# Run the ML pipeline, then the application pipeline.
+	$(MAKE) ml-pipeline
+	$(MAKE) application-pipeline
+
+project-context:
+	# Export all tracked and non-ignored text files without running pipelines.
 	mkdir -p context_exports
+	git ls-files --cached --others --exclude-standard \
+		| grep -v '^context_exports/' \
+		| sort > context_exports/.project_files.txt
 	{ \
-		echo "===== AUDIT EXPORT GENERATED AT ====="; \
+		echo "===== PROJECT CONTEXT GENERATED AT ====="; \
 		date; \
 		echo ""; \
-		echo "===== GIT BRANCH ====="; \
+		echo "===== BRANCH ====="; \
 		git branch --show-current; \
-		echo ""; \
-		echo "===== GIT LOG ====="; \
-		git log --oneline -15; \
 		echo ""; \
 		echo "===== GIT STATUS ====="; \
 		git status --short; \
 		echo ""; \
-		echo "===== BRANCH RELATIONSHIP WITH MAIN ====="; \
-		echo "Main HEAD:"; \
-		git log main --oneline -1 2>/dev/null || echo "main branch unavailable"; \
+		echo "===== GIT DIFF STAT ====="; \
+		git diff --stat; \
 		echo ""; \
-		echo "Commits on current branch not in main:"; \
-		git log --oneline main..HEAD 2>/dev/null || true; \
+		echo "===== GIT DIFF ====="; \
+		git diff -- . ':(exclude)reports/*.csv'; \
 		echo ""; \
-		echo "Commits on main not in current branch:"; \
-		git log --oneline HEAD..main 2>/dev/null || true; \
+		echo "===== RECENT COMMITS ====="; \
+		git log --oneline -10; \
 		echo ""; \
-		echo "Merge base:"; \
-		git merge-base HEAD main 2>/dev/null || echo "merge base unavailable"; \
+		echo "===== FILE INVENTORY ====="; \
+		cat context_exports/.project_files.txt; \
 		echo ""; \
-		echo "===== PROJECT FILE INVENTORY ====="; \
-		find . \
-			-path "./.git" -prune -o \
-			-path "./.venv" -prune -o \
-			-path "./data" -prune -o \
-			-path "./models" -prune -o \
-			-path "./context_exports" -prune -o \
-			-path "*/__pycache__" -prune -o \
-			-path "./.pytest_cache" -prune -o \
-			-path "./.ipynb_checkpoints" -prune -o \
-			-name "*.pyc" -prune -o \
-			-type f \( \
-				-name "*.py" -o \
-				-name "*.md" -o \
-				-name "*.yaml" -o \
-				-name "*.yml" -o \
-				-name "*.toml" -o \
-				-name "Makefile" -o \
-				-name "requirements.txt" -o \
-				-name ".gitignore" \
-			\) -print | sort; \
-		echo ""; \
-		echo "===== COMPLETE SOURCE CODE, TESTS, DOCS, AND CONFIG ====="; \
-		find . \
-			-path "./.git" -prune -o \
-			-path "./.venv" -prune -o \
-			-path "./data" -prune -o \
-			-path "./models" -prune -o \
-			-path "./context_exports" -prune -o \
-			-path "*/__pycache__" -prune -o \
-			-path "./.pytest_cache" -prune -o \
-			-path "./.ipynb_checkpoints" -prune -o \
-			-name "*.pyc" -prune -o \
-			-type f \( \
-				-name "*.py" -o \
-				-name "*.md" -o \
-				-name "*.yaml" -o \
-				-name "*.yml" -o \
-				-name "*.toml" -o \
-				-name "Makefile" -o \
-				-name "requirements.txt" -o \
-				-name ".gitignore" \
-			\) -print | sort | while read file; do \
+		while IFS= read -r file; do \
+			if [ -f "$$file" ] && { grep -Iq . "$$file" || [ ! -s "$$file" ]; }; then \
 				echo ""; \
 				echo "===== $$file ====="; \
 				cat "$$file"; \
 				echo ""; \
-			done; \
-		echo ""; \
-		echo "===== REPORT INVENTORY ====="; \
-		if [ -d reports ]; then \
-			find reports -maxdepth 1 -type f -print | sort; \
-		else \
-			echo "Missing reports directory"; \
-		fi; \
-		echo ""; \
-		echo "===== reports/model_results.csv ====="; \
-		if [ -f reports/model_results.csv ]; then cat reports/model_results.csv; else echo "Missing reports/model_results.csv"; fi; \
-		echo ""; \
-		echo "===== reports/best_regression_model.csv ====="; \
-		if [ -f reports/best_regression_model.csv ]; then cat reports/best_regression_model.csv; else echo "Missing reports/best_regression_model.csv"; fi; \
-		echo ""; \
-		echo "===== reports/final_regression_test_results.csv ====="; \
-		if [ -f reports/final_regression_test_results.csv ]; then cat reports/final_regression_test_results.csv; else echo "Missing reports/final_regression_test_results.csv"; fi; \
-		echo ""; \
-		echo "===== reports/spike_definition_analysis.csv ====="; \
-		if [ -f reports/spike_definition_analysis.csv ]; then cat reports/spike_definition_analysis.csv; else echo "Missing reports/spike_definition_analysis.csv"; fi; \
-		echo ""; \
-		echo "===== reports/spike_regime_analysis.csv ====="; \
-		if [ -f reports/spike_regime_analysis.csv ]; then cat reports/spike_regime_analysis.csv; else echo "Missing reports/spike_regime_analysis.csv"; fi; \
-		echo ""; \
-		echo "===== reports/best_classification_model.csv ====="; \
-		if [ -f reports/best_classification_model.csv ]; then cat reports/best_classification_model.csv; else echo "Missing reports/best_classification_model.csv"; fi; \
-		echo ""; \
-		echo "===== reports/final_classification_test_results.csv ====="; \
-		if [ -f reports/final_classification_test_results.csv ]; then cat reports/final_classification_test_results.csv; else echo "Missing reports/final_classification_test_results.csv"; fi; \
-		echo ""; \
-		echo "===== reports/final_classification_confusion_matrices.csv ====="; \
-		if [ -f reports/final_classification_confusion_matrices.csv ]; then cat reports/final_classification_confusion_matrices.csv; else echo "Missing reports/final_classification_confusion_matrices.csv"; fi; \
-		echo ""; \
-		echo "===== reports/final_classification_confidence_intervals.csv ====="; \
-		if [ -f reports/final_classification_confidence_intervals.csv ]; then cat reports/final_classification_confidence_intervals.csv; else echo "Missing reports/final_classification_confidence_intervals.csv"; fi; \
-		echo ""; \
-		echo "===== REGRESSION MODEL METADATA ====="; \
-		if [ -f models/regression/selected_regression_model_metadata.csv ]; then \
-			cat models/regression/selected_regression_model_metadata.csv; \
-		else \
-			echo "Missing regression model metadata"; \
-		fi; \
-		echo ""; \
-		echo "===== CLASSIFICATION MODEL METADATA ====="; \
-		if [ -f models/classification/selected_classification_model_metadata.csv ]; then \
-			cat models/classification/selected_classification_model_metadata.csv; \
-		else \
-			echo "Missing classification model metadata"; \
-		fi; \
-		echo ""; \
-		echo "===== REGRESSION ARTIFACT INVENTORY ====="; \
-		if [ -d models/regression ]; then \
-			find models/regression -maxdepth 1 -type f -print | sort; \
-		else \
-			echo "Missing models/regression directory"; \
-		fi; \
-		echo ""; \
-		echo "===== CLASSIFICATION ARTIFACT INVENTORY ====="; \
-		if [ -d models/classification ]; then \
-			find models/classification -maxdepth 1 -type f -print | sort; \
-		else \
-			echo "Missing models/classification directory"; \
-		fi; \
-		echo ""; \
-		echo "===== PYTHON COMPILATION ====="; \
-		if python -m compileall -q src; then \
-			echo "Compilation passed"; \
-		else \
-			echo "Compilation failed"; \
-		fi; \
-		echo ""; \
-		echo "===== COMPLETE TEST SUITE ====="; \
-		pytest -q; \
-	} > context_exports/project_context_full_audit.txt 2>&1
-	@echo "Full audit context exported to context_exports/project_context_full_audit.txt"
+			fi; \
+		done < context_exports/.project_files.txt; \
+	} > context_exports/project_context_full.txt
+	rm -f context_exports/.project_files.txt
+	@echo "Project context created: context_exports/project_context_full.txt"
+
+project-zip:
+	# Archive all tracked and non-ignored files without running pipelines.
+	mkdir -p context_exports
+	rm -f context_exports/alberta-electricity-price-predictor.zip
+	git ls-files --cached --others --exclude-standard \
+		| grep -v '^context_exports/' \
+		| sort > context_exports/.project_files.txt
+	test -s context_exports/.project_files.txt
+	cat context_exports/.project_files.txt \
+		| zip -q context_exports/alberta-electricity-price-predictor.zip -@
+	rm -f context_exports/.project_files.txt
+	@echo "Project archive created: context_exports/alberta-electricity-price-predictor.zip"
+
+project-export:
+	# Generate the text context and ZIP archive without running pipelines.
+	$(MAKE) project-context
+	$(MAKE) project-zip
+
