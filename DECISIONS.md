@@ -744,3 +744,44 @@ Benefits:
 Trade-offs:
 
 - the API maintains presentation mappings that are not persisted by the worker.
+
+---
+
+# P6-D05 — Today Temporal Wording Fallback
+
+## Status
+
+Accepted
+
+## Context
+
+The product specification defines temporal wording for:
+
+- targets within 90 minutes;
+- targets within four hours;
+- afternoon targets;
+- evening targets;
+- overnight targets;
+- targets at least twenty hours away.
+
+It does not define wording for a target between 6:00 AM and 11:59 AM local time when that target is more than four hours and less than twenty hours away.
+
+## Decision
+
+The API exposes the fallback key `later_today` for the uncovered morning case.
+
+Temporal wording is calculated from the viewing time rather than the prediction generation time.
+
+The API returns both the absolute Alberta-local target time and the temporal wording key.
+
+## Consequences
+
+Benefits:
+
+- every genuine forecast receives deterministic wording;
+- the frontend does not invent temporal copy;
+- wording remains accurate when a user opens the page after prediction generation.
+
+Trade-offs:
+
+- the API adds one wording key not explicitly named in the original specification.

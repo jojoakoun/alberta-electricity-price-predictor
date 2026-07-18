@@ -8,6 +8,7 @@ const { errorHandler } = require("./middleware/error-handler");
 const { notFoundHandler } = require("./middleware/not-found");
 const { healthRouter } = require("./routes/health");
 const { nowRouter } = require("./routes/now");
+const { todayRouter } = require("./routes/today");
 
 function createApp() {
   const app = express();
@@ -37,6 +38,7 @@ function createApp() {
 
   app.use("/api/v1", healthRouter);
   app.use("/api/v1", nowRouter);
+  app.use("/api/v1", todayRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
