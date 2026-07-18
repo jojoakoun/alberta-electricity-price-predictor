@@ -69,15 +69,75 @@ def save_prediction_run(
           horizon_hours,
           target_time_utc,
           predicted_price,
+          actual_price,
           spike_probability,
           spike_prediction,
           recommendation,
           explanation
         )
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+        VALUES (%s, %s, %s, %s, NULL, %s, %s, %s, %s);
         """,
         records,
       )
+
+    connection.commit()
+
+  return run_id
+
+
+def backfill_prediction_actual_prices() -> int:
+  """Fill completed predictions with their observed actual prices."""
+  with get_database_connection() as connection:
+    with connection.cursor() as cursor:
+      cursor.execute(
+        """
+        UPDATE predictions AS prediction
+        SET actual_price = hourly.actual_price
+        FROM hourly_prices AS hourly
+        WHERE prediction.target_time_utc = hourly.datetime_utc
+          AND prediction.actual_price IS NULL
+          AND hourly.actual_price IS NOT NULL;
+        """
+      )
+
+      updated_rows = cursor.rowcount
+
+    connection.commit()
+
+  return updated_rows
+
+
+def save_failed_prediction_run(
+  generated_at: datetime,
+  detail: str,
+) -> int:
+  """Save one failed worker run without prediction rows."""
+  with get_database_connection() as connection:
+    with connection.cursor() as cursor:
+      cursor.execute(
+        """
+        INSERT INTO prediction_runs (
+          generated_at,
+          status,
+          confidence,
+          spike_threshold,
+          detail
+        )
+        VALUES (%s, 'failed', NULL, NULL, %s)
+        RETURNING id;
+        """,
+        (
+          generated_at,
+          detail,
+        ),
+      )
+
+      run_row = cursor.fetchone()
+
+      if run_row is None:
+        raise RuntimeError("Failed to create failed prediction run.")
+
+      run_id = int(run_row[0])
 
     connection.commit()
 

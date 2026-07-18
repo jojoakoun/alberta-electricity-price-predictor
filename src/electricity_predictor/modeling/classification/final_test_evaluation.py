@@ -35,8 +35,8 @@ from electricity_predictor.modeling.model_results import (
   build_model_result_row,
   write_model_results,
 )
-from electricity_predictor.modeling.regression.feature_columns import (
-  REGRESSION_FEATURE_COLUMNS,
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
 )
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
@@ -330,7 +330,7 @@ def select_model_decision_threshold(
     target_column=target_column,
   )
 
-  validation_features = validation_data[REGRESSION_FEATURE_COLUMNS]
+  validation_features = validation_data[MODEL_FEATURE_COLUMNS]
   validation_probability = model.predict_proba(
     validation_features
   )[:, 1]
@@ -383,7 +383,7 @@ def evaluate_selected_classification_model(
     target_column=target_column,
   )
 
-  features = evaluation_data[REGRESSION_FEATURE_COLUMNS]
+  features = evaluation_data[MODEL_FEATURE_COLUMNS]
   probability = pd.Series(
     model.predict_proba(features)[:, 1],
     index=evaluation_data.index,

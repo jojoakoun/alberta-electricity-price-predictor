@@ -19,7 +19,7 @@ from electricity_predictor.modeling.regression.elastic_net.elastic_net_regressio
   evaluate_elastic_net_regression_model,
   train_elastic_net_regression_model,
 )
-from electricity_predictor.modeling.regression.feature_columns import REGRESSION_FEATURE_COLUMNS
+from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
 from electricity_predictor.modeling.split import split_time_series_data_from_config
 
 
@@ -80,7 +80,7 @@ def evaluate_elastic_net_config_with_time_series_cv(
       target_column=target_column,
     )
 
-    fold_features = fold_validation_data[REGRESSION_FEATURE_COLUMNS]
+    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
     fold_target = fold_validation_data[target_column]
     # Align predictions with fold validation rows before calculating MAE and RMSE.
     fold_predictions = pd.Series(

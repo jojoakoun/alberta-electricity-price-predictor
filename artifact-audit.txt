@@ -1,0 +1,85 @@
+===== NOTEBOOK =====
+-rw-r--r--@ 1 joelakoun  staff   801K Jul 13 13:43 notebooks/01_eda.ipynb
+4ddd2ff docs: add exploratory data analysis notebook
+   2 "execution_count": 101
+   1 "execution_count": 104
+   1 "execution_count": 107
+   1 "execution_count": 108
+   1 "execution_count": 109
+   1 "execution_count": 110
+   1 "execution_count": 111
+   2 "execution_count": 112
+   1 "execution_count": 80
+   2 "execution_count": 81
+   1 "execution_count": 82
+   1 "execution_count": 83
+   1 "execution_count": 84
+   2 "execution_count": 85
+   1 "execution_count": 86
+   2 "execution_count": 87
+   2 "execution_count": 88
+   1 "execution_count": 89
+   1 "execution_count": 90
+   1 "execution_count": 92
+   1 "execution_count": 94
+   2 "execution_count": 95
+   1 "execution_count": 97
+   2 "execution_count": 98
+   2 "execution_count": 99
+   2 "execution_count": null
+
+===== TRACKED DATA / MODELS / LOGS / EXPORTS =====
+logs/.gitkeep
+
+===== TRACKED REPORT SIZES =====
+     24663  reports/model_results.csv
+      4082  reports/spike_definition_analysis.csv
+      3125  reports/best_classification_model.csv
+      2515  reports/final_classification_test_results.csv
+      2118  reports/best_regression_model.csv
+      1416  reports/spike_regime_analysis.csv
+      1378  reports/final_regression_test_results.csv
+       676  reports/final_classification_confidence_intervals.csv
+       367  reports/final_classification_confusion_matrices.csv
+
+===== STATUS SUMMARY =====
+ .gitignore                                         |   8 +
+ Makefile                                           | 180 +++++----------------
+ configs/config.yaml                                |   4 +-
+ src/electricity_predictor/api/__init__.py          |   0
+ .../features/feature_columns.py                    |   9 ++
+ .../classification/final_test_evaluation.py        |   8 +-
+ .../gradient_boosting_classifier.py                |   6 +-
+ .../gradient_boosting/gradient_boosting_tuning.py  |   6 +-
+ .../classification/logistic/logistic_regression.py |   6 +-
+ .../classification/logistic/logistic_tuning.py     |   6 +-
+ .../random_forest/random_forest_classifier.py      |   6 +-
+ .../random_forest/random_forest_tuning.py          |   6 +-
+ .../classification/save_selected_models.py         |   6 +-
+ .../elastic_net/elastic_net_regression.py          |   6 +-
+ .../regression/elastic_net/elastic_net_tuning.py   |   4 +-
+ .../modeling/regression/feature_columns.py         |  13 --
+ .../modeling/regression/lasso/lasso_regression.py  |   6 +-
+ .../modeling/regression/lasso/lasso_tuning.py      |   4 +-
+ .../regression/linear/linear_regression.py         |   6 +-
+ .../regression/random_forest/random_forest.py      |   6 +-
+ .../random_forest/random_forest_tuning.py          |   4 +-
+ .../modeling/regression/ridge/ridge_regression.py  |   6 +-
+ .../modeling/regression/ridge/ridge_tuning.py      |   4 +-
+ .../modeling/regression/save_selected_models.py    |   6 +-
+ .../visualization/__init__.py                      |   0
+ src/electricity_predictor/worker/decision_layer.py |  54 +++++--
+ .../worker/feature_preparation.py                  |   6 +-
+ src/electricity_predictor/worker/persistence.py    |  78 ++++++++-
+ .../worker/result_persistence.py                   |  62 ++++++-
+ src/electricity_predictor/worker/runner.py         |  98 +++++++----
+ .../test_gradient_boosting_tuning.py               |   6 +-
+ .../classification/test_logistic_tuning.py         |   6 +-
+ .../classification/test_random_forest_tuning.py    |   6 +-
+ .../regression/linear/test_linear_regression.py    |   4 +-
+ .../regression/ridge/test_ridge_regression.py      |   4 +-
+ tests/modeling/regression/test_feature_columns.py  |   6 +-
+ tests/worker/test_decision_layer.py                |  46 +++++-
+ tests/worker/test_result_persistence.py            |  62 +++++++
+ tests/worker/test_runner.py                        |  73 ++++++++-
+ 39 files changed, 559 insertions(+), 268 deletions(-)

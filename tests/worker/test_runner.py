@@ -2,6 +2,10 @@ from unittest.mock import patch
 
 import pandas as pd
 
+from electricity_predictor.worker.decision_context import (
+  DecisionContext,
+)
+
 from electricity_predictor.worker.runner import run_worker_cycle
 
 
@@ -39,6 +43,16 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
     }
   ]
 
+  decision_context = DecisionContext(
+    window_hours=720,
+    row_count=720,
+    q1=20.0,
+    q3=40.0,
+    iqr=20.0,
+    recommended_threshold=20.0,
+    avoid_threshold=70.0,
+  )
+
   with (
     patch(
       "electricity_predictor.worker.runner.load_configuration",
@@ -57,6 +71,10 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
       return_value=predictions,
     ) as generate_predictions,
     patch(
+      "electricity_predictor.worker.runner.load_decision_context",
+      return_value=decision_context,
+    ) as load_context,
+    patch(
       "electricity_predictor.worker.runner.apply_decision_layer",
       return_value=decisions,
     ) as apply_decisions,
@@ -68,7 +86,11 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
     result = run_worker_cycle()
 
   generate_predictions.assert_called_once()
-  apply_decisions.assert_called_once_with(predictions)
+  load_context.assert_called_once_with()
+  apply_decisions.assert_called_once_with(
+    predictions=predictions,
+    context=decision_context,
+  )
 
   save_run.assert_called_once_with(
     generated_at=generated_at.to_pydatetime(),
@@ -78,3 +100,52 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
 
   assert result["run_id"] == 21
   assert result["decisions"] == decisions
+
+
+def test_run_worker_cycle_records_failure() -> None:
+  failure = ValueError("Feature preparation failed.")
+
+  with (
+    patch(
+      "electricity_predictor.worker.runner.load_configuration",
+      return_value={
+        "modeling": {
+          "horizons_hours": [1],
+        }
+      },
+    ),
+    patch(
+      "electricity_predictor.worker.runner."
+      "backfill_prediction_actual_prices",
+      return_value=0,
+    ),
+    patch(
+      "electricity_predictor.worker.runner.prepare_model_features",
+      side_effect=failure,
+    ),
+    patch(
+      "electricity_predictor.worker.runner.get_database_time",
+      return_value=pd.Timestamp(
+        "2026-07-17 18:00:00",
+        tz="UTC",
+      ).to_pydatetime(),
+    ),
+    patch(
+      "electricity_predictor.worker.runner.save_failed_prediction_run",
+      return_value=32,
+    ) as save_failed_run,
+  ):
+    try:
+      run_worker_cycle()
+    except ValueError as error:
+      assert str(error) == "Feature preparation failed."
+    else:
+      raise AssertionError("Worker failure was not re-raised.")
+
+  save_failed_run.assert_called_once()
+
+  saved_arguments = save_failed_run.call_args.kwargs
+
+  assert saved_arguments["detail"] == (
+    "ValueError: Feature preparation failed."
+  )

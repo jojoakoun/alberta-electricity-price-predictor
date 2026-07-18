@@ -48,3 +48,11 @@ context_exports/
 *.egg-info/
 
 app/server/node_modules/
+
+# Large reproducible decision-analysis detail reports
+reports/decision_policy_backtest.csv
+reports/predicted_decision_stress_test.csv
+
+# Application frontend
+app/client/node_modules/
+app/client/dist/

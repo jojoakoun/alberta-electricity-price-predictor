@@ -1,648 +1,496 @@
-# Project Decisions
+# Architecture Decisions
 
-This file records the main technical and product decisions for the Alberta Electricity Price Predictor.
+_Last updated: July 2026_
 
-Each decision uses this structure:
+This document records the major technical and architectural decisions made throughout the development of the Alberta Electricity Price Predictor.
 
-- **Decision:** what we chose
-- **Why:** why the choice makes sense
-- **Rejected:** what we chose not to do
-- **Next:** what the decision supports next
+Each decision includes:
 
-Decision IDs are organized by phase:
-
-- `P0` = repository setup
-- `P1` = data engineering
-- `P2` = feature engineering
-- `P3` = regression modeling
-- `P4` = classification and spike-risk modeling
+- context;
+- decision;
+- consequences.
 
 ---
 
-## Phase 0 — Repository Setup
+# P0-D01 — Python as the Primary Development Language
 
-### P0-D01 — Build a clean public-first project
+## Status
 
-**Decision:** Build the project from zero with a clean public repository structure.
+Accepted
 
-**Why:** The repository must be easy to understand, run, and maintain.
+## Context
 
-**Rejected:** Starting with unnecessary complexity before the core product works.
+The project requires mature libraries for data engineering, machine learning, model evaluation, testing, and future production deployment.
 
-**Next:** Use the project foundation to support data engineering, modeling, and application development.
+## Decision
 
-### P0-D02 — Keep the public product name simple
+Python was selected as the primary implementation language.
 
-**Decision:** Use `Alberta Electricity Price Predictor` as the project name.
+## Consequences
 
-**Why:** The name is clear and describes the project directly.
+Benefits:
 
-**Rejected:** Using a separate brand name before the product direction is stable.
+- mature machine learning ecosystem;
+- pandas and NumPy support;
+- scikit-learn integration;
+- excellent testing ecosystem.
 
-**Next:** Revisit branding only after the core product works.
+Trade-offs:
 
----
-
-## Phase 1 — Data Engineering
-
-### P1-D01 — Keep CSV as the interim data format
-
-**Decision:** Keep interim datasets as CSV files.
-
-**Why:** CSV is simple, readable, easy to inspect, and enough for the current phase.
-
-**Rejected:** Switching to Excel or a heavier data format before the project needs it.
-
-**Next:** Continue using CSV for interim outputs unless scale or performance requires another format.
-
-### P1-D02 — Separate historical ingestion from API ingestion
-
-**Decision:** Keep historical CSV ingestion and AESO API ingestion in separate modules.
-
-**Why:** The two sources have different formats, validation needs, and failure modes.
-
-**Rejected:** Mixing CSV and API logic in one large script.
-
-**Next:** Keep each source clean, then combine them through the pipeline layer.
-
-### P1-D03 — Use project-standard column names
-
-**Decision:** Rename raw source columns into stable project names.
-
-Current standard columns include:
-
-- `datetime_universal_time`
-- `datetime_local_time`
-- `actual_price`
-- `forecast_price`
-- `alberta_internal_load`
-
-**Why:** Stable names make downstream code easier to read and maintain.
-
-**Rejected:** Using source-specific names such as `Date_Begin_GMT` or `ACTUAL_AIL` throughout the project.
-
-**Next:** Use these names consistently in validation, EDA, feature engineering, and modeling.
-
-### P1-D04 — Extend historical data without overwriting it
-
-**Decision:** Let AESO API data extend the historical CSV data only after the last historical UTC timestamp.
-
-**Why:** The historical CSV remains the trusted base for older records, while the API adds newer records.
-
-**Rejected:** Allowing API rows to overwrite existing historical rows.
-
-**Next:** Continue checking for duplicate UTC timestamps after merging.
-
-### P1-D05 — Keep recent incomplete API rows in the source dataset
-
-**Decision:** Keep recent API rows even when `actual_price` is not finalized yet.
-
-**Why:** Recent market data may include hours where the actual pool price is not available yet. These rows are useful for live data awareness but not for training.
-
-**Rejected:** Deleting incomplete recent rows from the source dataset.
-
-**Next:** Exclude rows without finalized `actual_price` when creating modeling datasets.
-
-### P1-D06 — Do not rely on `alberta_internal_load` in the first modeling dataset unless recent load data is added
-
-**Decision:** Do not rely on `alberta_internal_load` as a required feature in the first modeling dataset.
-
-**Why:** This column is available in the historical CSV but missing for recent AESO pool price API records. A model that depends on it would not work consistently on current API-extended data.
-
-**Rejected:** Forcing `alberta_internal_load` into the first modeling dataset despite recent missing values.
-
-**Next:** Either exclude this feature from the first model or add a reliable recent AIL source later.
-
-### P1-D07 — Add explicit data quality reporting before feature engineering
-
-**Decision:** Add a data quality report before building features.
-
-**Why:** Feature engineering should not start until the project understands coverage, missing values, duplicate timestamps, hourly continuity, and zero-price behavior.
-
-**Rejected:** Moving directly from data ingestion to feature engineering without quality checks.
-
-**Next:** Use the data quality report as a checkpoint before modeling data preparation.
-
-### P1-D08 — Complete EDA before defining recommendation thresholds
-
-**Decision:** Answer business-focused EDA questions before defining `recommended`, `acceptable`, and `avoid` thresholds.
-
-**Why:** Thresholds should be supported by historical price behavior, spike patterns, forecast usefulness, and model evaluation.
-
-**Rejected:** Hardcoding recommendation thresholds too early.
-
-**Next:** Use EDA findings to guide feature engineering, baseline models, spike-risk classification, and the future decision layer.
+- slower execution than compiled languages.
 
 ---
 
-## Phase 2 — Feature Engineering
+# P1-D01 — Historical Dataset Strategy
 
-### P2-D01 — Create a separate modeling dataset
+## Status
 
-**Decision:** Create a separate modeling dataset instead of modifying the current historical dataset directly.
+Accepted
 
-**Why:** The current historical dataset is the clean source dataset produced by the data pipeline. Feature engineering adds model-specific columns, removes rows that are not usable for training, and prepares data for machine learning.
+## Context
 
-**Rejected:** Adding feature columns directly to `data/interim/current_historical_prices_clean.csv`.
+Model training requires several years of hourly Alberta electricity prices.
 
-**Next:** Create a feature engineering module that reads the current historical dataset and writes a processed modeling dataset.
+## Decision
 
-### P2-D02 — Exclude unfinished target rows from modeling datasets
+Use a validated historical CSV as the authoritative training dataset.
 
-**Decision:** Exclude rows where `actual_price` is missing from modeling datasets.
+New observations are synchronized from the AESO API.
 
-**Why:** `actual_price` is the target for price prediction. Rows without a finalized actual price cannot be used to train or evaluate a supervised model.
+## Consequences
 
-**Rejected:** Keeping unfinished target rows in the modeling dataset.
+Benefits:
 
-**Next:** Keep incomplete recent rows in the source dataset, but remove them when building model-ready data.
+- reproducible training;
+- deterministic datasets;
+- simple synchronization.
 
-### P2-D03 — Build the first feature set with available current data
+Trade-offs:
 
-**Decision:** Build the first modeling dataset using features that are available in the current API-extended dataset.
-
-Initial feature groups may include:
-
-- time features
-- forecast price features
-- lag features
-- rolling price features
-- recent spike-history features
-
-**Why:** The first model should work with the data that the project can reliably generate now.
-
-**Rejected:** Depending on unavailable or incomplete external features before the first modeling dataset works.
-
-**Next:** Design and implement the first feature engineering module slowly, with tests and inspection after each step.
-
-### P2-D04 — Keep modeling data separate from training data
-
-**Decision:** Keep `data/processed/modeling_dataset.csv` as the full feature-engineered dataset and create a separate `data/processed/training_dataset.csv` for rows that are ready for model training.
-
-**Why:** Lag and rolling features naturally create missing values in the first rows because there is not enough historical context. Keeping the modeling dataset complete makes feature quality inspection transparent, while the training dataset can remove incomplete rows before modeling.
-
-**Rejected:** Dropping incomplete feature rows directly from the modeling dataset.
-
-**Next:** Use `training_dataset.csv` as the input for Phase 3 baseline modeling.
-
-### P2-D05 — Create explicit future target columns for configured horizons
-
-**Decision:** Create future price target columns for the configured forecast horizons.
-
-Current target columns include:
-
-- `actual_price_target_1h`
-- `actual_price_target_3h`
-- `actual_price_target_6h`
-- `actual_price_target_12h`
-- `actual_price_target_24h`
-
-**Why:** The project needs to predict future electricity prices at multiple decision horizons. Explicit target columns make each prediction task clear.
-
-**Rejected:** Training models only against the current-row `actual_price`.
-
-**Next:** Use these target columns in Phase 3 regression modeling.
+- historical CSV must occasionally be refreshed.
 
 ---
 
-## Phase 3 — Modeling
+# P1-D02 — PostgreSQL as the Operational Database
 
-### P3-D01 — Separate regression and classification modeling code
+## Status
 
-**Decision:** Organize modeling code under `src/electricity_predictor/modeling/` with separate `regression/` and `classification/` folders.
+Accepted
 
-**Why:** The project has two related but different machine learning tasks. Regression predicts the exact electricity price, while classification will later support `recommended`, `acceptable`, and `avoid` usage categories.
+## Context
 
-**Rejected:** Keeping all modeling files in one flat folder or mixing regression and classification logic in the same module.
+The application requires persistent storage for historical prices, prediction runs, and future prediction validation.
 
-**Next:** Start Phase 3 with a naive regression baseline, then compare it against Linear Regression before adding more complex models.
+## Decision
 
-### P3-D02 — Start modeling with a naive regression baseline
+Use PostgreSQL as the production database.
 
-**Decision:** Start Phase 3 with a naive regression baseline that predicts future target price using `actual_price_lag_1h`.
+## Consequences
 
-**Why:** A baseline gives the project a simple benchmark. Future models are only useful if they beat this simple prediction. Since electricity prices are time-series data, the previous hour price is a reasonable first comparison point.
+Benefits:
 
-**Rejected:** Starting directly with Linear Regression, Random Forest, Gradient Boosting, XGBoost, or Deep Learning before establishing a simple benchmark.
+- relational integrity;
+- production-ready;
+- migration support;
+- future API compatibility.
 
-**Next:** Use the naive baseline as the comparison point for learned models across all horizons.
+Trade-offs:
 
-### P3-D03 — Use time-based splits for model evaluation
+- database maintenance required.
 
-**Decision:** Split modeling data by chronological order instead of random order.
+---
 
-**Why:** Electricity prices are time-series data. A random split can train the model on future records and test it on older records. This creates unrealistic evaluation and possible data leakage.
+# P2-D01 — Feature Engineering Strategy
 
-**Rejected:** Using a random train/test split for model evaluation.
+## Status
 
-**Next:** Use chronological train, validation, and test splits for all regression and classification models.
+Accepted
 
-### P3-D04 — Compare baseline models on the validation split
+## Context
 
-**Decision:** Evaluate regression baseline performance on the chronological validation split during model comparison.
+Electricity prices exhibit temporal dependence and strong seasonality.
 
-**Why:** Learned regression models are selected using validation MAE. The baseline must be evaluated on the same split so the comparison is fair and auditable.
+## Decision
 
-**Rejected:** Comparing learned models on validation while reporting the baseline on the protected test split.
+Generate:
 
-**Next:** Select the best predictor per horizon using validation MAE, then evaluate the selected predictors on the protected test split.
+- calendar features;
+- lag features;
+- rolling statistics;
+- AESO forecast features.
 
-### P3-D05 — Track model evaluation results in a shared summary file
+## Consequences
 
-**Decision:** Save model evaluation results in a shared results summary file.
+Benefits:
 
-**Why:** The project tests multiple regression and classification models. A shared summary makes it easier to compare models and choose the best approach.
+- improved predictive performance;
+- reusable feature pipeline.
 
-**Rejected:** Keeping model scores only in terminal output.
+Trade-offs:
 
-**Next:** Continue using `reports/model_results.csv` as the main model comparison table.
+- additional preprocessing cost.
 
-### P3-D06 — Compare base and tuned regression models
+---
 
-**Decision:** Keep both base and tuned versions of serious regression models in the model results summary.
+# P2-D02 — Shared Feature Definitions
 
-Current regression models include:
+## Status
 
-- `naive_baseline`
-- `linear_regression`
-- `ridge_regression`
-- `ridge_regression_tuned`
-- `lasso_regression`
-- `lasso_regression_tuned`
-- `elastic_net_regression`
-- `elastic_net_regression_tuned`
-- `random_forest_regressor`
-- `random_forest_regressor_tuned`
+Accepted
 
-**Why:** Base models show the default model behavior, while tuned models show whether hyperparameter search improves validation performance. Keeping both makes model comparison more transparent.
+## Context
 
-**Rejected:** Reporting only tuned models and losing the baseline comparison for each model family.
+Regression, classification, and the application worker require identical model input columns.
 
-**Next:** Use validation results to choose the strongest regression candidate for each forecast horizon.
+## Decision
 
-### P3-D07 — Use TimeSeriesSplit for regression hyperparameter tuning
+Centralize feature definitions in:
 
-**Decision:** Use `TimeSeriesSplit` for Ridge, Lasso, Elastic Net, and Random Forest tuning.
-
-**Why:** Electricity prices are time-series data. Hyperparameter tuning must respect chronological order so future rows do not leak into older training folds.
-
-**Rejected:** Using random cross-validation, shuffled folds, or standard `KFold` for time-series model tuning.
-
-**Next:** Continue using chronological validation for all future model tuning, including future classification models.
-
-### P3-D08 — Organize regression models by model family
-
-**Decision:** Organize regression model files into one folder per model family.
-
-Current regression structure includes:
-
-- `baseline/`
-- `linear/`
-- `ridge/`
-- `lasso/`
-- `elastic_net/`
-- `random_forest/`
-
-**Why:** Each model family can now keep its base model, tuned model, and tests together. This makes the project easier to extend when more models are added.
-
-**Rejected:** Keeping all regression files in one flat folder as the number of models grows.
-
-**Next:** Follow the same structure for future models such as gradient boosting or classification models.
-
-### P3-D09 — Keep test data protected until final model selection
-
-**Decision:** Use the validation split for comparing learned regression models and keep the test split protected until the final model is selected.
-
-**Why:** The test set should estimate future-like performance only once the modeling process has chosen final candidates. Reusing the test set during model selection would make results less trustworthy.
-
-**Rejected:** Repeatedly using the test split to choose between learned models.
-
-**Next:** Select the best validation model for each horizon, then evaluate selected models on the protected test split.
-
-### P3-D10 — Select the best regression model using validation MAE within each horizon
-
-**Decision:** Select the best regression model separately for each forecast horizon using the lowest validation MAE.
-
-The selected models are written to:
-
-```text
-reports/best_regression_model.csv
+```
+src/electricity_predictor/features/feature_columns.py
 ```
 
-The current selection rule is:
+## Consequences
 
-```text
-selection_metric = mae
-selection_rule = lowest_validation_mae_within_horizon
-```
+Benefits:
 
-**Why:** Each forecast horizon is a different prediction problem. A model that performs best for 1-hour predictions may not be the best model for 3-hour, 6-hour, 12-hour, or 24-hour predictions. Selecting one winner per horizon gives the project a more honest model comparison.
+- single source of truth;
+- eliminates duplicated feature definitions;
+- simplifies maintenance.
 
-**Rejected:** Selecting one global best regression model for all horizons.
+Trade-offs:
 
-**Next:** Use the selected horizon-specific models for final protected test evaluation.
-
-### P3-D11 — Train regression models against explicit future target columns
-
-**Decision:** Train regression models using explicit horizon target columns such as:
-
-- `actual_price_target_1h`
-- `actual_price_target_3h`
-- `actual_price_target_6h`
-- `actual_price_target_12h`
-- `actual_price_target_24h`
-
-**Why:** The project needs to predict future electricity prices, not simply reproduce the current row price. Explicit target columns make the prediction horizon clear and prevent confusion between input features and supervised-learning targets.
-
-**Rejected:** Continuing to train all regression models against only `actual_price`.
-
-**Next:** Use horizon-specific targets for final evaluation, model saving, and future recommendation logic.
-
-### P3-D12 — Store horizon information in model results
-
-**Decision:** Add `horizon_hours` to the shared model results schema.
-
-**Why:** A model score is not meaningful unless the forecast horizon is known. The same model can perform differently at 1h, 3h, 6h, 12h, and 24h. Adding `horizon_hours` makes `reports/model_results.csv` auditable and supports best-model selection per horizon.
-
-**Rejected:** Keeping a model results file that only stores model name, split, and metrics without horizon context.
-
-**Next:** Use the multi-horizon results table to compare model performance and support final protected test evaluation.
-
-### P3-D13 — Keep the full multi-horizon regression run as an end-of-block validation step
-
-**Decision:** Treat the full multi-horizon regression run as a heavier validation step rather than a command to run after every small code change.
-
-**Why:** The workflow now evaluates 10 model results across 5 horizons, producing 50 rows. Random Forest tuning is the slowest part, so running the full workflow too often slows development.
-
-**Rejected:** Running the full tuned regression workflow after every minor edit.
-
-**Next:** Use unit tests and targeted checks during development, then run the full regression workflow before committing major modeling changes.
-
-### P3-D14 — Evaluate selected regression models on the protected test split
-
-**Decision:** Evaluate the validation-selected regression model for each horizon on the protected chronological test split.
-
-**Why:** Validation data is used for model selection, but the protected test split gives the final future-like performance estimate after selection is complete.
-
-**Rejected:** Reporting validation scores as final model performance.
-
-**Next:** Use the final test results to close Phase 3 regression modeling and support the Phase 4 classification work.
-
-### P3-D15 — Save selected regression artifacts as joblib files
-
-**Decision:** Save the selected regression artifact for each forecast horizon under `models/regression/`.
-
-Selected learned models are saved as fitted scikit-learn model objects. Selected `naive_baseline` predictors are saved as rule artifacts that describe the prediction column and target horizon.
-
-**Why:** The selected predictor may be a trained model or a baseline rule. Saving both as artifacts gives future prediction and recommendation workflows a consistent handoff.
-
-**Rejected:** Forcing the `naive_baseline` through model training even though it is a rule, not a fitted scikit-learn estimator.
-
-**Next:** Use the saved regression artifacts as inputs for future serving and recommendation workflows.
-
-### P3-D16 — Allow the baseline to win when it performs best
-
-**Decision:** Allow `naive_baseline` to be selected as the best predictor for a forecast horizon when it has the lowest validation MAE.
-
-**Why:** A simple baseline that beats learned models is the more honest choice. The project should select the strongest predictor per horizon, not force machine learning when it does not improve performance.
-
-**Rejected:** Choosing a learned model only because it is more complex.
-
-**Next:** Improve feature engineering and external signals before expecting learned models to beat the baseline at longer horizons.
-
-### P3-D17 — Use parallel Random Forest training
-
-**Decision:** Configure Random Forest regression with `n_jobs=-1`.
-
-**Why:** Random Forest training and tuning are the slowest parts of the regression workflow. Using available CPU cores speeds up the workflow without changing the model comparison logic.
-
-**Rejected:** Refactoring the full multi-horizon workflow into process-level parallelism before the Phase 3 audit is stable.
-
-**Next:** Keep the current workflow simple, and consider horizon-level parallelism later only if runtime becomes a blocker.
-
-### P3-D18 — Centralize training dataset loading
-
-**Decision:** Keep `load_training_dataset()` in `src/electricity_predictor/modeling/split.py` as the single shared function for loading the model-ready training dataset.
-
-**Why:** Training dataset loading is shared modeling infrastructure, not baseline-specific logic. Centralizing it removes duplicated implementations and prevents regression models from depending on the naive baseline module.
-
-**Rejected:** Keeping separate training dataset loaders in both `modeling/split.py` and `regression/baseline/naive_baseline.py`.
-
-**Next:** Use the shared loader for regression, classification, final evaluation, and model artifact workflows.
-
-### P3-D19 — Centralize the training dataset path
-
-**Decision:** Keep `TRAINING_DATASET_PATH` in `src/electricity_predictor/modeling/split.py` as the single source of truth for the model-ready training dataset location.
-
-**Why:** The path `data/processed/training_dataset.csv` was repeated across regression scripts. A shared constant prevents path drift and allows the dataset location to be changed in one place.
-
-**Rejected:** Repeating the same hardcoded training dataset path in every model and orchestration script.
-
-**Next:** Reuse the shared path constant in future regression and classification workflows.
+- none.
 
 ---
 
-## Phase 4 — Classification and Spike-Risk Modeling
+# P3-D01 — Separate Regression and Classification Pipelines
 
-### P4-D01 — Define spikes from the chronological train split only
+## Status
 
-**Decision:** Calculate one global IQR spike threshold from `actual_price` in the chronological train split. Apply the frozen threshold to every future horizon target in train, validation, and test data.
+Accepted
 
-**Why:** The threshold represents the historical price level considered unusually high. Learning it from train data only prevents validation and test price distributions from leaking into label construction. One shared threshold also keeps the spike definition consistent across forecast horizons.
+## Context
 
-**Rejected:** Calculating separate thresholds from each future target column or recalculating thresholds on validation and test data.
+Predicting price and predicting spike risk are different machine learning problems.
 
-**Next:** Create `is_spike_target_1h`, `is_spike_target_3h`, `is_spike_target_6h`, `is_spike_target_12h`, and `is_spike_target_24h` after the chronological split.
+## Decision
 
-### P4-D02 — Use a previous-hour spike rule as the classification baseline
+Train separate regression and classification models.
 
-**Decision:** Use `actual_price_lag_1h` with the frozen train-derived spike threshold as the naive classification predictor.
+## Consequences
 
-**Why:** The rule tests whether recent spike persistence alone can predict a future spike. It provides a simple benchmark that learned classifiers must beat on the same validation split.
+Benefits:
 
-**Rejected:** Using accuracy from an always-non-spike majority predictor as the main baseline. That approach would look strong because spikes are rare but would provide no useful spike detection.
+- independent optimization;
+- independent evaluation;
+- easier experimentation.
 
-**Next:** Compare Logistic Regression with this baseline using precision, recall, and F1 for each forecast horizon.
+---
 
-### P4-D03 — Select one model per forecast horizon
+# P3-D02 — Chronological Evaluation
 
-Each horizon is treated as a separate prediction problem. One validation
-winner is selected independently for 1h, 3h, 6h, 12h, and 24h.
+## Status
 
-### P4-D04 — Use MAE for regression model selection
+Accepted
 
-Regression winners are selected using the lowest validation MAE. RMSE remains
-a secondary metric for understanding sensitivity to large errors.
+## Context
 
-### P4-D05 — Use F1 for classification model selection
+Random train/test splits introduce future leakage for time series.
 
-Classification winners are selected using the highest validation F1 because
-spikes are rare and accuracy alone would be misleading.
+## Decision
 
-### P4-D06 — Learn the spike threshold from train data only
+Use chronological train, validation, and protected test periods.
 
-The spike threshold is calculated from the chronological training split and
-then frozen for train, validation, and test target construction.
+## Consequences
 
-### P4-D07 — Protect the chronological test split
+Benefits:
 
-Hyperparameter tuning and model selection use train and validation data only.
-The test split is evaluated only after a model has been selected.
+- realistic evaluation;
+- production-like performance estimates.
 
-### P4-D08 — Retrain on train plus validation
+---
 
-After model selection, learned models are retrained using train plus validation
-before final protected test evaluation and artifact generation.
+# P3-D03 — Protected Test Set
 
-### P4-D09 — Preserve naive baselines
+## Status
 
-Regression and classification baselines remain part of the comparison. A more
-complex model must beat a credible simple rule before it can be considered
-valuable.
+Accepted
 
-### P4-D10 — Save parameters and reproducibility metadata
+## Context
 
-Selected hyperparameters, ordered feature columns, training window, horizon,
-target column, scikit-learn version, selection rule, and artifact paths are
-saved for reproducibility.
+Final model evaluation must remain unbiased.
 
-### P4-D11 — Require a rigorous audit before deployment
+## Decision
 
-Passing tests confirm implemented behavior, but they do not prove the absence
-of leakage, statistical weakness, distribution instability, or production
-risk. Deployment and Phase 5 application work remain blocked until the
-coherence audit is completed.
+Never use the protected test split during model selection.
 
-### P4-D12 — Keep one frozen absolute spike threshold across time
+## Consequences
 
-**Decision:** Retain the current train-derived IQR spike threshold as the project spike definition. The F-16 regime analysis supports keeping one stable business definition while addressing distribution shift through training and evaluation methodology rather than by redefining the label.
+Benefits:
 
-**Why:** The spike label represents an unusually high absolute electricity price. The yearly regime analysis shows that the Alberta market moved from a highly volatile 2021–2023 regime to a much calmer 2024–2026 regime. The observed label shift reflects a change in the underlying market rather than a flaw in the threshold definition. A stable threshold therefore preserves one consistent business meaning across historical, validation, test, and future inference periods.
+- trustworthy final metrics.
 
-The frozen threshold is currently:
+---
 
-```text
-170.77 $/MWh
+# P4-D01 — Train-only Spike Threshold
+
+## Status
+
+Accepted
+
+## Context
+
+Spike thresholds calculated on validation or test data introduce leakage.
+
+## Decision
+
+Estimate the spike threshold using the training split only.
+
+## Consequences
+
+Benefits:
+
+- statistically correct target generation.
+
+---
+
+# P4-D02 — TimeSeriesSplit with Gap
+
+## Status
+
+Accepted
+
+## Context
+
+Rolling features can leak information across validation folds.
+
+## Decision
+
+Use TimeSeriesSplit with a 24-hour gap.
+
+## Consequences
+
+Benefits:
+
+- leakage prevention;
+- more realistic cross-validation.
+
+---
+
+# P4-D03 — Fixed Calendar Splits
+
+## Status
+
+Accepted
+
+## Context
+
+Percentage-based dataset splits drift as additional historical data becomes available.
+
+## Decision
+
+Use fixed calendar periods for:
+
+- training;
+- validation;
+- testing.
+
+## Consequences
+
+Benefits:
+
+- reproducible experiments;
+- stable benchmarks.
+
+---
+
+# P5-D01 — Worker Architecture
+
+## Status
+
+Accepted
+
+## Context
+
+Inference should be isolated from model training.
+
+## Decision
+
+Introduce a dedicated worker responsible for:
+
+- feature preparation;
+- prediction;
+- decision generation;
+- persistence.
+
+## Consequences
+
+Benefits:
+
+- clear separation of responsibilities;
+- production-ready architecture.
+
+---
+
+# P5-D02 — Application Pipeline
+
+## Status
+
+Accepted
+
+## Context
+
+Running multiple commands manually increases operational complexity.
+
+## Decision
+
+Create a unified application pipeline that:
+
+1. synchronizes historical data;
+2. prepares features;
+3. generates predictions;
+4. applies the decision layer;
+5. persists results.
+
+## Consequences
+
+Benefits:
+
+- reproducible execution;
+- simplified deployment.
+
+---
+
+# P5-D03 — Dynamic Decision Context
+
+## Status
+
+Accepted
+
+## Context
+
+Static recommendation thresholds quickly become outdated because Alberta electricity prices vary across market regimes.
+
+## Decision
+
+Build a rolling **720-hour** market context from finalized prices.
+
+Compute recommendation thresholds dynamically.
+
+## Consequences
+
+Benefits:
+
+- adapts to changing markets;
+- removes hard-coded thresholds;
+- improves recommendation stability.
+
+Trade-offs:
+
+- requires sufficient finalized historical observations.
+
+---
+
+# P5-D04 — Recommendation Categories
+
+## Status
+
+Accepted
+
+## Context
+
+End users should not interpret raw electricity prices.
+
+## Decision
+
+Generate three operational recommendations:
+
+- Recommended
+- Acceptable
+- Avoid
+
+## Consequences
+
+Benefits:
+
+- simple user experience;
+- business-oriented output.
+
+---
+
+# P5-D05 — Prediction Persistence
+
+## Status
+
+Accepted
+
+## Context
+
+Model performance should be evaluated continuously after deployment.
+
+## Decision
+
+Store every prediction together with its future observed price.
+
+Backfill actual prices automatically once they become available.
+
+## Consequences
+
+Benefits:
+
+- continuous production evaluation;
+- future monitoring support.
+
+---
+
+# P5-D06 — Production Pipeline
+
+## Status
+
+Accepted
+
+## Context
+
+Daily execution should require a single entry point.
+
+## Decision
+
+Introduce the production pipeline:
+
+```
+Historical Refresh
+        │
+        ▼
+Application Pipeline
+        │
+        ▼
+Prediction Persistence
 ```
 
-The regime analysis shows:
+## Consequences
 
-- 2022 spike rate: 22.19%;
-- 2023 spike rate: 20.57%;
-- 2025 sub-period spike rates: 2.38% and 4.55%;
-- 2026 spike rate: 2.05%.
+Benefits:
 
-The same periods also show large declines in mean price, price volatility, and the 95th percentile. This confirms genuine market non-stationarity.
+- operational simplicity;
+- future scheduler integration.
 
-**Rejected:** Recalculating the threshold from a rolling recent window. That approach would change the meaning of a spike over time and could label moderate prices as spikes during calm market periods.
+---
 
-**Rejected:** Defining spikes independently with a relative q95 or q99 threshold in each period. That approach would force a more stable positive-class rate but would make labels incomparable across years and disconnect them from a stable household price-risk interpretation.
+# Repository Principles
 
-**Next:** Keep label definition separate from imbalance handling. Revisit class weighting, probability cutoff selection, PR-AUC, confidence intervals, and training-period representativeness without changing the frozen business label.
+The project follows these architectural principles:
 
-### P4-D13 — Use fixed evaluation dates and 24-hour purged boundaries
+- chronological evaluation;
+- no future leakage;
+- single source of truth;
+- clear separation of responsibilities;
+- reproducible experiments;
+- production-oriented design;
+- automated testing before integration.
 
-**Decision:** Replace ratio-based train, validation, and test splits with fixed UTC date boundaries. Remove the final 24 hours from train and validation, and use `TimeSeriesSplit(gap=24)` during hyperparameter tuning.
+---
 
-The fixed evaluation protocol is:
+# Superseded Decisions
 
-- train: 2020-01-08 07:00:00 through 2023-12-30 23:00:00;
-- validation: 2024-01-01 00:00:00 through 2024-12-30 23:00:00;
-- test: 2025-01-01 00:00:00 through 2026-06-30 23:00:00.
-
-**Why:** Ratio-based boundaries moved whenever new AESO observations were added, making model runs incomparable. The 24-hour purge prevents the longest forecast target from crossing train-to-validation or validation-to-test boundaries. The same 24-hour gap is required inside cross-validation folds.
-
-**Rejected:** Continuing to use 70/15/15 ratios on a growing dataset.
-
-**Rejected:** Using adjacent chronological splits without purging future targets at the boundaries.
-
-**Next:** Use this fixed protocol for model selection, protected test evaluation, artifact generation, and future audit comparisons.
-
-### P4-D14 — Select classification probability cutoffs on validation data
-
-**Decision:** Select one probability cutoff per forecast horizon using validation data only. Freeze the selected cutoff before evaluating the protected test split.
-
-**Why:** A fixed cutoff of `0.5` is not always suitable for rare spike events. Validation-based cutoff selection balances precision and recall without using protected test outcomes.
-
-The current selected cutoffs are:
-
-- 1h: `0.45`
-- 3h: `0.45`
-- 6h: `0.45`
-- 12h: `0.45`
-- 24h: `0.50`
-
-**Rejected:** Selecting or adjusting a cutoff after reviewing protected test results.
-
-**Next:** Store each cutoff with its classification artifact and apply it during inference.
-
-### P4-D15 — Report PR-AUC for spike classification
-
-**Decision:** Report Precision-Recall AUC for learned classification models.
-
-**Why:** Spike events are rare. Accuracy can remain high while a model misses most spikes. PR-AUC evaluates probability ranking with emphasis on the positive class.
-
-**Rejected:** Using accuracy as the primary classification metric.
-
-**Next:** Continue selecting models by validation F1 while reporting PR-AUC as an additional evaluation metric.
-
-### P4-D16 — Persist confusion matrices for protected test results
-
-**Decision:** Save one confusion matrix per forecast horizon after protected test evaluation.
-
-The report is written to:
-
-    reports/final_classification_confusion_matrices.csv
-
-**Why:** Precision, recall, and F1 do not expose the exact counts of true positives, false positives, false negatives, and true negatives.
-
-**Rejected:** Keeping confusion-matrix counts only in terminal output.
-
-**Next:** Use the persisted counts to audit classification errors.
-
-### P4-D17 — Estimate F1 uncertainty with block bootstrap
-
-**Decision:** Estimate a 95% confidence interval for F1 using a 24-hour block bootstrap.
-
-The report is written to:
-
-    reports/final_classification_confidence_intervals.csv
-
-**Why:** Hourly electricity prices are time dependent. A block bootstrap preserves short-term temporal structure better than resampling individual rows.
-
-**Rejected:** Reporting a single F1 value without uncertainty.
-
-**Rejected:** Using independent-row bootstrap sampling.
-
-**Next:** Use confidence intervals to judge whether performance differences are statistically meaningful.
-
-### P4-D18 — Save decision thresholds with classification artifacts
-
-**Decision:** Store the selected decision threshold in the classification model metadata.
-
-The metadata is written to:
-
-    models/classification/selected_classification_model_metadata.csv
-
-**Why:** The deployed classifier must use the same probability cutoff selected during validation. Saving the fitted model alone is not sufficient.
-
-**Rejected:** Assuming every deployed classifier should use the default threshold of `0.5`.
-
-**Next:** Load the fitted model, feature list, spike threshold, and decision threshold together during inference.
-
-
-### P4-D19 — Document cutoff refitting and cross-validation label approximations
-
-**Decision:** Keep the current validation-selected probability cutoffs and the current full-train spike threshold during Phase 4. Document both approximations rather than redesigning the workflow after protected test evaluation.
-
-**Why:** Classification cutoffs are selected from validation predictions produced by models fitted on train data. Final selected models are then refitted on train plus validation before protected test evaluation and artifact generation. The workflow assumes that each selected cutoff remains suitable after refitting.
-
-Classification labels inside tuning folds also use the spike threshold calculated from the complete chronological train period. The threshold does not use validation or test prices, but it is not recalculated independently inside each cross-validation fold.
-
-These choices preserve one stable business definition and avoid using protected test data. They remain methodological approximations and must stay visible in the documentation.
-
-**Rejected:** Recalibrating probability cutoffs after reviewing protected test outcomes.
-
-**Rejected:** Changing the frozen spike definition after model evaluation.
-
-**Next:** Consider nested cutoff calibration and fold-local threshold sensitivity analysis in a future modeling revision. Do not include them in the current Phase 4 remediation.
+No architectural decisions have been superseded as of the completion of Phase 5.

@@ -14,8 +14,8 @@ from electricity_predictor.modeling.model_results import (
   append_model_result,
   build_model_result_row,
 )
-from electricity_predictor.modeling.regression.feature_columns import (
-  REGRESSION_FEATURE_COLUMNS,
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
 )
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
@@ -24,7 +24,7 @@ from electricity_predictor.modeling.split import (
 )
 
 
-CLASSIFICATION_FEATURE_COLUMNS = REGRESSION_FEATURE_COLUMNS
+CLASSIFICATION_FEATURE_COLUMNS = MODEL_FEATURE_COLUMNS
 MODEL_RESULTS_PATH = Path("reports/model_results.csv")
 
 

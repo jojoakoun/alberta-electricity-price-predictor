@@ -6,8 +6,8 @@ from electricity_predictor.features.feature_engineering import (
   add_time_features,
   validate_continuous_hourly_utc_timestamps,
 )
-from electricity_predictor.modeling.regression.feature_columns import (
-  REGRESSION_FEATURE_COLUMNS,
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
 )
 from electricity_predictor.worker.persistence import load_hourly_prices
 
@@ -42,7 +42,7 @@ def prepare_model_features() -> pd.DataFrame:
   data = add_rolling_features(data)
 
   complete_rows = data.dropna(
-    subset=REGRESSION_FEATURE_COLUMNS,
+    subset=MODEL_FEATURE_COLUMNS,
   )
 
   if complete_rows.empty:

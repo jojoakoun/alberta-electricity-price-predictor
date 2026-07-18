@@ -75,8 +75,8 @@ def upsert_hourly_prices(data: pd.DataFrame, source: str = "pipeline") -> int:
   return len(records)
 
 
-def load_hourly_prices() -> pd.DataFrame:
-  """Load all hourly prices in chronological order."""
+def load_hourly_prices(limit: int = 200) -> pd.DataFrame:
+  """Load recent hourly prices in chronological order."""
   query = """
     SELECT
       datetime_utc,
@@ -84,13 +84,23 @@ def load_hourly_prices() -> pd.DataFrame:
       forecast_price,
       alberta_internal_load,
       source
-    FROM hourly_prices
+    FROM (
+      SELECT
+        datetime_utc,
+        actual_price,
+        forecast_price,
+        alberta_internal_load,
+        source
+      FROM hourly_prices
+      ORDER BY datetime_utc DESC
+      LIMIT %s
+    ) recent
     ORDER BY datetime_utc;
   """
 
   with get_database_connection() as connection:
     with connection.cursor() as cursor:
-      cursor.execute(query)
+      cursor.execute(query, (limit,))
       rows = cursor.fetchall()
 
   columns = [
@@ -110,3 +120,63 @@ def load_hourly_prices() -> pd.DataFrame:
     )
 
   return data
+
+
+def load_recent_finalized_prices(limit: int) -> pd.Series:
+  """Load recent finalized actual prices in chronological order."""
+  if limit <= 0:
+    raise ValueError("Price limit must be greater than zero.")
+
+  query = """
+    SELECT actual_price
+    FROM (
+      SELECT
+        datetime_utc,
+        actual_price
+      FROM hourly_prices
+      WHERE actual_price IS NOT NULL
+      ORDER BY datetime_utc DESC
+      LIMIT %s
+    ) recent
+    ORDER BY datetime_utc;
+  """
+
+  with get_database_connection() as connection:
+    with connection.cursor() as cursor:
+      cursor.execute(query, (limit,))
+      rows = cursor.fetchall()
+
+  return pd.Series(
+    [row[0] for row in rows],
+    name="actual_price",
+  )
+
+
+def load_recent_finalized_prices(limit: int) -> pd.Series:
+  """Load recent finalized actual prices in chronological order."""
+  if limit <= 0:
+    raise ValueError("Price limit must be greater than zero.")
+
+  query = """
+    SELECT actual_price
+    FROM (
+      SELECT
+        datetime_utc,
+        actual_price
+      FROM hourly_prices
+      WHERE actual_price IS NOT NULL
+      ORDER BY datetime_utc DESC
+      LIMIT %s
+    ) recent
+    ORDER BY datetime_utc;
+  """
+
+  with get_database_connection() as connection:
+    with connection.cursor() as cursor:
+      cursor.execute(query, (limit,))
+      rows = cursor.fetchall()
+
+  return pd.Series(
+    [row[0] for row in rows],
+    name="actual_price",
+  )

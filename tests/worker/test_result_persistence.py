@@ -73,3 +73,65 @@ def test_save_prediction_run_rejects_empty_decisions() -> None:
       generated_at=datetime.now(timezone.utc),
       decisions=[],
     )
+
+
+def test_backfill_prediction_actual_prices() -> None:
+  from unittest.mock import MagicMock, patch
+
+  from electricity_predictor.worker.result_persistence import (
+    backfill_prediction_actual_prices,
+  )
+
+  cursor = MagicMock()
+  cursor.rowcount = 4
+
+  connection = MagicMock()
+  connection.cursor.return_value.__enter__.return_value = cursor
+
+  with patch(
+    "electricity_predictor.worker.result_persistence.get_database_connection"
+  ) as get_connection:
+    get_connection.return_value.__enter__.return_value = connection
+
+    updated_rows = backfill_prediction_actual_prices()
+
+  cursor.execute.assert_called_once()
+  connection.commit.assert_called_once_with()
+  assert updated_rows == 4
+
+
+def test_save_failed_prediction_run() -> None:
+  from datetime import UTC, datetime
+  from unittest.mock import MagicMock, patch
+
+  from electricity_predictor.worker.result_persistence import (
+    save_failed_prediction_run,
+  )
+
+  cursor = MagicMock()
+  cursor.fetchone.return_value = (31,)
+
+  connection = MagicMock()
+  connection.cursor.return_value.__enter__.return_value = cursor
+
+  generated_at = datetime(
+    2026,
+    7,
+    17,
+    18,
+    tzinfo=UTC,
+  )
+
+  with patch(
+    "electricity_predictor.worker.result_persistence."
+    "get_database_connection"
+  ) as get_connection:
+    get_connection.return_value.__enter__.return_value = connection
+
+    run_id = save_failed_prediction_run(
+      generated_at=generated_at,
+      detail="ValueError: test failure",
+    )
+
+  assert run_id == 31
+  connection.commit.assert_called_once_with()

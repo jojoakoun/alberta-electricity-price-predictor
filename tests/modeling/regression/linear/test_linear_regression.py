@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 
-from electricity_predictor.modeling.regression.feature_columns import REGRESSION_FEATURE_COLUMNS
+from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
 from electricity_predictor.modeling.regression.linear.linear_regression import (
   build_linear_regression_result,
   evaluate_linear_regression_model,
@@ -42,7 +42,7 @@ def test_train_linear_regression_model_returns_fitted_model():
   assert isinstance(model, LinearRegression)
 
   # A fitted Linear Regression model stores one coefficient per input feature.
-  assert len(model.coef_) == len(REGRESSION_FEATURE_COLUMNS)
+  assert len(model.coef_) == len(MODEL_FEATURE_COLUMNS)
 
 
 def test_evaluate_linear_regression_model_returns_mae_and_rmse():

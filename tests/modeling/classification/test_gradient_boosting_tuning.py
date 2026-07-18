@@ -6,8 +6,8 @@ from electricity_predictor.modeling.classification.gradient_boosting.gradient_bo
   evaluate_gradient_boosting_parameters_with_time_series_cv,
   tune_gradient_boosting,
 )
-from electricity_predictor.modeling.regression.feature_columns import (
-  REGRESSION_FEATURE_COLUMNS,
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
 )
 
 
@@ -15,7 +15,7 @@ def make_time_series_classification_data(row_count: int = 200) -> pd.DataFrame:
   """Create ordered classification data with every required feature."""
   data = pd.DataFrame({
     column: [float(index % 10) for index in range(row_count)]
-    for column in REGRESSION_FEATURE_COLUMNS
+    for column in MODEL_FEATURE_COLUMNS
   })
 
   data["is_spike_target_1h"] = [
