@@ -6,12 +6,15 @@ const pinoHttp = require("pino-http");
 const { env } = require("./config/env");
 const { errorHandler } = require("./middleware/error-handler");
 const { notFoundHandler } = require("./middleware/not-found");
+const { healthRouter } = require("./routes/health");
 
 function createApp() {
   const app = express();
 
+  // Hide the Express signature from public responses.
   app.disable("x-powered-by");
 
+  // Keep test output clean while preserving structured logs elsewhere.
   if (env.nodeEnv !== "test") {
     app.use(
       pinoHttp({
@@ -30,6 +33,8 @@ function createApp() {
   );
 
   app.use(express.json({ limit: "16kb" }));
+
+  app.use("/api/v1", healthRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
