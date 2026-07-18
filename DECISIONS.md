@@ -500,3 +500,161 @@ The project follows these architectural principles:
 # Superseded Decisions
 
 No architectural decisions have been superseded as of the completion of Phase 5.
+
+---
+
+# P6-D01 — Phase 6 Product and Implementation Reconciliation
+
+## Status
+
+Accepted
+
+## Context
+
+The WattWise product specification defines the public product contract.
+
+The completed Phase 5 implementation defines the audited worker, decision layer, and PostgreSQL persistence contract.
+
+Differences between those two sources were reviewed before Phase 6 development began.
+
+## Decision
+
+Phase 6 adopts the following reconciliations.
+
+### Recommendation Labels
+
+The database recommendation values remain:
+
+- `Recommended`
+- `Acceptable`
+- `Avoid`
+
+The public API normalizes them to:
+
+- `recommended`
+- `acceptable`
+- `avoid`
+
+The frontend maps the API values to consumer wording in one location:
+
+`app/client/src/copy.ts`
+
+Consumer wording:
+
+- `recommended` maps to `Good time`
+- `acceptable` maps to `Okay time`
+- `avoid` maps to `Better to wait`
+
+### Decision Layer
+
+Phase 6 consumes the completed Phase 5 decision policy without changing it:
+
+- rolling market window: 720 hours;
+- recommended threshold: first quartile;
+- avoid threshold: third quartile plus 1.5 times the interquartile range;
+- predicted price remains the primary decision input;
+- a spike prediction may downgrade a recommendation by no more than one level.
+
+### Public Confidence
+
+The API calculates confidence when data is read.
+
+Confidence is derived from the age of `generated_at` on the latest successful prediction run:
+
+- 75 minutes or less: `high`;
+- more than 75 minutes and up to 150 minutes: `moderate`;
+- more than 150 minutes: `low`.
+
+When confidence is `low`, the frontend displays the recommendation-unavailable state.
+
+The `prediction_runs.confidence` column remains `NULL`.
+
+### Public Payload Privacy
+
+The implemented PostgreSQL schema is authoritative for Phase 6.
+
+Public payloads never expose:
+
+- spike probability;
+- spike prediction;
+- internal recommendation thresholds;
+- model names.
+
+### Freshness
+
+`prediction_runs.generated_at` represents the latest settled source hour used by the worker.
+
+The API exposes:
+
+- `generatedAt`;
+- `stale`;
+- `confidence`.
+
+The frontend displays the timestamp in `America/Edmonton` using the wording `Updated {local time}`.
+
+## Consequences
+
+Benefits:
+
+- Phase 6 consumes the audited Phase 5 implementation;
+- frozen machine-learning and decision logic remain unchanged;
+- public payloads remain consumer-focused;
+- recommendation wording is centralized and i18n-ready;
+- stale data handling is deterministic;
+- internal prediction details remain private.
+
+Trade-offs:
+
+- the API must normalize the existing database labels;
+- confidence is calculated during reads instead of persisted;
+- low confidence is handled as a product state rather than an API error.
+
+---
+
+# P6-D02 — Phase 5 Prediction Persistence Contract
+
+## Status
+
+Accepted
+
+## Context
+
+The completed Phase 5 implementation differs from the original product specification in two important ways.
+
+Successful prediction runs are stored with status `success` rather than `ok`.
+
+The worker computes dynamic recommendation thresholds, but those thresholds are not persisted in the `predictions` table.
+
+## Decision
+
+Phase 6 consumes the existing persistence contract without modification.
+
+The API identifies the latest completed prediction run using:
+
+- `prediction_runs.status = 'success'`
+
+Failed worker executions continue to use:
+
+- `prediction_runs.status = 'failed'`
+
+No migration will rename the successful status during Phase 6.
+
+Dynamic recommendation thresholds remain internal worker values.
+
+Dynamic recommendation thresholds are never exposed through the public API.
+
+Phase 6 will not add threshold columns solely to match earlier specification drafts.
+
+## Consequences
+
+Benefits:
+
+- no migration of validated Phase 5 production data;
+- the API reads the values actually persisted by the worker;
+- the worker remains the single source of truth;
+- internal thresholds remain private.
+
+Trade-offs:
+
+- the API uses `success` rather than `ok`;
+- historical threshold values cannot be reconstructed from stored prediction rows alone.
