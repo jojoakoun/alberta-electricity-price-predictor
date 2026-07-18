@@ -22,6 +22,7 @@ const env = Object.freeze({
   port: parsePort(process.env.API_PORT || "8000"),
   corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",
   logLevel: process.env.LOG_LEVEL || "info",
+  databaseUrl: process.env.DATABASE_URL || "",
 });
 
 module.exports = { env };
