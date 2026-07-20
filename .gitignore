@@ -59,3 +59,6 @@ app/client/dist/
 
 # Local database administration scripts
 local/
+
+# Local model lifecycle runtime state
+reports/model_lifecycle/

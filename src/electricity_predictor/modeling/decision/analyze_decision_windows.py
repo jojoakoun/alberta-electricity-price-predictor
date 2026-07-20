@@ -50,7 +50,15 @@ def load_finalized_hourly_prices() -> pd.DataFrame:
     errors="coerce",
   )
 
-  return data.dropna().reset_index(drop=True)
+  data = data.dropna().reset_index(drop=True)
+
+  if data.empty:
+    raise RuntimeError(
+      "No finalized hourly prices are available in PostgreSQL. "
+      "Run `make sync-history` before decision analysis."
+    )
+
+  return data
 
 
 def build_reference_dates(data: pd.DataFrame) -> pd.Series:
@@ -164,6 +172,12 @@ def main() -> None:
   """Generate detailed and summarized decision-window reports."""
   data = load_finalized_hourly_prices()
   reference_dates = build_reference_dates(data)
+
+  if reference_dates.empty:
+    raise RuntimeError(
+      "Not enough finalized hourly prices are available "
+      f"to analyze the largest {max(WINDOWS)}-hour window."
+    )
 
   detail = pd.DataFrame(
     [

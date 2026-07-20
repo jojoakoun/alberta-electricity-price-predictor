@@ -253,3 +253,69 @@ def test_predict_horizon_supports_classification_rule_without_cutoff(
   assert result["spike_probability"] == pytest.approx(1.0)
   assert result["decision_threshold"] == pytest.approx(0.5)
   assert result["is_spike"] is True
+
+
+def test_predict_horizon_resolves_active_registry(
+  tmp_path: Path,
+):
+  from electricity_predictor.serving.model_registry import (
+    build_legacy_registry,
+    write_active_registry_atomic,
+  )
+
+  (
+    regression_metadata_path,
+    classification_metadata_path,
+  ) = write_test_artifacts(
+    tmp_path
+  )
+
+  registry = build_legacy_registry()
+
+  registry[
+    "tasks"
+  ][
+    "regression"
+  ][
+    "metadata_path"
+  ] = str(
+    regression_metadata_path
+  )
+
+  registry[
+    "tasks"
+  ][
+    "classification"
+  ][
+    "metadata_path"
+  ] = str(
+    classification_metadata_path
+  )
+
+  registry_path = (
+    tmp_path / "active_models.json"
+  )
+
+  write_active_registry_atomic(
+    registry=registry,
+    registry_path=registry_path,
+  )
+
+  result = predict_horizon(
+    horizon_hours=1,
+    features={
+      "forecast_price": 50.0,
+      "actual_price_lag_1h": 45.0,
+    },
+    active_registry_path=(
+      registry_path
+    ),
+  )
+
+  assert result[
+    "predicted_price"
+  ] == pytest.approx(55.0)
+
+  assert result[
+    "classification_model"
+  ] == "dummy_classification"

@@ -34,3 +34,12 @@ modeling:
   time_series_cv_gap_hours: 24
 decision:
   window_hours: 720
+
+model_lifecycle:
+  strategy: "expanding"
+  validation_days: 365
+  test_days: 180
+  purge_hours: 24
+  minimum_training_days: 1095
+  retraining_interval_days: 90
+  promotion_mode: "manual"

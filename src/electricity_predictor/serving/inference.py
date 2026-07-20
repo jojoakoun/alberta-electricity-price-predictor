@@ -3,12 +3,19 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-
-REGRESSION_METADATA_PATH = Path(
-  "models/regression/selected_regression_model_metadata.csv"
+from electricity_predictor.serving.model_registry import (
+  ACTIVE_MODEL_REGISTRY_PATH,
+  LEGACY_CLASSIFICATION_METADATA_PATH,
+  LEGACY_REGRESSION_METADATA_PATH,
+  resolve_active_metadata_paths,
 )
-CLASSIFICATION_METADATA_PATH = Path(
-  "models/classification/selected_classification_model_metadata.csv"
+
+
+REGRESSION_METADATA_PATH = (
+  LEGACY_REGRESSION_METADATA_PATH
+)
+CLASSIFICATION_METADATA_PATH = (
+  LEGACY_CLASSIFICATION_METADATA_PATH
 )
 
 
@@ -204,10 +211,35 @@ def predict_classification_value(
 def predict_horizon(
   horizon_hours: int,
   features: dict,
-  regression_metadata_path: Path = REGRESSION_METADATA_PATH,
-  classification_metadata_path: Path = CLASSIFICATION_METADATA_PATH,
+  regression_metadata_path: Path | None = None,
+  classification_metadata_path: Path | None = None,
+  active_registry_path: Path = (
+    ACTIVE_MODEL_REGISTRY_PATH
+  ),
 ) -> dict:
   """Generate price and spike-risk predictions for one forecast horizon."""
+  if (
+    regression_metadata_path is None
+    or classification_metadata_path is None
+  ):
+    (
+      active_regression_path,
+      active_classification_path,
+      _,
+    ) = resolve_active_metadata_paths(
+      registry_path=active_registry_path
+    )
+
+    if regression_metadata_path is None:
+      regression_metadata_path = (
+        active_regression_path
+      )
+
+    if classification_metadata_path is None:
+      classification_metadata_path = (
+        active_classification_path
+      )
+
   regression_metadata = load_model_metadata(
     metadata_path=regression_metadata_path,
     required_columns={
