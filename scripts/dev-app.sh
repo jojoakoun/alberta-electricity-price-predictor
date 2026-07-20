@@ -31,5 +31,8 @@ echo "Starting WattWise frontend at http://127.0.0.1:5173"
 npm --prefix app/client run dev -- --open &
 CLIENT_PID=$!
 
-# Stop both processes if either development server exits.
-wait -n "${SERVER_PID}" "${CLIENT_PID}"
+# macOS Bash does not support `wait -n`.
+while kill -0 "${SERVER_PID}" 2>/dev/null &&
+      kill -0 "${CLIENT_PID}" 2>/dev/null; do
+  sleep 1
+done

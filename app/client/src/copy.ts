@@ -69,7 +69,7 @@ export const copy = {
   pages: {
     now: {
       title: "Should I use electricity now?",
-      todayLink: "See the rest of the day",
+      todayLink: "See today's forecast",
     },
 
     today: {
@@ -88,6 +88,22 @@ export const copy = {
   freshness: {
     updated: "Updated",
     delayed: "Data delayed",
+  },
+
+  states: {
+    loading: "Checking the latest electricity data…",
+    errorTitle: "WattWise could not load the latest update.",
+    retry: "Try again",
+  },
+
+  price: {
+    label: "Current electricity price",
+  },
+
+  confidence: {
+    high: "Latest recommendation available",
+    moderate: "The latest update may be delayed",
+    low: "Recommendation unavailable",
   },
 
   footer: {
