@@ -1,9 +1,19 @@
-import { BookOpen, Clock3, House } from "lucide-react";
+import {
+  BookOpen,
+  Clock3,
+  House,
+  Menu,
+  X,
+} from "lucide-react";
+import {
+  useState,
+} from "react";
 import {
   NavLink,
   Outlet,
 } from "react-router";
 
+import { CreatorProfile } from "../components/CreatorProfile";
 import { copy } from "../copy";
 
 const navigation = [
@@ -24,49 +34,48 @@ const navigation = [
   },
 ] as const;
 
-function navigationClassName({
+function linkClassName({
   isActive,
 }: {
   isActive: boolean;
 }) {
   return [
-    "relative inline-flex min-h-11 items-center justify-center",
-    "gap-[var(--space-1)]",
-    "px-[var(--space-2)]",
-    "text-[var(--color-text-muted)]",
-    "transition-colors",
-    "duration-[var(--motion-duration)]",
-    "ease-[var(--motion-easing)]",
-    "after:absolute after:inset-x-[var(--space-2)] after:bottom-0",
-    "after:h-0.5 after:bg-transparent",
+    "inline-flex min-h-11 items-center",
+    "gap-[var(--space-2)]",
+    "rounded-[var(--radius)]",
+    "px-[var(--space-3)]",
     isActive
-      ? "font-semibold text-[var(--color-text)] after:bg-[var(--color-brand)]"
-      : "hover:text-[var(--color-text)]",
+      ? "bg-[var(--color-brand-surface)] font-semibold text-[var(--color-brand)]"
+      : "text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
   ].join(" ");
 }
 
 export function AppLayout() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-[var(--color-bg)]">
+    <div className="flex min-h-screen flex-col bg-[var(--color-bg)]">
       <header
         className={[
+          "relative z-40",
           "border-b border-[var(--color-border)]",
           "bg-[var(--color-surface)]",
         ].join(" ")}
       >
         <div
           className={[
-            "mx-auto flex max-w-5xl items-center justify-between",
+            "mx-auto flex max-w-5xl",
+            "items-center justify-between",
             "px-[var(--space-3)] py-[var(--space-2)]",
-            "md:px-[var(--space-5)]",
+            "lg:px-[var(--space-5)]",
           ].join(" ")}
         >
           <NavLink
             to="/"
             className={[
               "inline-flex min-h-11 items-center",
-              "text-[var(--color-brand)]",
-              "text-[var(--font-size-h2)] font-semibold",
+              "text-[var(--font-size-h2)]",
+              "font-semibold text-[var(--color-brand)]",
             ].join(" ")}
           >
             {copy.brand.name}
@@ -79,53 +88,88 @@ export function AppLayout() {
             {navigation.map(({ to, label }) => (
               <NavLink
                 key={to}
-                to={to}
+                className={linkClassName}
                 end={to === "/"}
-                className={navigationClassName}
+                to={to}
               >
                 {label}
               </NavLink>
             ))}
           </nav>
+
+          <button
+            aria-controls="mobile-menu"
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            className={[
+              "inline-flex min-h-11 min-w-11",
+              "items-center justify-center",
+              "rounded-[var(--radius)]",
+              "text-[var(--color-text)]",
+              "hover:bg-[var(--color-brand-surface)]",
+              "md:hidden",
+            ].join(" ")}
+            onClick={() => setMenuOpen((current) => !current)}
+            type="button"
+          >
+            {menuOpen ? (
+              <X aria-hidden="true" size={24} />
+            ) : (
+              <Menu aria-hidden="true" size={24} />
+            )}
+          </button>
         </div>
+
+        {menuOpen && (
+          <nav
+            id="mobile-menu"
+            aria-label="Mobile navigation"
+            className={[
+              "absolute inset-x-0 top-full",
+              "border-b border-[var(--color-border)]",
+              "bg-[var(--color-surface)]",
+              "p-[var(--space-3)]",
+              "shadow-[var(--shadow-card)]",
+              "md:hidden",
+            ].join(" ")}
+          >
+            <div className="mx-auto grid max-w-5xl gap-[var(--space-2)]">
+              {navigation.map(({ to, label, Icon }) => (
+                <NavLink
+                  key={to}
+                  className={linkClassName}
+                  end={to === "/"}
+                  onClick={() => setMenuOpen(false)}
+                  to={to}
+                >
+                  <Icon aria-hidden="true" size={20} />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
+          </nav>
+        )}
       </header>
 
       <main
         className={[
-          "mx-auto w-full max-w-3xl",
-          "px-[var(--space-3)]",
-          "py-[var(--space-5)]",
-          "pb-[calc(var(--space-7)+var(--space-5))]",
-          "md:px-[var(--space-5)] md:pb-[var(--space-6)]",
+          "mx-auto w-full max-w-3xl flex-1",
+          "px-[var(--space-3)] py-[var(--space-5)]",
+          "lg:px-[var(--space-5)]",
         ].join(" ")}
       >
         <Outlet />
       </main>
 
-      <nav
-        aria-label="Mobile navigation"
+      <footer
         className={[
-          "fixed inset-x-0 bottom-0 z-20",
-          "grid grid-cols-3",
           "border-t border-[var(--color-border)]",
           "bg-[var(--color-surface)]",
-          "md:hidden",
+          "px-[var(--space-3)] py-[var(--space-4)]",
         ].join(" ")}
       >
-        {navigation.map(({ to, label, Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === "/"}
-            className={navigationClassName}
-          >
-            <Icon aria-hidden="true" size={20} strokeWidth={2} />
-            <span className="text-[var(--font-size-caption)]">
-              {label}
-            </span>
-          </NavLink>
-        ))}
-      </nav>
+        <CreatorProfile />
+      </footer>
     </div>
   );
 }

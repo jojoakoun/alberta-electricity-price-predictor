@@ -13,6 +13,24 @@ describe("Forecast time presentation", () => {
     ).toBe("very_soon");
   });
 
+  test("keeps a target visible during the fifteen-minute transition window", () => {
+    expect(
+      getTemporalWordingKey(
+        "2026-07-20T01:00:00.000Z",
+        "2026-07-20T01:14:59.000Z",
+      ),
+    ).toBe("very_soon");
+  });
+
+  test("rejects a target outside the transition window", () => {
+    expect(() =>
+      getTemporalWordingKey(
+        "2026-07-20T01:00:00.000Z",
+        "2026-07-20T01:15:01.000Z",
+      ),
+    ).toThrow("Target time is outside the transition window.");
+  });
+
   test("returns in a few hours through four hours", () => {
     expect(
       getTemporalWordingKey(
@@ -58,7 +76,7 @@ describe("Forecast time presentation", () => {
     ).toBe("tomorrow_around_this_time");
   });
 
-  test("uses the documented fallback for an uncovered morning target", () => {
+  test("uses the morning fallback for an uncovered target", () => {
     expect(
       getTemporalWordingKey(
         "2026-07-18T15:00:00.000Z",
@@ -78,14 +96,5 @@ describe("Forecast time presentation", () => {
       targetTimeLocal: "3:00 p.m.",
       temporalWordingKey: "very_soon",
     });
-  });
-
-  test("rejects a target before the viewing time", () => {
-    expect(() =>
-      getTemporalWordingKey(
-        "2026-07-18T19:00:00.000Z",
-        "2026-07-18T20:00:00.000Z",
-      ),
-    ).toThrow("Target time cannot be before the viewing time.");
   });
 });

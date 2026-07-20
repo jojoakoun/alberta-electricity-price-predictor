@@ -90,6 +90,24 @@ export const copy = {
     delayed: "Data delayed",
   },
 
+  forecast: {
+    bestTimeTitle: "Best forecast time",
+    expectedPrice: "Expected price",
+    bestTimeExplanation: "Lowest predicted price in the next 24 hours.",
+    tomorrowCaution: "The 24-hour forecast is less reliable. Use it as a planning guide, not a guarantee.",
+    timelineLabel: "Five forecast points for today",
+    viewForecasts: "Forecast details",
+    priceComparison: "Price comparison",
+    forecastDetails: "Forecast details",
+    hideDetails: "Hide details",
+  },
+
+  explanations: {
+    lower_than_usual: "The predicted price is favourable compared with the recent market.",
+    acceptable_market_risk: "The predicted price is acceptable, but market risk is increasing.",
+    higher_than_usual: "The predicted price is high compared with the recent market.",
+  },
+
   states: {
     loading: "Checking the latest electricity data…",
     errorTitle: "WattWise could not load the latest update.",
@@ -104,6 +122,15 @@ export const copy = {
     high: "Latest recommendation available",
     moderate: "The latest update may be delayed",
     low: "Recommendation unavailable",
+  },
+
+  creator: {
+    label: "Created by",
+    name: "Joël-Hervé Akoun",
+    initials: "JA",
+    photoPath: "/joel.png",
+    linkedInUrl: "https://www.linkedin.com/in/joelakoun/",
+    linkedInLabel: "View LinkedIn profile",
   },
 
   footer: {

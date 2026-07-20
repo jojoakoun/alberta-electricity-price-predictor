@@ -785,3 +785,39 @@ Benefits:
 Trade-offs:
 
 - the API adds one wording key not explicitly named in the original specification.
+
+---
+
+# P6-D06 — Hourly Forecast Transition Window
+
+## Status
+
+Accepted
+
+## Context
+
+The hourly worker refreshes predictions after each settled source hour.
+
+During the first minutes after an hour changes, the previous run may still be the latest successful run while its one-hour target has just passed.
+
+Rejecting that complete run causes the public Today endpoint to return an internal server error during a normal refresh transition.
+
+## Decision
+
+A forecast target that passed no more than 15 minutes ago remains available and receives the temporal wording key `very_soon`.
+
+A target more than 15 minutes in the past remains invalid.
+
+The API does not remove, interpolate, or fabricate forecast points.
+
+## Consequences
+
+Benefits:
+
+- the Today endpoint remains available during normal hourly refresh transitions;
+- all five authentic forecast points remain visible;
+- no synthetic prediction is introduced.
+
+Trade-offs:
+
+- one just-expired target may remain visible for up to 15 minutes.

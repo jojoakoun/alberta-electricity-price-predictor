@@ -2,6 +2,7 @@ const { ALBERTA_TIME_ZONE, formatAlbertaTime } = require("./time");
 
 const MINUTES_PER_HOUR = 60;
 const MILLISECONDS_PER_MINUTE = 60 * 1000;
+const PAST_TARGET_GRACE_MINUTES = 15;
 
 function getAlbertaHour(value) {
   const date = new Date(value);
@@ -36,8 +37,9 @@ function getTemporalWordingKey(targetTime, viewedAt = new Date()) {
     (targetDate.getTime() - viewedDate.getTime()) /
     MILLISECONDS_PER_MINUTE;
 
-  if (differenceMinutes < 0) {
-    throw new RangeError("Target time cannot be before the viewing time.");
+  // Keep a just-expired forecast visible while the hourly worker refreshes.
+  if (differenceMinutes < -PAST_TARGET_GRACE_MINUTES) {
+    throw new RangeError("Target time is outside the transition window.");
   }
 
   if (differenceMinutes <= 90) {
@@ -48,7 +50,6 @@ function getTemporalWordingKey(targetTime, viewedAt = new Date()) {
     return "in_a_few_hours";
   }
 
-  // Check the long horizon before local dayparts.
   if (differenceMinutes >= 20 * MINUTES_PER_HOUR) {
     return "tomorrow_around_this_time";
   }
@@ -67,7 +68,6 @@ function getTemporalWordingKey(targetTime, viewedAt = new Date()) {
     return "overnight";
   }
 
-  // The specification does not name the 6:00–11:59 fallback case.
   return "later_today";
 }
 
