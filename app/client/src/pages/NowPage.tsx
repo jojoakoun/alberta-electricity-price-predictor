@@ -55,7 +55,7 @@ export function NowPage() {
   const recommendationUnavailable = data.confidence === "low";
 
   return (
-    <div className="space-y-[var(--space-5)]">
+    <div className="mx-auto max-w-3xl space-y-[var(--space-5)]">
       <header>
         <h1>{copy.pages.now.title}</h1>
       </header>

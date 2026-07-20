@@ -1,20 +1,24 @@
-import { Card } from "../components/Card";
-import { copy } from "../copy";
+import { ConfidenceLevels } from "../components/learn/ConfidenceLevels";
+import { DataSourceCard } from "../components/learn/DataSourceCard";
+import { LearnHero } from "../components/learn/LearnHero";
+import { LearningTimeline } from "../components/learn/LearningTimeline";
+import { LimitationsCard } from "../components/learn/LimitationsCard";
+import { RecommendationExplorer } from "../components/learn/RecommendationExplorer";
 
 export function LearnPage() {
   return (
-    <div className="space-y-[var(--space-4)]">
-      <header className="space-y-[var(--space-2)]">
-        <h1>{copy.pages.learn.title}</h1>
+    <div className="space-y-[var(--space-7)]">
+      <LearnHero />
 
-        <p className="text-[var(--color-text-muted)]">
-          {copy.pages.learn.description}
-        </p>
-      </header>
+      <LearningTimeline />
 
-      <Card>
-        <h2>How it works</h2>
-      </Card>
+      <RecommendationExplorer />
+
+      <DataSourceCard />
+
+      <ConfidenceLevels />
+
+      <LimitationsCard />
     </div>
   );
 }

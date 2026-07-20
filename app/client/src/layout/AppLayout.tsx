@@ -13,7 +13,6 @@ import {
   Outlet,
 } from "react-router";
 
-import { CreatorProfile } from "../components/CreatorProfile";
 import { copy } from "../copy";
 
 const navigation = [
@@ -57,7 +56,7 @@ export function AppLayout() {
     <div className="flex min-h-screen flex-col bg-[var(--color-bg)]">
       <header
         className={[
-          "relative z-40",
+          "sticky top-0 z-40",
           "border-b border-[var(--color-border)]",
           "bg-[var(--color-surface)]",
         ].join(" ")}
@@ -153,7 +152,7 @@ export function AppLayout() {
 
       <main
         className={[
-          "mx-auto w-full max-w-3xl flex-1",
+          "mx-auto w-full max-w-5xl flex-1",
           "px-[var(--space-3)] py-[var(--space-5)]",
           "lg:px-[var(--space-5)]",
         ].join(" ")}
@@ -161,15 +160,7 @@ export function AppLayout() {
         <Outlet />
       </main>
 
-      <footer
-        className={[
-          "border-t border-[var(--color-border)]",
-          "bg-[var(--color-surface)]",
-          "px-[var(--space-3)] py-[var(--space-4)]",
-        ].join(" ")}
-      >
-        <CreatorProfile />
-      </footer>
+
     </div>
   );
 }

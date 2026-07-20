@@ -88,7 +88,7 @@ export function TodayPage() {
   const data = todayQuery.data;
 
   return (
-    <div className="space-y-[var(--space-5)]">
+    <div className="mx-auto max-w-3xl space-y-[var(--space-5)]">
       <header className="space-y-[var(--space-2)]">
         <h1>{copy.pages.today.title}</h1>
 

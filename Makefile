@@ -1,152 +1,334 @@
-.PHONY: install test app-dev app-stop compile-check config-check pipeline data-quality features feature-quality training-data baseline linear-regression ridge-regression lasso-regression lasso-tuning elastic-net-regression elastic-net-tuning regression-models select-best-regression-model final-regression-evaluation save-selected-regression-models spike-definition-analysis spike-regime-analysis classification-baseline logistic-regression logistic-tuning random-forest random-forest-tuning gradient-boosting gradient-boosting-tuning classification-models select-best-classification-model final-classification-evaluation save-selected-classification-models inference-check ml-pipeline application-pipeline pipelines project-context project-zip project-export production-pipeline decision-window-analysis decision-regime-analysis decision-policy-backtest decision-policy-calibration predicted-decision-stress-test decision-analysis
+SHELL := /bin/bash
+.DEFAULT_GOAL := help
+MAKEFLAGS += --no-print-directory
+
+PYTHON ?= python
+PIP ?= pip
+
+.PHONY: \
+	help \
+	install \
+	test \
+	test-python \
+	test-server \
+	test-client \
+	verify \
+	compile-check \
+	config-check \
+	app-dev \
+	app-stop \
+	app-check \
+	database-check \
+	refresh-data \
+	sync-and-predict \
+	refresh-application \
+	rebuild-ml \
+	rebuild-all \
+	pipeline \
+	application-pipeline \
+	production-pipeline \
+	ml-pipeline \
+	pipelines \
+	data-quality \
+	features \
+	feature-quality \
+	training-data \
+	baseline \
+	linear-regression \
+	ridge-regression \
+	lasso-regression \
+	lasso-tuning \
+	elastic-net-regression \
+	elastic-net-tuning \
+	regression-models \
+	select-best-regression-model \
+	final-regression-evaluation \
+	save-selected-regression-models \
+	spike-definition-analysis \
+	spike-regime-analysis \
+	classification-baseline \
+	logistic-regression \
+	logistic-tuning \
+	random-forest \
+	random-forest-tuning \
+	gradient-boosting \
+	gradient-boosting-tuning \
+	classification-models \
+	select-best-classification-model \
+	final-classification-evaluation \
+	save-selected-classification-models \
+	decision-window-analysis \
+	decision-regime-analysis \
+	decision-policy-backtest \
+	decision-policy-calibration \
+	predicted-decision-stress-test \
+	decision-analysis \
+	inference-check \
+	project-context \
+	project-zip \
+	project-export
+
+
+# ==============================================================================
+# Help
+# ==============================================================================
+
+help:
+	@echo ""
+	@echo "WattWise / Alberta Electricity Predictor"
+	@echo ""
+	@echo "Primary workflows"
+	@echo "  make app-dev              Start the API and frontend development servers"
+	@echo "  make app-stop             Stop local Nodemon and Vite processes"
+	@echo "  make refresh-application Refresh AESO data and create a fresh prediction run"
+	@echo "  make rebuild-ml          Rebuild datasets, reports, evaluations, and model artifacts"
+	@echo "  make rebuild-all         Rebuild ML artifacts, then create fresh app predictions"
+	@echo "  make verify              Run project-wide syntax, tests, lint, and build checks"
+	@echo ""
+	@echo "Data and application"
+	@echo "  make refresh-data         Rebuild the current historical dataset"
+	@echo "  make sync-and-predict     Synchronize PostgreSQL and save five predictions"
+	@echo "  make database-check       Verify that PostgreSQL is reachable"
+	@echo "  make app-check            Check the health, Now, and Today API endpoints"
+	@echo ""
+	@echo "Exports"
+	@echo "  make project-context      Export project files into one text context"
+	@echo "  make project-zip          Create a project ZIP archive"
+	@echo "  make project-export       Generate both project exports"
+	@echo ""
+
+
+# ==============================================================================
+# Installation
+# ==============================================================================
 
 install:
-	# Install dependencies and register the local package.
-	pip install -r requirements.txt
-	pip install -e .
+	# Install Python dependencies and register the local package.
+	$(PIP) install -r requirements.txt
+	$(PIP) install -e .
 
-test:
-	# Run the project test suite.
-	pytest
+	# Install backend and frontend dependencies.
+	npm --prefix app/server install
+	npm --prefix app/client install
 
-compile-check:
-	# Compile project source files to detect syntax and import problems.
-	python -m compileall -q src
 
-config-check:
-	# Check that the configuration can be loaded.
-	python -c "from electricity_predictor.config import load_configuration; print(load_configuration()['project']['name'])"
+# ==============================================================================
+# Local application development
+# ==============================================================================
 
-pipeline:
-	# Build the current historical dataset from CSV and AESO API data.
-	python src/electricity_predictor/data/pipeline.py
+app-dev:
+	# Start Express with Nodemon and React with Vite.
+	./scripts/dev-app.sh
+
+app-stop:
+	# Stop local development processes started by app-dev.
+	pkill -f "nodemon" || true
+	pkill -f "vite" || true
+
+app-check:
+	# Verify the public application endpoints while the API is running.
+	@echo "===== HEALTH ====="
+	curl -fsS http://127.0.0.1:8000/api/v1/health
+	@echo ""
+	@echo "===== NOW ====="
+	curl -fsS http://127.0.0.1:8000/api/v1/now
+	@echo ""
+	@echo "===== TODAY ====="
+	curl -fsS http://127.0.0.1:8000/api/v1/today
+	@echo ""
+
+database-check:
+	# Load DATABASE_URL from the root .env file and verify PostgreSQL.
+	./app/server/node_modules/.bin/dotenv -e .env -- \
+		sh -c 'psql "$$DATABASE_URL" -c "SELECT current_database(), current_user, NOW() AS database_time;"'
+
+
+# ==============================================================================
+# Fast operational application refresh
+# ==============================================================================
+
+refresh-data:
+	# Refresh the historical dataset from CSV and the latest AESO API data.
+	$(PYTHON) src/electricity_predictor/data/pipeline.py
+
+sync-and-predict:
+	# Synchronize PostgreSQL and create one fresh five-horizon prediction run.
+	$(PYTHON) -m electricity_predictor.application_pipeline
+
+refresh-application:
+	# Normal operational workflow: refresh data, then publish fresh predictions.
+	$(MAKE) refresh-data
+	$(MAKE) sync-and-predict
+
+
+# ==============================================================================
+# Data preparation and quality
+# ==============================================================================
 
 data-quality:
-	# Inspect the current historical dataset before feature engineering.
-	python src/electricity_predictor/data/data_quality.py
+	# Inspect the refreshed historical dataset before feature engineering.
+	$(PYTHON) src/electricity_predictor/data/data_quality.py
 
 features:
-	# Build the first modeling dataset for machine learning.
-	python src/electricity_predictor/features/feature_engineering.py
+	# Build the feature-engineered modeling dataset.
+	$(PYTHON) src/electricity_predictor/features/feature_engineering.py
 
 feature-quality:
-	# Inspect missing values created by feature engineering.
-	python src/electricity_predictor/features/feature_quality.py
-
+	# Inspect missing values and feature-engineering output quality.
+	$(PYTHON) src/electricity_predictor/features/feature_quality.py
 
 training-data:
-	# Build the model-ready training dataset.
-	python src/electricity_predictor/features/training_data.py
+	# Build the chronological model-ready training dataset.
+	$(PYTHON) src/electricity_predictor/features/training_data.py
 
+
+# ==============================================================================
+# Regression modeling
+# ==============================================================================
 
 baseline:
-	# Run the naive regression baseline.
-	python src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
+	# Evaluate the naive regression baseline.
+	$(PYTHON) src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
 
 linear-regression:
-	# Train and evaluate the Linear Regression model on the validation split.
-	python src/electricity_predictor/modeling/regression/linear/linear_regression.py
+	# Train and evaluate Linear Regression on the validation split.
+	$(PYTHON) src/electricity_predictor/modeling/regression/linear/linear_regression.py
 
 ridge-regression:
-	# Train and evaluate the Ridge Regression model on the validation split.
-	python src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
-
+	# Train and evaluate Ridge Regression on the validation split.
+	$(PYTHON) src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
 
 lasso-regression:
-	# Train and evaluate the Lasso Regression model on the validation split.
-	python src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
+	# Train and evaluate Lasso Regression on the validation split.
+	$(PYTHON) src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
 
 lasso-tuning:
-	# Tune Lasso Regression with TimeSeriesSplit on the chronological train split.
-	python src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
+	# Tune Lasso with chronological TimeSeriesSplit.
+	$(PYTHON) src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
 
 elastic-net-regression:
-	# Train and evaluate the Elastic Net Regression model on the validation split.
-	python src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
+	# Train and evaluate Elastic Net Regression.
+	$(PYTHON) src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
 
 elastic-net-tuning:
-	# Tune Elastic Net Regression with TimeSeriesSplit on the chronological train split.
-	python src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
+	# Tune Elastic Net with chronological TimeSeriesSplit.
+	$(PYTHON) src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
 
 regression-models:
-	# Train and evaluate all current regression models.
-	python src/electricity_predictor/modeling/regression/run_regression_models.py
+	# Run the complete regression-model comparison workflow.
+	$(PYTHON) src/electricity_predictor/modeling/regression/run_regression_models.py
 
 select-best-regression-model:
-	# Select the best validation regression model from the model results summary.
-	python src/electricity_predictor/modeling/regression/best_model_selection.py
+	# Select the strongest validation regression model for each horizon.
+	$(PYTHON) src/electricity_predictor/modeling/regression/best_model_selection.py
 
 final-regression-evaluation:
 	# Evaluate selected regression models on the protected test split.
-	python src/electricity_predictor/modeling/regression/final_test_evaluation.py
+	$(PYTHON) src/electricity_predictor/modeling/regression/final_test_evaluation.py
 
 save-selected-regression-models:
-	# Train and save the selected regression models as local joblib artifacts.
-	python src/electricity_predictor/modeling/regression/save_selected_models.py
+	# Train and save selected regression models as joblib artifacts.
+	$(PYTHON) src/electricity_predictor/modeling/regression/save_selected_models.py
 
+
+# ==============================================================================
+# Spike classification modeling
+# ==============================================================================
 
 spike-definition-analysis:
-	# Compare train-derived spike definitions across fixed chronological splits.
-	python src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+	# Compare train-derived spike definitions across chronological splits.
+	$(PYTHON) src/electricity_predictor/modeling/classification/analyze_spike_definition.py
 
 spike-regime-analysis:
-	# Analyze yearly spike rates and price regimes using the frozen train threshold.
-	python src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+	# Analyze yearly spike rates using the frozen train-derived threshold.
+	$(PYTHON) src/electricity_predictor/modeling/classification/analyze_spike_regime.py
 
 classification-baseline:
-	# Evaluate the naive spike baseline on the chronological validation split.
-	python src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+	# Evaluate the naive spike-classification baseline.
+	$(PYTHON) src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
 
 logistic-regression:
-	# Train and evaluate base Logistic Regression for all forecast horizons.
-	python src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+	# Train and evaluate Logistic Regression for every horizon.
+	$(PYTHON) src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
 
 logistic-tuning:
-	# Tune Logistic Regression with TimeSeriesSplit for all forecast horizons.
-	python src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
-
+	# Tune Logistic Regression with chronological TimeSeriesSplit.
+	$(PYTHON) src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
 
 random-forest:
-	# Train and evaluate Random Forest for all forecast horizons.
-	python src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+	# Train and evaluate Random Forest classification.
+	$(PYTHON) src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
 
 random-forest-tuning:
-	# Tune Random Forest with TimeSeriesSplit for all forecast horizons.
-	python src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
-
+	# Tune Random Forest with chronological TimeSeriesSplit.
+	$(PYTHON) src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
 
 gradient-boosting:
-	# Train and evaluate Gradient Boosting for all forecast horizons.
-	python src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+	# Train and evaluate Gradient Boosting classification.
+	$(PYTHON) src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
 
 gradient-boosting-tuning:
-	# Tune Gradient Boosting with TimeSeriesSplit for all forecast horizons.
-	python src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+	# Tune Gradient Boosting with chronological TimeSeriesSplit.
+	$(PYTHON) src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
 
 classification-models:
-	# Run the current multi-horizon classification comparison workflow.
-	python src/electricity_predictor/modeling/classification/run_classification_models.py
+	# Run the complete multi-horizon classification comparison workflow.
+	$(PYTHON) src/electricity_predictor/modeling/classification/run_classification_models.py
 
 select-best-classification-model:
 	# Select the strongest validation classifier for each horizon.
-	python src/electricity_predictor/modeling/classification/best_model_selection.py
+	$(PYTHON) src/electricity_predictor/modeling/classification/best_model_selection.py
 
 final-classification-evaluation:
-	# Evaluate selected classifiers on the protected chronological test split.
-	python src/electricity_predictor/modeling/classification/final_test_evaluation.py
+	# Evaluate selected classifiers on the protected test split.
+	$(PYTHON) src/electricity_predictor/modeling/classification/final_test_evaluation.py
 
 save-selected-classification-models:
 	# Train and save selected classification models as joblib artifacts.
-	python src/electricity_predictor/modeling/classification/save_selected_models.py
+	$(PYTHON) src/electricity_predictor/modeling/classification/save_selected_models.py
 
-inference-check:
-	# Run serving and inference tests.
-	pytest -q tests/serving
 
-ml-pipeline:
-	# Rebuild ML data, reports, selected artifacts, and run verification.
+# ==============================================================================
+# Decision-policy analysis
+# ==============================================================================
+
+decision-window-analysis:
+	# Compare rolling windows and write detailed stability reports.
+	$(PYTHON) -m electricity_predictor.modeling.decision.analyze_decision_windows
+
+decision-regime-analysis:
+	# Compare decision stability across historical market regimes.
+	$(PYTHON) -m electricity_predictor.modeling.decision.analyze_decision_regimes
+
+decision-policy-backtest:
+	# Backtest candidate rolling-window policies.
+	$(PYTHON) -m electricity_predictor.modeling.decision.backtest_decision_windows
+
+decision-policy-calibration:
+	# Calibrate recommendation quantiles and avoid-threshold multipliers.
+	$(PYTHON) -m electricity_predictor.modeling.decision.calibrate_decision_policy
+
+predicted-decision-stress-test:
+	# Compare predicted recommendations with actual future-price labels.
+	$(PYTHON) -m electricity_predictor.modeling.decision.stress_test_predicted_decisions
+
+decision-analysis:
+	# Regenerate all decision-policy reports in dependency order.
+	$(MAKE) decision-window-analysis
+	$(MAKE) decision-regime-analysis
+	$(MAKE) decision-policy-backtest
+	$(MAKE) decision-policy-calibration
+	$(MAKE) predicted-decision-stress-test
+
+
+# ==============================================================================
+# Full machine-learning rebuild
+# ==============================================================================
+
+rebuild-ml:
+	# Rebuild data, reports, evaluations, and all selected model artifacts.
 	$(MAKE) config-check
-	$(MAKE) pipeline
+	$(MAKE) refresh-data
 	$(MAKE) data-quality
 	$(MAKE) features
 	$(MAKE) feature-quality
@@ -164,53 +346,91 @@ ml-pipeline:
 	$(MAKE) decision-analysis
 	$(MAKE) compile-check
 	$(MAKE) inference-check
-	$(MAKE) test
+	$(MAKE) test-python
 
-decision-window-analysis:
-	# Compare 72h, 168h, 336h, and 720h rolling windows and write detailed and summary stability reports.
-	python -m electricity_predictor.modeling.decision.analyze_decision_windows
+rebuild-all:
+	# Full rebuild: retrain ML artifacts, then publish a fresh app prediction run.
+	$(MAKE) rebuild-ml
+	$(MAKE) sync-and-predict
 
-decision-regime-analysis:
-	# Compare decision-window stability across the 2020-2023 and 2024-2026 market regimes.
-	python -m electricity_predictor.modeling.decision.analyze_decision_regimes
 
-decision-policy-backtest:
-	# Backtest the 336h and 720h decision windows and summarize recommendation-label stability.
-	python -m electricity_predictor.modeling.decision.backtest_decision_windows
+# ==============================================================================
+# Verification
+# ==============================================================================
 
-decision-policy-calibration:
-	# Evaluate candidate recommendation quantiles and avoid-threshold multipliers on calibration and holdout periods.
-	python -m electricity_predictor.modeling.decision.calibrate_decision_policy
+compile-check:
+	# Compile Python source files to detect syntax and import problems.
+	$(PYTHON) -m compileall -q src
 
-predicted-decision-stress-test:
-	# Compare predicted recommendations with labels derived from actual future prices across all forecast horizons.
-	python -m electricity_predictor.modeling.decision.stress_test_predicted_decisions
+config-check:
+	# Verify that the project configuration loads correctly.
+	$(PYTHON) -c "from electricity_predictor.config import load_configuration; print(load_configuration()['project']['name'])"
 
-decision-analysis:
-	# Regenerate all reproducible decision-policy reports in dependency order.
-	$(MAKE) decision-window-analysis
-	$(MAKE) decision-regime-analysis
-	$(MAKE) decision-policy-backtest
-	$(MAKE) decision-policy-calibration
-	$(MAKE) predicted-decision-stress-test
+inference-check:
+	# Run focused serving and inference tests.
+	pytest -q tests/serving
+
+test-python:
+	# Run the complete Python test suite.
+	pytest
+
+test-server:
+	# Run the Express API test suite.
+	NODE_ENV=test npm --prefix app/server test
+
+test-client:
+	# Run frontend tests, lint, and the production build.
+	npm --prefix app/client test
+	npm --prefix app/client run lint
+	npm --prefix app/client run build
+
+test:
+	# Backward-compatible alias for the Python test suite.
+	$(MAKE) test-python
+
+verify:
+	# Run project-wide verification without retraining models.
+	$(MAKE) config-check
+	$(MAKE) compile-check
+	$(MAKE) inference-check
+	$(MAKE) test-python
+	$(MAKE) test-server
+	$(MAKE) test-client
+	git diff --check
+
+
+# ==============================================================================
+# Backward-compatible aliases
+# ==============================================================================
+
+pipeline:
+	# Legacy alias: rebuild the current historical dataset.
+	$(MAKE) refresh-data
 
 application-pipeline:
-	# Synchronize PostgreSQL, generate predictions, and save results.
-	python -m electricity_predictor.application_pipeline
-
+	# Legacy alias: synchronize PostgreSQL and create predictions.
+	$(MAKE) sync-and-predict
 
 production-pipeline:
-	# Refresh AESO data, synchronize PostgreSQL, and generate predictions.
-	$(MAKE) pipeline
-	$(MAKE) application-pipeline
+	# Legacy alias: perform the normal operational application refresh.
+	$(MAKE) refresh-application
+
+ml-pipeline:
+	# Legacy alias: perform the full machine-learning rebuild.
+	$(MAKE) rebuild-ml
 
 pipelines:
-	# Run the ML pipeline, then the application pipeline.
-	$(MAKE) ml-pipeline
-	$(MAKE) application-pipeline
+	# Legacy alias: perform the complete ML and application rebuild.
+	@echo "NOTICE: 'pipelines' is a legacy name. Prefer 'make rebuild-all'."
+	$(MAKE) rebuild-all
+
+
+# ==============================================================================
+# Project exports
+# ==============================================================================
 
 project-context:
-	# Export all tracked and non-ignored text files without running pipelines.
+	# Export tracked and non-ignored text files without running pipelines.
 	mkdir -p context_exports
 	git ls-files --cached --others --exclude-standard \
 		| grep -v '^context_exports/' \
@@ -250,7 +470,7 @@ project-context:
 	@echo "Project context created: context_exports/project_context_full.txt"
 
 project-zip:
-	# Archive all tracked and non-ignored files without running pipelines.
+	# Archive tracked and non-ignored files without running pipelines.
 	mkdir -p context_exports
 	rm -f context_exports/alberta-electricity-price-predictor.zip
 	git ls-files --cached --others --exclude-standard \
@@ -263,13 +483,6 @@ project-zip:
 	@echo "Project archive created: context_exports/alberta-electricity-price-predictor.zip"
 
 project-export:
-	# Generate the text context and ZIP archive without running pipelines.
+	# Generate both the text context and ZIP archive.
 	$(MAKE) project-context
 	$(MAKE) project-zip
-
-app-dev:
-	./scripts/dev-app.sh
-
-app-stop:
-	pkill -f nodemon || true
-	pkill -f vite || true
