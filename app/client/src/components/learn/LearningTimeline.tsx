@@ -1,3 +1,6 @@
+import type {
+  CSSProperties,
+} from "react";
 import {
   BarChart3,
   BrainCircuit,
@@ -8,34 +11,33 @@ import {
 import { Card } from "../Card";
 import { copy } from "../../copy";
 
-const processSteps = [
-  {
-    number: "01",
-    Icon: Database,
-    ...copy.learnPage.process.steps.data,
-  },
-  {
-    number: "02",
-    Icon: BarChart3,
-    ...copy.learnPage.process.steps.patterns,
-  },
-  {
-    number: "03",
-    Icon: BrainCircuit,
-    ...copy.learnPage.process.steps.forecasts,
-  },
-  {
-    number: "04",
-    Icon: Lightbulb,
-    ...copy.learnPage.process.steps.recommendation,
-  },
-] as const;
-
 export function LearningTimeline() {
+  const processSteps = [
+    {
+      number: "01",
+      Icon: Database,
+      ...copy.learnPage.process.steps.data,
+    },
+    {
+      number: "02",
+      Icon: BarChart3,
+      ...copy.learnPage.process.steps.patterns,
+    },
+    {
+      number: "03",
+      Icon: BrainCircuit,
+      ...copy.learnPage.process.steps.forecasts,
+    },
+    {
+      number: "04",
+      Icon: Lightbulb,
+      ...copy.learnPage.process.steps.recommendation,
+    },
+  ] as const;
   return (
     <section
       aria-labelledby="how-wattwise-works"
-      className="space-y-[var(--space-4)]"
+      className="product-section-panel learn-process-panel"
     >
       <div className="max-w-2xl space-y-[var(--space-2)]">
         <h2 id="how-wattwise-works">
@@ -47,90 +49,43 @@ export function LearningTimeline() {
         </p>
       </div>
 
-      <ol className="space-y-[var(--space-3)]">
+      <ol className="learn-timeline">
         {processSteps.map(
-          (
-            {
-              number,
-              Icon,
-              title,
-              description,
-            },
-            index,
-          ) => {
-            const hasNextStep =
-              index < processSteps.length - 1;
+          ({
+            number,
+            Icon,
+            title,
+            description,
+          }, index) => (
+            <li
+              key={title}
+              className="learn-timeline-step"
+              style={{
+                "--learn-step-delay": `${120 + index * 90}ms`,
+              } as CSSProperties}
+            >
+              <span className="learn-timeline-node">
+                <Icon
+                  aria-hidden="true"
+                  size={19}
+                  strokeWidth={2}
+                />
+              </span>
 
-            return (
-              <li
-                key={title}
-                className={[
-                  "relative grid",
-                  "grid-cols-[2.5rem_minmax(0,1fr)]",
-                  "gap-[var(--space-3)]",
-                ].join(" ")}
-              >
-                {hasNextStep && (
-                  <span
-                    aria-hidden="true"
-                    className={[
-                      "absolute left-[1.21875rem]",
-                      "top-10 -bottom-[var(--space-3)]",
-                      "w-px",
-                      "bg-[var(--color-border)]",
-                    ].join(" ")}
-                  />
-                )}
+              <Card className="learn-timeline-card product-interactive-card">
+                <p className="product-eyebrow">
+                  {copy.learnPage.process.stepLabel}{" "}
+                  {number}
+                </p>
 
-                <span
-                  className={[
-                    "relative z-10",
-                    "flex h-10 w-10",
-                    "items-center justify-center",
-                    "rounded-full",
-                    "border border-[var(--color-brand)]",
-                    "bg-[var(--color-surface)]",
-                    "text-[var(--color-brand)]",
-                  ].join(" ")}
-                >
-                  <Icon
-                    aria-hidden="true"
-                    size={18}
-                    strokeWidth={2}
-                  />
-                </span>
+                <h3>{title}</h3>
 
-                <Card
-                  className={[
-                    "space-y-[var(--space-2)]",
-                    "p-[var(--space-3)]",
-                    "sm:p-[var(--space-4)]",
-                  ].join(" ")}
-                >
-                  <p
-                    className={[
-                      "font-semibold uppercase tracking-wide",
-                      "text-[var(--font-size-caption)]",
-                      "text-[var(--color-brand)]",
-                    ].join(" ")}
-                  >
-                    Step {number}
-                  </p>
-
-                  <h3>{title}</h3>
-
-                  <p
-                    className={[
-                      "max-w-2xl",
-                      "text-[var(--color-text-muted)]",
-                    ].join(" ")}
-                  >
-                    {description}
-                  </p>
-                </Card>
-              </li>
-            );
-          },
+                <p className="text-[var(--color-text-muted)]">
+                  {description}
+                </p>
+              </Card>
+            </li>
+          ),
         )}
       </ol>
     </section>

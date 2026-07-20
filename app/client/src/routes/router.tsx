@@ -5,6 +5,7 @@ import {
 import { AppLayout } from "../layout/AppLayout";
 import { LearnPage } from "../pages/LearnPage";
 import { NowPage } from "../pages/NowPage";
+import { ProjectPage } from "../pages/ProjectPage";
 import { TodayPage } from "../pages/TodayPage";
 
 export const router = createBrowserRouter([
@@ -22,6 +23,10 @@ export const router = createBrowserRouter([
       {
         path: "/learn",
         element: <LearnPage />,
+      },
+      {
+        path: "/project",
+        element: <ProjectPage />,
       },
     ],
   },

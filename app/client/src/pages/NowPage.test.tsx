@@ -74,7 +74,11 @@ describe("NowPage", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText("8.42 ¢/kWh"),
+      screen.getByText("8.42"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("¢/kWh"),
     ).toBeInTheDocument();
 
     expect(

@@ -51,6 +51,10 @@ async function getNow() {
 
   const recentPrices = await getRecentFinalizedPrices();
 
+  const observedAtUtc = latestPrice.datetime_utc
+    ? new Date(latestPrice.datetime_utc).toISOString()
+    : undefined;
+
   const recommendation = normalizeRecommendation(
     prediction.recommendation,
   );
@@ -64,6 +68,9 @@ async function getNow() {
         latestPrice.actual_price,
       ),
       unit: "¢/kWh",
+      ...(observedAtUtc
+        ? { observedAtUtc }
+        : {}),
     },
 
     recommendation: {

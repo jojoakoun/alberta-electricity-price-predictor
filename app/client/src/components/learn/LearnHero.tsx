@@ -1,40 +1,37 @@
+import {
+  BookOpenCheck,
+} from "lucide-react";
+
 import { copy } from "../../copy";
 
 export function LearnHero() {
   return (
-    <header
-      className={[
-        "space-y-[var(--space-3)]",
-        "rounded-[var(--radius)]",
-        "border border-[var(--color-border)]",
-        "bg-[var(--color-surface)]",
-        "p-[var(--space-4)]",
-        "shadow-[var(--shadow-card)]",
-        "sm:p-[var(--space-5)]",
-      ].join(" ")}
-    >
-      <p
-        className={[
-          "font-semibold uppercase tracking-wide",
-          "text-[var(--font-size-caption)]",
-          "text-[var(--color-brand)]",
-        ].join(" ")}
-      >
+    <header className="product-hero learn-hero">
+      <div
+        aria-hidden="true"
+        className="product-hero-orb"
+      />
+
+      <p className="product-eyebrow product-hero-item">
+        <BookOpenCheck aria-hidden="true" size={18} />
         {copy.navigation.learn}
       </p>
 
-      <h1
-        className={[
-          "text-[var(--font-size-hero)]",
-          "leading-[var(--line-height-hero)]",
-        ].join(" ")}
-      >
+      <h1 className="product-page-title product-hero-item">
         {copy.learnPage.hero.title}
       </h1>
 
-      <p className="max-w-2xl text-[var(--color-text-muted)]">
+      <p className="product-hero-description product-hero-item">
         {copy.learnPage.hero.description}
       </p>
+
+      <div className="product-chip-row product-hero-item">
+        <span>{copy.learnPage.hero.chips.data}</span>
+        <span>{copy.learnPage.hero.chips.forecasts}</span>
+        <span>
+          {copy.learnPage.hero.chips.recommendations}
+        </span>
+      </div>
     </header>
   );
 }

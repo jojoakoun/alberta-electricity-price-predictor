@@ -5,6 +5,10 @@ import {
 } from "lucide-react";
 
 import { copy } from "../copy";
+import {
+  formatAlbertaTime,
+  formatNumber,
+} from "../i18n/formatters";
 import type {
   TodayBestTime,
   TodayForecast,
@@ -73,7 +77,7 @@ export function ForecastList({
                 >
                   {isBestTime ? (
                     <Star
-                      aria-label="Best forecast time"
+                      aria-label={copy.forecast.bestTimeTitle}
                       size={20}
                       fill="currentColor"
                     />
@@ -84,7 +88,7 @@ export function ForecastList({
 
                 <span className="min-w-0">
                   <span className="block font-semibold">
-                    {forecast.targetTimeLocal}
+                    {formatAlbertaTime(forecast.targetTimeUtc)}
                   </span>
 
                   <span
@@ -106,7 +110,7 @@ export function ForecastList({
                       : "text-[var(--color-text)]",
                   ].join(" ")}
                 >
-                  {forecast.priceCents.toFixed(2)} ¢/kWh
+                  {formatNumber(forecast.priceCents)} ¢/kWh
                 </span>
 
                 <ChevronDown

@@ -1,6 +1,7 @@
 import { Clock3 } from "lucide-react";
 
 import { copy } from "../copy";
+import { formatAlbertaTime } from "../i18n/formatters";
 
 type FreshnessLineProps = {
   generatedAt: string;
@@ -9,13 +10,7 @@ type FreshnessLineProps = {
 export function FreshnessLine({
   generatedAt,
 }: FreshnessLineProps) {
-  const date = new Date(generatedAt);
-
-  const localTime = new Intl.DateTimeFormat("en-CA", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(date);
+  const localTime = formatAlbertaTime(generatedAt);
 
   return (
     <p

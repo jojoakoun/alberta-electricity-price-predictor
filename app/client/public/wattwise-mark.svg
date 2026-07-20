@@ -1,0 +1,20 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 64 64"
+  role="img"
+  aria-labelledby="title"
+>
+  <title id="title">WattWise</title>
+
+  <rect
+    width="64"
+    height="64"
+    rx="16"
+    fill="#0f766e"
+  />
+
+  <path
+    d="M37 8 17 35h13l-3 21 20-29H34l3-19Z"
+    fill="#ffffff"
+  />
+</svg>

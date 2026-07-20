@@ -29,6 +29,7 @@ export type NowResponse = {
   price: {
     value: number;
     unit: "¢/kWh";
+    observedAtUtc?: string;
   };
 
   recommendation: {

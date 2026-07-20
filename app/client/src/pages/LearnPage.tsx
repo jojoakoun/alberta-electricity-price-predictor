@@ -1,3 +1,7 @@
+import "../styles/product-pages.css";
+import { AudienceNotice } from "../components/AudienceNotice";
+
+import { AppReveal } from "../components/motion/AppReveal";
 import { ConfidenceLevels } from "../components/learn/ConfidenceLevels";
 import { DataSourceCard } from "../components/learn/DataSourceCard";
 import { LearnHero } from "../components/learn/LearnHero";
@@ -7,18 +11,37 @@ import { RecommendationExplorer } from "../components/learn/RecommendationExplor
 
 export function LearnPage() {
   return (
-    <div className="space-y-[var(--space-7)]">
+    <div
+      className={[
+        "product-page learn-page",
+        "space-y-[var(--space-7)]",
+      ].join(" ")}
+    >
       <LearnHero />
 
-      <LearningTimeline />
+      <AppReveal delay={30}>
+        <AudienceNotice />
+      </AppReveal>
 
-      <RecommendationExplorer />
+      <AppReveal>
+        <LearningTimeline />
+      </AppReveal>
 
-      <DataSourceCard />
+      <AppReveal delay={60}>
+        <RecommendationExplorer />
+      </AppReveal>
 
-      <ConfidenceLevels />
+      <AppReveal delay={80}>
+        <DataSourceCard />
+      </AppReveal>
 
-      <LimitationsCard />
+      <AppReveal delay={100}>
+        <ConfidenceLevels />
+      </AppReveal>
+
+      <AppReveal delay={120}>
+        <LimitationsCard />
+      </AppReveal>
     </div>
   );
 }

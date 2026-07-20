@@ -10,32 +10,31 @@ type PublicRecommendation = Exclude<
   "unavailable"
 >;
 
-const recommendationOptions = [
-  {
-    level: "recommended",
-    title: copy.learnPage.recommendations.good.title,
-    description:
-      copy.learnPage.recommendations.good.description,
-  },
-  {
-    level: "acceptable",
-    title: copy.learnPage.recommendations.okay.title,
-    description:
-      copy.learnPage.recommendations.okay.description,
-  },
-  {
-    level: "avoid",
-    title: copy.learnPage.recommendations.wait.title,
-    description:
-      copy.learnPage.recommendations.wait.description,
-  },
-] satisfies Array<{
-  level: PublicRecommendation;
-  title: string;
-  description: string;
-}>;
-
 export function RecommendationExplorer() {
+  const recommendationOptions = [
+    {
+      level: "recommended",
+      title: copy.learnPage.recommendations.good.title,
+      description:
+        copy.learnPage.recommendations.good.description,
+    },
+    {
+      level: "acceptable",
+      title: copy.learnPage.recommendations.okay.title,
+      description:
+        copy.learnPage.recommendations.okay.description,
+    },
+    {
+      level: "avoid",
+      title: copy.learnPage.recommendations.wait.title,
+      description:
+        copy.learnPage.recommendations.wait.description,
+    },
+  ] satisfies Array<{
+    level: PublicRecommendation;
+    title: string;
+    description: string;
+  }>;
   const [
     selectedRecommendation,
     setSelectedRecommendation,
@@ -50,7 +49,7 @@ export function RecommendationExplorer() {
   return (
     <section
       aria-labelledby="recommendation-levels"
-      className="space-y-[var(--space-4)]"
+      className="product-section-panel product-section-soft"
     >
       <div className="max-w-2xl space-y-[var(--space-2)]">
         <h2 id="recommendation-levels">
@@ -65,10 +64,7 @@ export function RecommendationExplorer() {
       <div
         role="tablist"
         aria-label="Recommendation levels"
-        className={[
-          "grid gap-[var(--space-2)]",
-          "sm:grid-cols-3",
-        ].join(" ")}
+        className="grid gap-[var(--space-3)] sm:grid-cols-3"
       >
         {recommendationOptions.map(({ level }) => {
           const isSelected =
@@ -81,19 +77,8 @@ export function RecommendationExplorer() {
               aria-controls="recommendation-explanation"
               aria-selected={isSelected}
               className={[
-                "min-h-14 rounded-[var(--radius)]",
-                "border p-[var(--space-2)]",
-                "text-left transition-colors",
-                isSelected
-                  ? [
-                      "border-[var(--color-brand)]",
-                      "bg-[var(--color-brand-surface)]",
-                    ].join(" ")
-                  : [
-                      "border-[var(--color-border)]",
-                      "bg-[var(--color-surface)]",
-                      "hover:bg-[var(--color-brand-surface)]",
-                    ].join(" "),
+                "learn-recommendation-tab",
+                isSelected ? "is-selected" : "",
               ].join(" ")}
               onClick={() =>
                 setSelectedRecommendation(level)
@@ -107,9 +92,10 @@ export function RecommendationExplorer() {
       </div>
 
       <Card
+        key={selectedRecommendation}
         id="recommendation-explanation"
         role="tabpanel"
-        className="space-y-[var(--space-3)]"
+        className="learn-tab-panel"
       >
         <StatusBadge
           level={selectedRecommendation}
@@ -117,7 +103,7 @@ export function RecommendationExplorer() {
 
         <h3>{selectedOption.title}</h3>
 
-        <p className="text-[var(--color-text-muted)]">
+        <p className="max-w-2xl text-[var(--color-text-muted)]">
           {selectedOption.description}
         </p>
       </Card>
