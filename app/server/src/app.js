@@ -1,23 +1,36 @@
+const path = require("node:path");
+
 const cors = require("cors");
 const express = require("express");
 const helmet = require("helmet");
 const pinoHttp = require("pino-http");
 
 const { env } = require("./config/env");
-const { errorHandler } = require("./middleware/error-handler");
-const { notFoundHandler } = require("./middleware/not-found");
+const {
+  errorHandler,
+} = require("./middleware/error-handler");
+const {
+  notFoundHandler,
+} = require("./middleware/not-found");
 const { healthRouter } = require("./routes/health");
 const { nowRouter } = require("./routes/now");
 const { todayRouter } = require("./routes/today");
 
-function createApp() {
+const DEFAULT_CLIENT_DIST_PATH = path.resolve(
+  __dirname,
+  "../../client/dist",
+);
+
+function createApp({
+  nodeEnv = env.nodeEnv,
+  clientDistPath = DEFAULT_CLIENT_DIST_PATH,
+  enableRequestLogging = nodeEnv !== "test",
+} = {}) {
   const app = express();
 
-  // Hide the Express signature from public responses.
   app.disable("x-powered-by");
 
-  // Keep test output clean while preserving structured logs elsewhere.
-  if (env.nodeEnv !== "test") {
+  if (enableRequestLogging) {
     app.use(
       pinoHttp({
         level: env.logLevel,
@@ -40,10 +53,47 @@ function createApp() {
   app.use("/api/v1", nowRouter);
   app.use("/api/v1", todayRouter);
 
+  if (nodeEnv === "production") {
+    const clientIndexPath = path.join(
+      clientDistPath,
+      "index.html",
+    );
+
+    app.use(
+      express.static(
+        clientDistPath,
+        {
+          index: false,
+        },
+      ),
+    );
+
+    app.use((request, response, next) => {
+      if (
+        request.method !== "GET"
+        || request.path.startsWith("/api/")
+      ) {
+        next();
+        return;
+      }
+
+      response.sendFile(
+        clientIndexPath,
+        (error) => {
+          if (error) {
+            next(error);
+          }
+        },
+      );
+    });
+  }
+
   app.use(notFoundHandler);
   app.use(errorHandler);
 
   return app;
 }
 
-module.exports = { createApp };
+module.exports = {
+  createApp,
+};

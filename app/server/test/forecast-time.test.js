@@ -13,22 +13,22 @@ describe("Forecast time presentation", () => {
     ).toBe("very_soon");
   });
 
-  test("keeps a target visible during the fifteen-minute transition window", () => {
+  test("keeps a recently passed target available while freshness controls the page", () => {
     expect(
       getTemporalWordingKey(
-        "2026-07-20T01:00:00.000Z",
-        "2026-07-20T01:14:59.000Z",
+        "2026-07-20T20:00:00.000Z",
+        "2026-07-20T20:17:30.000Z",
       ),
     ).toBe("very_soon");
   });
 
-  test("rejects a target outside the transition window", () => {
-    expect(() =>
+  test("does not throw for an older target", () => {
+    expect(
       getTemporalWordingKey(
-        "2026-07-20T01:00:00.000Z",
-        "2026-07-20T01:15:01.000Z",
+        "2026-07-20T19:00:00.000Z",
+        "2026-07-20T20:30:00.000Z",
       ),
-    ).toThrow("Target time is outside the transition window.");
+    ).toBe("very_soon");
   });
 
   test("returns in a few hours through four hours", () => {
@@ -73,7 +73,9 @@ describe("Forecast time presentation", () => {
         "2026-07-19T17:00:00.000Z",
         "2026-07-18T20:00:00.000Z",
       ),
-    ).toBe("tomorrow_around_this_time");
+    ).toBe(
+      "tomorrow_around_this_time",
+    );
   });
 
   test("uses the morning fallback for an uncovered target", () => {
@@ -92,7 +94,8 @@ describe("Forecast time presentation", () => {
         "2026-07-18T20:00:00.000Z",
       ),
     ).toEqual({
-      targetTimeUtc: "2026-07-18T21:00:00.000Z",
+      targetTimeUtc:
+        "2026-07-18T21:00:00.000Z",
       targetTimeLocal: "3:00 p.m.",
       temporalWordingKey: "very_soon",
     });

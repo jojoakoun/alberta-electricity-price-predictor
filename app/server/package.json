@@ -9,7 +9,9 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "migrate": "dotenv -e ../../.env -- node-pg-migrate up --migrations-dir migrations",
-    "migrate:down": "dotenv -e ../../.env -- node-pg-migrate down --migrations-dir migrations"
+    "migrate:down": "dotenv -e ../../.env -- node-pg-migrate down --migrations-dir migrations",
+    "migrate:prod": "node-pg-migrate up --migrations-dir migrations",
+    "migrate:prod:down": "node-pg-migrate down --migrations-dir migrations"
   },
   "dependencies": {
     "cors": "^2.8.6",
