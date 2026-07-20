@@ -29,6 +29,26 @@ describe("LearnPage", () => {
       ),
     ).toBeInTheDocument();
 
+
+    expect(
+      screen.getByText(
+        /Models are periodically re-evaluated with newer market data/i,
+      ),
+    ).toBeInTheDocument();
+
+
+    expect(
+      screen.getByText(
+        /Models are periodically re-evaluated with newer market data/i,
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /Models are periodically re-evaluated with newer market data/i,
+      ),
+    ).toBeInTheDocument();
+
     expect(
       screen.getAllByRole("progressbar"),
     ).toHaveLength(5);

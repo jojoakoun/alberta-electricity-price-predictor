@@ -25,12 +25,24 @@ describe("ProjectPage", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText("AESO market data"),
+      screen.getByRole("heading", {
+        name: "AESO market data",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Step 06"),
     ).toBeInTheDocument();
 
     expect(
       screen.getByRole("heading", {
         name: "Engineering principles",
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Explainable recommendations",
       }),
     ).toBeInTheDocument();
 

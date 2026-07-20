@@ -1,10 +1,14 @@
 import {
   Check,
+  Clock3,
   Gauge,
 } from "lucide-react";
 
 import { copy } from "../copy";
-import { formatNumber } from "../i18n/formatters";
+import {
+  formatAlbertaTime,
+  formatNumber,
+} from "../i18n/formatters";
 import type { NowResponse } from "../types/api";
 import { Card } from "./Card";
 import { FreshnessLine } from "./FreshnessLine";
@@ -18,6 +22,7 @@ export function RecommendationCard({
   data,
 }: RecommendationCardProps) {
   const { recommendation } = data;
+  const observedAtUtc = data.price.observedAtUtc;
 
   return (
     <Card className="now-recommendation-card">
@@ -67,6 +72,25 @@ export function RecommendationCard({
           {formatNumber(data.price.value)}
           <span>{data.price.unit}</span>
         </p>
+
+        {observedAtUtc && (
+          <p
+            className={[
+              "flex items-center gap-[var(--space-2)]",
+              "text-[var(--font-size-caption)]",
+              "text-[var(--color-text-muted)]",
+            ].join(" ")}
+          >
+            <Clock3
+              aria-hidden="true"
+              size={16}
+              strokeWidth={2}
+            />
+
+            {copy.freshness.observed}{" "}
+            {formatAlbertaTime(observedAtUtc)}
+          </p>
+        )}
 
         <FreshnessLine generatedAt={data.generatedAt} />
       </div>

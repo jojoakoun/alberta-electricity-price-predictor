@@ -47,6 +47,15 @@ export function LearningTimeline() {
         <p className="text-[var(--color-text-muted)]">
           {copy.learnPage.process.description}
         </p>
+
+        <p
+          className={[
+            "text-[var(--font-size-caption)]",
+            "text-[var(--color-text-muted)]",
+          ].join(" ")}
+        >
+          {copy.learnPage.process.modelReview}
+        </p>
       </div>
 
       <ol className="learn-timeline">

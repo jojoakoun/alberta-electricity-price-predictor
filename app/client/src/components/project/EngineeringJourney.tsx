@@ -10,45 +10,45 @@ import {
   Workflow,
 } from "lucide-react";
 
-import { Reveal } from "../motion/Reveal";
-import { Card } from "../Card";
 import { copy } from "../../copy";
+import { Card } from "../Card";
+import { Reveal } from "../motion/Reveal";
 
 export function EngineeringJourney() {
   const journey = copy.projectPage.journey;
 
   const journeySteps = [
-  {
-    number: "01",
-    Icon: Database,
-    ...copy.projectPage.journey.steps.source,
-  },
-  {
-    number: "02",
-    Icon: Workflow,
-    ...copy.projectPage.journey.steps.data,
-  },
-  {
-    number: "03",
-    Icon: ChartNoAxesCombined,
-    ...copy.projectPage.journey.steps.features,
-  },
-  {
-    number: "04",
-    Icon: BrainCircuit,
-    ...copy.projectPage.journey.steps.models,
-  },
-  {
-    number: "05",
-    Icon: Server,
-    ...copy.projectPage.journey.steps.api,
-  },
-  {
-    number: "06",
-    Icon: PanelsTopLeft,
-    ...copy.projectPage.journey.steps.product,
-  },
-] as const;
+    {
+      number: "01",
+      Icon: Database,
+      ...journey.steps.source,
+    },
+    {
+      number: "02",
+      Icon: Workflow,
+      ...journey.steps.data,
+    },
+    {
+      number: "03",
+      Icon: ChartNoAxesCombined,
+      ...journey.steps.features,
+    },
+    {
+      number: "04",
+      Icon: BrainCircuit,
+      ...journey.steps.models,
+    },
+    {
+      number: "05",
+      Icon: Server,
+      ...journey.steps.api,
+    },
+    {
+      number: "06",
+      Icon: PanelsTopLeft,
+      ...journey.steps.product,
+    },
+  ] as const;
 
   return (
     <Reveal>
@@ -85,7 +85,8 @@ export function EngineeringJourney() {
                 key={title}
                 className="project-journey-step"
                 style={{
-                  "--step-delay": `${80 + index * 75}ms`,
+                  "--step-delay":
+                    `${80 + index * 75}ms`,
                 } as CSSProperties}
               >
                 <span className="project-journey-node">

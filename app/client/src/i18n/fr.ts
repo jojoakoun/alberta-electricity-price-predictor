@@ -116,6 +116,8 @@ export const fr = {
       title: "Comment fonctionne WattWise",
       description:
         "WattWise transforme les données horaires du marché en cinq prévisions et en une recommandation claire pour planifier votre consommation.",
+      modelReview:
+        "Les modèles sont réévalués périodiquement avec des données plus récentes et sont utilisés seulement après révision et approbation.",
       stepLabel: "Étape",
 
       steps: {
@@ -282,9 +284,11 @@ export const fr = {
     journey: {
       title: "Des données à la décision",
       description:
-        "Chaque partie du système remplit un rôle précis, de la collecte des données officielles jusqu’à la recommandation affichée.",
-      startLabel: "Les données du marché entrent dans WattWise",
-      endLabel: "Une recommandation claire arrive à l’utilisateur",
+        "Chaque partie remplit un rôle clair, de la collecte des données officielles jusqu’à la recommandation présentée à l’utilisateur.",
+      startLabel:
+        "Les données du marché entrent dans WattWise",
+      endLabel:
+        "Une recommandation claire arrive à l’utilisateur",
       stepLabel: "Étape",
 
       steps: {
@@ -301,17 +305,17 @@ export const fr = {
         features: {
           title: "Création des variables",
           description:
-            "L’heure, l’historique des prix, les comportements du marché et la demande deviennent des renseignements utilisables par les modèles.",
+            "L’heure, l’historique des prix, les comportements du marché et la demande deviennent utilisables par les modèles.",
         },
         models: {
           title: "Apprentissage automatique",
           description:
-            "Des modèles adaptés à chaque période estiment les prix futurs et détectent un risque élevé du marché.",
+            "Les modèles estiment les prix futurs et détectent les périodes où le risque du marché est plus élevé.",
         },
         api: {
           title: "API de prévision",
           description:
-            "PostgreSQL et Express fournissent des réponses normalisées et faciles à utiliser par l’application.",
+            "PostgreSQL et Express fournissent des réponses de prévision normalisées à l’application.",
         },
         product: {
           title: "Interface React",
@@ -324,33 +328,33 @@ export const fr = {
     principles: {
       title: "Principes d’ingénierie",
       description:
-        "Le projet a été conçu pour offrir une évaluation honnête, un fonctionnement fiable et des résultats faciles à comprendre.",
+        "WattWise a été conçu autour de données fiables, d’une évaluation honnête et de résultats faciles à comprendre.",
 
       items: [
         {
           title: "Validation dans l’ordre du temps",
           description:
-            "Les anciennes données servent à entraîner le modèle, tandis que les données plus récentes servent à vérifier ses résultats.",
+            "Les anciennes données servent à entraîner les modèles et les données plus récentes à vérifier leurs résultats.",
         },
         {
           title: "Protection contre les informations futures",
           description:
-            "Des séparations temporelles empêchent le modèle d’utiliser accidentellement des renseignements qui ne seraient pas encore disponibles.",
+            "Les séparations temporelles empêchent l’utilisation accidentelle de renseignements futurs.",
         },
         {
           title: "Seuils calculés avec les données d’entraînement",
           description:
-            "Les règles de décision et de détection des prix extrêmes sont définies sans consulter les données réservées au test final.",
+            "Les seuils sont définis sans consulter les données protégées du test final.",
         },
         {
           title: "Recommandations explicables",
           description:
-            "L’utilisateur reçoit Bon moment, Moment acceptable ou Mieux vaut attendre plutôt qu’un résultat brut difficile à interpréter.",
+            "L’utilisateur reçoit une indication claire plutôt qu’un résultat brut difficile à interpréter.",
         },
         {
           title: "Architecture modulaire",
           description:
-            "Les données, les modèles, le worker, l’API et l’interface sont séparés pour faciliter les tests et les changements.",
+            "Les données, les modèles, le worker, l’API et l’interface restent séparés.",
         },
         {
           title: "Vérification automatisée",
@@ -487,6 +491,9 @@ export const fr = {
     },
 
     currentPriceReference: "Prix actuel",
+    observedPriceAt: "Prix observé à",
+    sameAsObservedPrice:
+      "Même valeur que le prix observé",
     todayLabel: "Aujourd’hui",
     tomorrowLabel: "Demain",
     expectedPrice: "Prix prévu",
@@ -502,7 +509,7 @@ export const fr = {
     hideDetails: "Masquer les détails",
     priceTrendTitle: "Évolution prévue du prix",
     priceTrendDescription:
-      "Comparez les cinq véritables points de prévision.",
+      "La courbe lissée est seulement un repère visuel reliant cinq prévisions distinctes. Les valeurs entre les points ne sont pas prédites par les modèles.",
   },
 
   explanations: {

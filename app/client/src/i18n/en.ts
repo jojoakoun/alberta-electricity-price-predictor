@@ -115,6 +115,8 @@ export const en = {
       title: "How WattWise works",
       description:
         "WattWise turns hourly electricity market information into five forecasts and one clear planning recommendation.",
+      modelReview:
+        "Models are periodically re-evaluated with newer market data and are used only after review and approval.",
       stepLabel: "Step",
 
       steps: {
@@ -283,7 +285,7 @@ export const en = {
     journey: {
       title: "From data to decisions",
       description:
-        "Each layer has a specific responsibility, from collecting official market information to presenting a recommendation.",
+        "Each layer has a clear responsibility, from collecting official market data to presenting a practical recommendation.",
       startLabel: "Market data enters WattWise",
       endLabel:
         "A clear recommendation reaches the user",
@@ -308,12 +310,12 @@ export const en = {
         models: {
           title: "Machine learning",
           description:
-            "Horizon-specific models estimate future prices and identify elevated market risk.",
+            "Models estimate future prices and identify periods of elevated market risk.",
         },
         api: {
           title: "Prediction API",
           description:
-            "PostgreSQL and Express expose normalized, consumer-focused prediction responses.",
+            "PostgreSQL and Express provide normalized prediction responses to the application.",
         },
         product: {
           title: "React experience",
@@ -326,7 +328,7 @@ export const en = {
     principles: {
       title: "Engineering principles",
       description:
-        "The project was designed around reliability, honest evaluation, and understandable product behaviour.",
+        "WattWise was designed around reliable data, honest evaluation, and understandable product behaviour.",
 
       items: [
         {
@@ -347,7 +349,7 @@ export const en = {
         {
           title: "Explainable recommendations",
           description:
-            "Users receive Good, Okay, or Better to wait instead of unexplained raw model outputs.",
+            "Users receive clear guidance instead of unexplained raw model outputs.",
         },
         {
           title: "Modular architecture",
@@ -357,7 +359,7 @@ export const en = {
         {
           title: "Automated verification",
           description:
-            "Python, API, and frontend checks protect the application as it evolves.",
+            "Python, API, and frontend tests protect the application as it evolves.",
         },
       ],
     },
@@ -486,6 +488,8 @@ export const en = {
     },
 
     currentPriceReference: "Current price",
+    observedPriceAt: "Observed price at",
+    sameAsObservedPrice: "Same as observed price",
     todayLabel: "Today",
     tomorrowLabel: "Tomorrow",
     expectedPrice: "Expected price",
@@ -501,7 +505,7 @@ export const en = {
     hideDetails: "Hide details",
     priceTrendTitle: "Price trend",
     priceTrendDescription:
-      "Compare the five genuine forecast points.",
+      "The smooth line is only a visual guide connecting five distinct forecasts. Values between the dots are not model predictions.",
   },
 
   explanations: {

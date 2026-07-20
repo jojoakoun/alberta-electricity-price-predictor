@@ -188,6 +188,9 @@ export function TodayPage() {
                 nowQuery.data?.price.value
               }
               forecasts={data.forecasts}
+              currentObservedAtUtc={
+                nowQuery.data?.price.observedAtUtc
+              }
               referenceTimeUtc={data.generatedAt}
             />
           </AppReveal>
