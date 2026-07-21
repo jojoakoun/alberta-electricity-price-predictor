@@ -13,8 +13,10 @@ from electricity_predictor.modeling.lifecycle.candidate import (
 from electricity_predictor.modeling.lifecycle.manifest import (
   calculate_dataset_sha256,
 )
-from electricity_predictor.modeling.lifecycle.regression_candidate import (
+from electricity_predictor.modeling.lifecycle.frozen_splits import (
   load_frozen_candidate_splits,
+)
+from electricity_predictor.modeling.lifecycle.regression_candidate import (
   train_regression_candidate,
 )
 

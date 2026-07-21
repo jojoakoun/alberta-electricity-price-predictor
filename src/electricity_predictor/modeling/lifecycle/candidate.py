@@ -5,15 +5,11 @@ from pathlib import Path
 from electricity_predictor.config import (
   load_configuration,
 )
-
-
-LATEST_SPLIT_MANIFEST_PATH = Path(
-  "reports/model_lifecycle/latest_split_manifest.json"
+from electricity_predictor.modeling.lifecycle.paths import (
+  CANDIDATE_ROOT,
+  LATEST_SPLIT_MANIFEST_PATH,
 )
 
-CANDIDATE_ROOT = Path(
-  "models/candidates"
-)
 
 REGRESSION_CHAMPION_METADATA_PATH = Path(
   "models/regression/"

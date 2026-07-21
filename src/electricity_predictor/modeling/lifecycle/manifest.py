@@ -6,6 +6,10 @@ from pathlib import Path
 import pandas as pd
 
 from electricity_predictor.config import load_configuration
+from electricity_predictor.modeling.lifecycle.paths import (
+  LATEST_SPLIT_MANIFEST_PATH as LATEST_MANIFEST_PATH,
+  MANIFEST_DIRECTORY,
+)
 from electricity_predictor.modeling.lifecycle.split_plan import (
   LifecycleSplitPlan,
   build_lifecycle_split_plan_from_config,
@@ -15,14 +19,6 @@ from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
   load_training_dataset,
   split_time_series_data,
-)
-
-
-MANIFEST_DIRECTORY = Path(
-  "reports/model_lifecycle/split_manifests"
-)
-LATEST_MANIFEST_PATH = Path(
-  "reports/model_lifecycle/latest_split_manifest.json"
 )
 
 

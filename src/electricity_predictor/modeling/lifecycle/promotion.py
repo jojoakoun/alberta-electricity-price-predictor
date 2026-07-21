@@ -14,7 +14,7 @@ from electricity_predictor.modeling.lifecycle.candidate import (
   read_json_file,
   write_json_file,
 )
-from electricity_predictor.modeling.lifecycle.regression_candidate import (
+from electricity_predictor.modeling.lifecycle.frozen_splits import (
   resolve_latest_candidate_manifest_path,
 )
 from electricity_predictor.serving.model_registry import (

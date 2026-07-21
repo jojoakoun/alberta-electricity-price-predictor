@@ -20,26 +20,21 @@ from electricity_predictor.modeling.lifecycle.classification_candidate import (
 from electricity_predictor.modeling.lifecycle.comparison import (
   compare_candidate_to_champion,
 )
+from electricity_predictor.modeling.lifecycle.frozen_splits import (
+  resolve_latest_candidate_manifest_path,
+)
 from electricity_predictor.modeling.lifecycle.manifest import (
   materialize_lifecycle_manifest,
 )
+from electricity_predictor.modeling.lifecycle.paths import (
+  CANDIDATE_ROOT,
+  LATEST_SPLIT_MANIFEST_PATH,
+  LIFECYCLE_STATE_PATH,
+)
 from electricity_predictor.modeling.lifecycle.regression_candidate import (
-  resolve_latest_candidate_manifest_path,
   train_regression_candidate,
 )
 
-
-LIFECYCLE_STATE_PATH = Path(
-  "reports/model_lifecycle/lifecycle_state.json"
-)
-
-LATEST_SPLIT_MANIFEST_PATH = Path(
-  "reports/model_lifecycle/latest_split_manifest.json"
-)
-
-CANDIDATE_ROOT = Path(
-  "models/candidates"
-)
 
 PREPARATION_STEPS = (
   (
