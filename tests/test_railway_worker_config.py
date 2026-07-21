@@ -145,6 +145,30 @@ def test_make_worker_target_uses_canonical_python_entry_point() -> None:
   assert "$(MAKE) app-refresh" not in target
 
 
+def test_operational_pipeline_targets_use_relocated_worker_module() -> None:
+  makefile = load_makefile()
+
+  for target_name in (
+    "app-refresh",
+    "sync-and-predict",
+  ):
+    target = extract_make_target(
+      makefile=makefile,
+      target_name=target_name,
+    )
+
+    assert (
+      "$(PYTHON) -m "
+      "electricity_predictor.worker."
+      "operational_pipeline"
+      in target
+    )
+    assert (
+      "electricity_predictor.application_pipeline"
+      not in target
+    )
+
+
 def test_worker_entry_point_is_installed_by_python_package() -> None:
   with Path("pyproject.toml").open("rb") as stream:
     pyproject = tomllib.load(stream)

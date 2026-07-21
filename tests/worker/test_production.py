@@ -3,10 +3,21 @@ from unittest.mock import call, patch
 
 import pytest
 
+import electricity_predictor.worker.production as production
+from electricity_predictor.worker.operational_pipeline import (
+  run_application_pipeline,
+)
 from electricity_predictor.worker.production import (
   ensure_models_available,
   run_production_worker,
 )
+
+
+def test_production_imports_relocated_operational_pipeline() -> None:
+  assert (
+    production.run_application_pipeline
+    is run_application_pipeline
+  )
 
 
 def test_production_worker_installs_models_before_operational_pipeline() -> None:

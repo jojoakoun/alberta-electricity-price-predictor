@@ -166,8 +166,7 @@ stop:
 
 app-refresh:
 	# Incrementally refresh PostgreSQL from AESO and publish predictions.
-	$(PYTHON) \
-		-m electricity_predictor.application_pipeline
+	$(PYTHON) -m electricity_predictor.worker.operational_pipeline
 
 
 models-install:
@@ -380,8 +379,7 @@ sync-history:
 
 sync-and-predict:
 	# Synchronize PostgreSQL and create one five-horizon prediction run.
-	$(PYTHON) \
-		-m electricity_predictor.application_pipeline
+	$(PYTHON) -m electricity_predictor.worker.operational_pipeline
 
 
 data-quality:

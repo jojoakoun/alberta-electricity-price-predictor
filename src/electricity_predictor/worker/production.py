@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 
-from electricity_predictor.application_pipeline import (
+from electricity_predictor.worker.operational_pipeline import (
   run_application_pipeline,
 )
 from electricity_predictor.config import PROJECT_ROOT
