@@ -150,33 +150,3 @@ def load_recent_finalized_prices(limit: int) -> pd.Series:
     [row[0] for row in rows],
     name="actual_price",
   )
-
-
-def load_recent_finalized_prices(limit: int) -> pd.Series:
-  """Load recent finalized actual prices in chronological order."""
-  if limit <= 0:
-    raise ValueError("Price limit must be greater than zero.")
-
-  query = """
-    SELECT actual_price
-    FROM (
-      SELECT
-        datetime_utc,
-        actual_price
-      FROM hourly_prices
-      WHERE actual_price IS NOT NULL
-      ORDER BY datetime_utc DESC
-      LIMIT %s
-    ) recent
-    ORDER BY datetime_utc;
-  """
-
-  with get_database_connection() as connection:
-    with connection.cursor() as cursor:
-      cursor.execute(query, (limit,))
-      rows = cursor.fetchall()
-
-  return pd.Series(
-    [row[0] for row in rows],
-    name="actual_price",
-  )

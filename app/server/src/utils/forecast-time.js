@@ -35,13 +35,8 @@ function getTemporalWordingKey(
   targetTime,
   viewedAt = new Date(),
 ) {
-  const targetDate = new Date(
-    targetTime,
-  );
-
-  const viewedDate = new Date(
-    viewedAt,
-  );
+  const targetDate = new Date(targetTime);
+  const viewedDate = new Date(viewedAt);
 
   if (
     Number.isNaN(targetDate.getTime())
@@ -59,8 +54,10 @@ function getTemporalWordingKey(
     )
     / MILLISECONDS_PER_MINUTE;
 
-  // Freshness controls availability. Wording must never crash
-  // the API while the hourly worker is preparing a newer run.
+  if (differenceMinutes < 0) {
+    return "recently_passed";
+  }
+
   if (differenceMinutes <= 90) {
     return "very_soon";
   }

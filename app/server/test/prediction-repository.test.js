@@ -36,6 +36,11 @@ describe("Prediction repository", () => {
     expect(predictions).toHaveLength(1);
     expect(predictions[0].horizon_hours).toBe(1);
     expect(pool.query).toHaveBeenCalledTimes(1);
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "ORDER BY generated_at DESC, id DESC",
+      ),
+    );
   });
 
   test("returns the latest finalized market price", async () => {

@@ -3,6 +3,38 @@ from datetime import datetime, timedelta
 from electricity_predictor.worker.db import get_database_connection
 
 
+EXPECTED_HORIZONS = (1, 3, 6, 12, 24)
+
+
+def _validate_prediction_decisions(
+  decisions: list[dict],
+) -> list[dict]:
+  if not decisions:
+    raise ValueError(
+      "At least one prediction decision is required."
+    )
+
+  ordered_decisions = sorted(
+    decisions,
+    key=lambda decision: int(
+      decision["horizon_hours"]
+    ),
+  )
+
+  horizons = tuple(
+    int(decision["horizon_hours"])
+    for decision in ordered_decisions
+  )
+
+  if horizons != EXPECTED_HORIZONS:
+    raise ValueError(
+      "Prediction decisions must contain exactly the horizons "
+      "1, 3, 6, 12, and 24 hours."
+    )
+
+  return ordered_decisions
+
+
 def save_prediction_run(
   generated_at: datetime,
   decisions: list[dict],
@@ -10,11 +42,19 @@ def save_prediction_run(
   confidence: str | None = None,
   detail: str | None = None,
 ) -> int:
-  """Save one prediction run and all horizon decisions."""
-  if not decisions:
-    raise ValueError("At least one prediction decision is required.")
+  """Atomically create or replace one successful prediction run."""
+  if status != "success":
+    raise ValueError(
+      "save_prediction_run only accepts successful runs."
+    )
 
-  spike_threshold = decisions[0].get("spike_threshold")
+  ordered_decisions = _validate_prediction_decisions(
+    decisions
+  )
+
+  spike_threshold = ordered_decisions[0].get(
+    "spike_threshold"
+  )
 
   with get_database_connection() as connection:
     with connection.cursor() as cursor:
@@ -28,6 +68,12 @@ def save_prediction_run(
           detail
         )
         VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (generated_at)
+          WHERE status = 'success'
+        DO UPDATE SET
+          confidence = EXCLUDED.confidence,
+          spike_threshold = EXCLUDED.spike_threshold,
+          detail = EXCLUDED.detail
         RETURNING id;
         """,
         (
@@ -42,16 +88,29 @@ def save_prediction_run(
       run_row = cursor.fetchone()
 
       if run_row is None:
-        raise RuntimeError("Failed to create prediction run.")
+        raise RuntimeError(
+          "Failed to create prediction run."
+        )
 
       run_id = int(run_row[0])
+
+      cursor.execute(
+        """
+        DELETE FROM predictions
+        WHERE prediction_run_id = %s;
+        """,
+        (run_id,),
+      )
 
       records = [
         (
           run_id,
           int(decision["horizon_hours"]),
-          generated_at + timedelta(
-            hours=int(decision["horizon_hours"])
+          generated_at
+          + timedelta(
+            hours=int(
+              decision["horizon_hours"]
+            )
           ),
           float(decision["predicted_price"]),
           float(decision["spike_probability"]),
@@ -59,7 +118,7 @@ def save_prediction_run(
           decision["recommendation"],
           decision["explanation"],
         )
-        for decision in decisions
+        for decision in ordered_decisions
       ]
 
       cursor.executemany(
@@ -75,7 +134,17 @@ def save_prediction_run(
           recommendation,
           explanation
         )
-        VALUES (%s, %s, %s, %s, NULL, %s, %s, %s, %s);
+        VALUES (
+          %s,
+          %s,
+          %s,
+          %s,
+          NULL,
+          %s,
+          %s,
+          %s,
+          %s
+        );
         """,
         records,
       )
@@ -86,7 +155,7 @@ def save_prediction_run(
 
 
 def backfill_prediction_actual_prices() -> int:
-  """Fill completed predictions with their observed actual prices."""
+  """Fill completed predictions with observed prices."""
   with get_database_connection() as connection:
     with connection.cursor() as cursor:
       cursor.execute(
@@ -135,7 +204,9 @@ def save_failed_prediction_run(
       run_row = cursor.fetchone()
 
       if run_row is None:
-        raise RuntimeError("Failed to create failed prediction run.")
+        raise RuntimeError(
+          "Failed to create failed prediction run."
+        )
 
       run_id = int(run_row[0])
 

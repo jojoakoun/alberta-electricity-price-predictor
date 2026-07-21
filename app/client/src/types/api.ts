@@ -13,6 +13,7 @@ export type ExplanationKey =
   | "higher_than_usual";
 
 export type TemporalWordingKey =
+  | "recently_passed"
   | "very_soon"
   | "in_a_few_hours"
   | "this_afternoon"
@@ -70,7 +71,7 @@ export type TodayResponse = {
   confidence: ConfidenceLevel;
   stale: boolean;
   forecasts: TodayForecast[];
-  bestTime: TodayBestTime;
+  bestTime: TodayBestTime | null;
 };
 
 export type ApiErrorResponse = {

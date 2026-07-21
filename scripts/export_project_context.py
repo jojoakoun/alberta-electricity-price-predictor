@@ -50,6 +50,8 @@ EXCLUDED_DIRECTORIES = {
     ".turbo",
     ".next",
     "context_exports",
+    "local",
+    "logs",
 }
 
 EXCLUDED_FILENAMES = {

@@ -93,6 +93,54 @@ describe("Today service", () => {
     });
   });
 
+  test("ignores passed horizons when selecting the best time", async () => {
+    repository.getLatestPredictions.mockResolvedValue(
+      [1, 3, 6, 12, 24].map((horizon, index) => ({
+        horizon_hours: horizon,
+        target_time_utc: [
+          "2026-07-18T19:30:00.000Z",
+          "2026-07-18T21:00:00.000Z",
+          "2026-07-19T02:00:00.000Z",
+          "2026-07-19T08:00:00.000Z",
+          "2026-07-19T20:00:00.000Z",
+        ][index],
+        predicted_price: String(
+          [1, 61.4, 72, 90, 105][index],
+        ),
+        recommendation: "Recommended",
+        explanation:
+          "Predicted price is favorable compared with the recent market.",
+        generated_at: "2026-07-18T19:00:00.000Z",
+      })),
+    );
+
+    const today = await getToday(viewedAt);
+
+    expect(today.forecasts).toHaveLength(5);
+    expect(today.bestTime.horizonHours).toBe(3);
+  });
+
+  test("returns unavailable when every forecast target passed", async () => {
+    repository.getLatestPredictions.mockResolvedValue(
+      [1, 3, 6, 12, 24].map((horizon, index) => ({
+        horizon_hours: horizon,
+        target_time_utc:
+          `2026-07-18T${String(10 + index).padStart(2, "0")}:00:00.000Z`,
+        predicted_price: "50.00",
+        recommendation: "Recommended",
+        explanation:
+          "Predicted price is favorable compared with the recent market.",
+        generated_at: "2026-07-18T10:00:00.000Z",
+      })),
+    );
+
+    const today = await getToday(viewedAt);
+
+    expect(today.confidence).toBe("low");
+    expect(today.stale).toBe(true);
+    expect(today.bestTime).toBeNull();
+  });
+
   test("returns null when no prediction run exists", async () => {
     repository.getLatestPredictions.mockResolvedValue([]);
 

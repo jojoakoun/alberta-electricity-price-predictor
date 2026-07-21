@@ -156,7 +156,7 @@ export function TodayPage() {
         </AppReveal>
       )}
 
-      {data.confidence === "low" ? (
+      {data.confidence === "low" || data.bestTime === null ? (
         <AppReveal>
           <Card className="space-y-[var(--space-4)]">
             <StatusBadge level="unavailable" />

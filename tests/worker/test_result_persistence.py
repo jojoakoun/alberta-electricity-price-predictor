@@ -8,7 +8,28 @@ from electricity_predictor.worker.result_persistence import (
 )
 
 
-def test_save_prediction_run_inserts_run_and_horizon_decisions() -> None:
+def build_decisions() -> list[dict]:
+  return [
+    {
+      "horizon_hours": horizon,
+      "predicted_price": 70.0 + horizon,
+      "spike_probability": 0.1,
+      "is_spike": False,
+      "spike_threshold": 170.77,
+      "recommendation": "Recommended",
+      "explanation": "Low spike probability.",
+    }
+    for horizon in [
+      1,
+      3,
+      6,
+      12,
+      24,
+    ]
+  ]
+
+
+def test_save_prediction_run_upserts_and_replaces_horizons() -> None:
   generated_at = datetime(
     2026,
     7,
@@ -18,27 +39,6 @@ def test_save_prediction_run_inserts_run_and_horizon_decisions() -> None:
     tzinfo=timezone.utc,
   )
 
-  decisions = [
-    {
-      "horizon_hours": 1,
-      "predicted_price": 77.19,
-      "spike_probability": 0.245,
-      "is_spike": False,
-      "spike_threshold": 170.77,
-      "recommendation": "Recommended",
-      "explanation": "Low spike probability.",
-    },
-    {
-      "horizon_hours": 3,
-      "predicted_price": 180.37,
-      "spike_probability": 0.476,
-      "is_spike": True,
-      "spike_threshold": 170.77,
-      "recommendation": "Avoid",
-      "explanation": "High spike probability.",
-    },
-  ]
-
   cursor = MagicMock()
   cursor.fetchone.return_value = (12,)
 
@@ -46,21 +46,57 @@ def test_save_prediction_run_inserts_run_and_horizon_decisions() -> None:
   connection.cursor.return_value.__enter__.return_value = cursor
 
   with patch(
-    "electricity_predictor.worker.result_persistence.get_database_connection"
+    "electricity_predictor.worker.result_persistence."
+    "get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = connection
 
     run_id = save_prediction_run(
       generated_at=generated_at,
-      decisions=decisions,
+      decisions=build_decisions(),
       confidence="medium",
     )
 
-  records = cursor.executemany.call_args.args[1]
+  insert_query = (
+    cursor.execute.call_args_list[0]
+    .args[0]
+  )
+
+  delete_query = (
+    cursor.execute.call_args_list[1]
+    .args[0]
+  )
+
+  records = (
+    cursor.executemany
+    .call_args
+    .args[1]
+  )
 
   assert run_id == 12
-  assert records[0][2].hour == 19
-  assert records[1][2].hour == 21
+  assert (
+    "ON CONFLICT (generated_at)"
+    in insert_query
+  )
+  assert (
+    "WHERE status = 'success'"
+    in insert_query
+  )
+  assert (
+    "DELETE FROM predictions"
+    in delete_query
+  )
+  assert [
+    record[1]
+    for record in records
+  ] == [
+    1,
+    3,
+    6,
+    12,
+    24,
+  ]
+
   connection.commit.assert_called_once()
 
 
@@ -70,14 +106,30 @@ def test_save_prediction_run_rejects_empty_decisions() -> None:
     match="At least one prediction decision is required",
   ):
     save_prediction_run(
-      generated_at=datetime.now(timezone.utc),
+      generated_at=datetime.now(
+        timezone.utc
+      ),
       decisions=[],
     )
 
 
-def test_backfill_prediction_actual_prices() -> None:
-  from unittest.mock import MagicMock, patch
+def test_save_prediction_run_rejects_incomplete_horizons() -> None:
+  with pytest.raises(
+    ValueError,
+    match=(
+      "exactly the horizons "
+      "1, 3, 6, 12, and 24 hours"
+    ),
+  ):
+    save_prediction_run(
+      generated_at=datetime.now(
+        timezone.utc
+      ),
+      decisions=build_decisions()[:-1],
+    )
 
+
+def test_backfill_prediction_actual_prices() -> None:
   from electricity_predictor.worker.result_persistence import (
     backfill_prediction_actual_prices,
   )
@@ -89,20 +141,23 @@ def test_backfill_prediction_actual_prices() -> None:
   connection.cursor.return_value.__enter__.return_value = cursor
 
   with patch(
-    "electricity_predictor.worker.result_persistence.get_database_connection"
+    "electricity_predictor.worker.result_persistence."
+    "get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = connection
 
-    updated_rows = backfill_prediction_actual_prices()
+    updated_rows = (
+      backfill_prediction_actual_prices()
+    )
 
   cursor.execute.assert_called_once()
   connection.commit.assert_called_once_with()
+
   assert updated_rows == 4
 
 
 def test_save_failed_prediction_run() -> None:
-  from datetime import UTC, datetime
-  from unittest.mock import MagicMock, patch
+  from datetime import UTC
 
   from electricity_predictor.worker.result_persistence import (
     save_failed_prediction_run,

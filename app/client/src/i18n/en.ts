@@ -89,6 +89,7 @@ export const en = {
   },
 
   temporal: {
+    recently_passed: "Recently passed",
     very_soon: "Very soon",
     in_a_few_hours: "In a few hours",
     this_afternoon: "This afternoon",

@@ -22,33 +22,51 @@ const {
   normalizeRecommendation,
 } = require("../utils/recommendation");
 
-const EXPECTED_HORIZONS = Object.freeze([1, 3, 6, 12, 24]);
+const EXPECTED_HORIZONS = Object.freeze([
+  1,
+  3,
+  6,
+  12,
+  24,
+]);
 
-function buildPublicForecast(prediction, viewedAt) {
+function buildPublicForecast(
+  prediction,
+  viewedAt,
+) {
   return {
     horizonHours: prediction.horizon_hours,
-    ...buildForecastTime(prediction.target_time_utc, viewedAt),
-    priceCents: dollarsPerMwhToCentsPerKwh(
-      prediction.predicted_price,
+    ...buildForecastTime(
+      prediction.target_time_utc,
+      viewedAt,
     ),
-    recommendation: normalizeRecommendation(
-      prediction.recommendation,
-    ),
-    explanationKey: getExplanationKey(
-      prediction.explanation,
-    ),
+    priceCents:
+      dollarsPerMwhToCentsPerKwh(
+        prediction.predicted_price,
+      ),
+    recommendation:
+      normalizeRecommendation(
+        prediction.recommendation,
+      ),
+    explanationKey:
+      getExplanationKey(
+        prediction.explanation,
+      ),
   };
 }
 
 function validateForecastSet(predictions) {
   const horizons = predictions.map(
-    (prediction) => prediction.horizon_hours,
+    (prediction) =>
+      prediction.horizon_hours,
   );
 
   const isComplete =
-    horizons.length === EXPECTED_HORIZONS.length &&
-    EXPECTED_HORIZONS.every(
-      (horizon, index) => horizons[index] === horizon,
+    horizons.length
+      === EXPECTED_HORIZONS.length
+    && EXPECTED_HORIZONS.every(
+      (horizon, index) =>
+        horizons[index] === horizon,
     );
 
   if (!isComplete) {
@@ -58,18 +76,53 @@ function validateForecastSet(predictions) {
   }
 }
 
-function selectBestTime(forecasts) {
-  return forecasts.reduce((best, forecast) => {
-    if (!best || forecast.priceCents < best.priceCents) {
-      return forecast;
-    }
+function selectBestTime(
+  forecasts,
+  viewedAt,
+) {
+  const viewedDate = new Date(
+    viewedAt,
+  );
 
-    return best;
-  }, null);
+  if (
+    Number.isNaN(
+      viewedDate.getTime(),
+    )
+  ) {
+    throw new TypeError(
+      "Best-time selection requires a valid viewedAt timestamp.",
+    );
+  }
+
+  return forecasts
+    .filter(
+      (forecast) =>
+        new Date(
+          forecast.targetTimeUtc,
+        ).getTime()
+        > viewedDate.getTime(),
+    )
+    .reduce(
+      (best, forecast) => {
+        if (
+          !best
+          || forecast.priceCents
+            < best.priceCents
+        ) {
+          return forecast;
+        }
+
+        return best;
+      },
+      null,
+    );
 }
 
-async function getToday(viewedAt = new Date()) {
-  const predictions = await getLatestPredictions();
+async function getToday(
+  viewedAt = new Date(),
+) {
+  const predictions =
+    await getLatestPredictions();
 
   if (predictions.length === 0) {
     return null;
@@ -77,28 +130,54 @@ async function getToday(viewedAt = new Date()) {
 
   validateForecastSet(predictions);
 
-  const forecasts = predictions.map((prediction) =>
-    buildPublicForecast(prediction, viewedAt),
+  const forecasts = predictions.map(
+    (prediction) =>
+      buildPublicForecast(
+        prediction,
+        viewedAt,
+      ),
   );
 
-  const bestForecast = selectBestTime(forecasts);
+  const generatedAt = new Date(
+    predictions[0].generated_at,
+  ).toISOString();
+
+  const freshness = getFreshness(
+    predictions[0].generated_at,
+    viewedAt,
+  );
+
+  const bestForecast =
+    selectBestTime(
+      forecasts,
+      viewedAt,
+    );
 
   return {
-    generatedAt: new Date(
-      predictions[0].generated_at,
-    ).toISOString(),
-    ...getFreshness(
-      predictions[0].generated_at,
-      viewedAt,
+    generatedAt,
+    ...(
+      bestForecast
+        ? freshness
+        : {
+            confidence: "low",
+            stale: true,
+          }
     ),
     forecasts,
-    bestTime: {
-      horizonHours: bestForecast.horizonHours,
-      targetTimeUtc: bestForecast.targetTimeUtc,
-      targetTimeLocal: bestForecast.targetTimeLocal,
-      priceCents: bestForecast.priceCents,
-      recommendation: bestForecast.recommendation,
-    },
+    bestTime: bestForecast
+      ? {
+          horizonHours:
+            bestForecast.horizonHours,
+          targetTimeUtc:
+            bestForecast.targetTimeUtc,
+          targetTimeLocal:
+            bestForecast.targetTimeLocal,
+          priceCents:
+            bestForecast.priceCents,
+          recommendation:
+            bestForecast.recommendation,
+        }
+      : null,
   };
 }
 

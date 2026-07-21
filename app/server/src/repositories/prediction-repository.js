@@ -9,7 +9,7 @@ async function getLatestPredictions() {
         generated_at
       FROM prediction_runs
       WHERE status = 'success'
-      ORDER BY generated_at DESC
+      ORDER BY generated_at DESC, id DESC
       LIMIT 1
     )
     SELECT

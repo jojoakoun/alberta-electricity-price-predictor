@@ -13,22 +13,22 @@ describe("Forecast time presentation", () => {
     ).toBe("very_soon");
   });
 
-  test("keeps a recently passed target available while freshness controls the page", () => {
+  test("labels a recently passed target honestly", () => {
     expect(
       getTemporalWordingKey(
         "2026-07-20T20:00:00.000Z",
         "2026-07-20T20:17:30.000Z",
       ),
-    ).toBe("very_soon");
+    ).toBe("recently_passed");
   });
 
-  test("does not throw for an older target", () => {
+  test("labels an older passed target without throwing", () => {
     expect(
       getTemporalWordingKey(
         "2026-07-20T19:00:00.000Z",
         "2026-07-20T20:30:00.000Z",
       ),
-    ).toBe("very_soon");
+    ).toBe("recently_passed");
   });
 
   test("returns in a few hours through four hours", () => {

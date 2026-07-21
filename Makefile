@@ -668,16 +668,8 @@ project-export:
 
 project-export-check:
 	@echo "===== PROJECT EXPORT ====="
-	@echo "Included files: $$( \
-		tail -n +2 context_exports/project_files_manifest.txt \
-		| wc -l \
-		| tr -d ' ' \
-	)"
-	@echo "Intentionally excluded paths: $$( \
-		tail -n +2 context_exports/project_excluded_manifest.txt \
-		| wc -l \
-		| tr -d ' ' \
-	)"
+	$(PYTHON) \
+		scripts/verify_project_export.py
 	@du -h \
 		context_exports/project_context_full.txt
 	@du -h \
