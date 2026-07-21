@@ -1,14 +1,24 @@
+"""Persist complete, idempotent prediction runs and observed outcomes."""
+
+import json
 from datetime import datetime, timedelta
 
+from electricity_predictor.features.feature_columns import (
+  SUPPORTED_FORECAST_HORIZONS_HOURS,
+)
 from electricity_predictor.worker.db import get_database_connection
 
 
-EXPECTED_HORIZONS = (1, 3, 6, 12, 24)
+FORECAST_KINDS = frozenset({
+  "model_forecast",
+  "persistence_reference",
+})
 
 
 def _validate_prediction_decisions(
   decisions: list[dict],
 ) -> list[dict]:
+  """Return decisions ordered only when all supported horizons are present."""
   if not decisions:
     raise ValueError(
       "At least one prediction decision is required."
@@ -26,30 +36,67 @@ def _validate_prediction_decisions(
     for decision in ordered_decisions
   )
 
-  if horizons != EXPECTED_HORIZONS:
+  if horizons != SUPPORTED_FORECAST_HORIZONS_HOURS:
+    supported_horizons = ", ".join(
+      str(horizon_hours)
+      for horizon_hours in SUPPORTED_FORECAST_HORIZONS_HOURS
+    )
     raise ValueError(
       "Prediction decisions must contain exactly the horizons "
-      "1, 3, 6, 12, and 24 hours."
+      f"{supported_horizons} hours."
     )
 
   return ordered_decisions
 
 
+def _build_prediction_run_detail(
+  decisions: list[dict],
+  summary: str | None,
+) -> str:
+  """Serialize per-horizon provenance for fail-closed API interpretation."""
+  forecast_kinds: dict[str, str] = {}
+
+  for decision in decisions:
+    forecast_kind = decision.get("forecast_kind")
+
+    if forecast_kind not in FORECAST_KINDS:
+      raise ValueError(
+        f"Unsupported forecast kind: {forecast_kind!r}."
+      )
+
+    forecast_kinds[
+      str(int(decision["horizon_hours"]))
+    ] = forecast_kind
+
+  return json.dumps(
+    {
+      "schemaVersion": 1,
+      "summary": summary,
+      "forecastKinds": forecast_kinds,
+    },
+    separators=(",", ":"),
+    sort_keys=True,
+  )
+
+
 def save_prediction_run(
   generated_at: datetime,
   decisions: list[dict],
-  status: str = "success",
   confidence: str | None = None,
   detail: str | None = None,
 ) -> int:
-  """Atomically create or replace one successful prediction run."""
-  if status != "success":
-    raise ValueError(
-      "save_prediction_run only accepts successful runs."
-    )
+  """Atomically create or replace one successful five-horizon run.
 
+  ``generated_at`` is the forecast source market hour. Repeating that source
+  hour reuses the successful run and replaces all five predictions in one
+  transaction, so readers never observe a partial horizon set.
+  """
   ordered_decisions = _validate_prediction_decisions(
     decisions
+  )
+  run_detail = _build_prediction_run_detail(
+    decisions=ordered_decisions,
+    summary=detail,
   )
 
   spike_threshold = ordered_decisions[0].get(
@@ -67,7 +114,9 @@ def save_prediction_run(
           spike_threshold,
           detail
         )
-        VALUES (%s, %s, %s, %s, %s)
+        VALUES (%s, 'success', %s, %s, %s)
+        -- Match the partial unique index that permits multiple failed attempts
+        -- while allowing only one successful run per forecast source hour.
         ON CONFLICT (generated_at)
           WHERE status = 'success'
         DO UPDATE SET
@@ -78,10 +127,9 @@ def save_prediction_run(
         """,
         (
           generated_at,
-          status,
           confidence,
           spike_threshold,
-          detail,
+          run_detail,
         ),
       )
 
@@ -94,6 +142,8 @@ def save_prediction_run(
 
       run_id = int(run_row[0])
 
+      # Reused runs replace their complete prediction set atomically. Deleting
+      # first prevents stale horizons from surviving a retry.
       cursor.execute(
         """
         DELETE FROM predictions
@@ -155,7 +205,11 @@ def save_prediction_run(
 
 
 def backfill_prediction_actual_prices() -> int:
-  """Fill completed predictions with observed prices."""
+  """Fill null outcomes from matching finalized observations.
+
+  Existing prediction outcomes are immutable, and no forecast or synthetic
+  value may stand in for a missing actual price.
+  """
   with get_database_connection() as connection:
     with connection.cursor() as cursor:
       cursor.execute(
@@ -180,7 +234,11 @@ def save_failed_prediction_run(
   generated_at: datetime,
   detail: str,
 ) -> int:
-  """Save one failed worker run without prediction rows."""
+  """Preserve one failed attempt without prediction rows or success reuse.
+
+  The timestamp is the source hour when one was selected, otherwise the attempt
+  time. Failed rows are not eligible for forecast freshness or idempotent reuse.
+  """
   with get_database_connection() as connection:
     with connection.cursor() as cursor:
       cursor.execute(

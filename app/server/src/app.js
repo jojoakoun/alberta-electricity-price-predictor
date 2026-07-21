@@ -68,6 +68,8 @@ function createApp({
       ),
     );
 
+    // Only browser routes receive the SPA entry point; unknown API paths must
+    // continue to the structured JSON 404 handler below.
     app.use((request, response, next) => {
       if (
         request.method !== "GET"

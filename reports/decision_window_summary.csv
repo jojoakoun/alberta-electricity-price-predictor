@@ -1,5 +1,0 @@
-window_hours,reference_count,average_coverage_rate,average_q1,q1_standard_deviation,median_q1_monthly_change,average_iqr_threshold,iqr_threshold_standard_deviation,median_threshold_monthly_change,maximum_threshold_monthly_change
-72,79,0.9873,35.2626,23.0777,8.1100,229.0526,395.9865,48.6550,1984.0125
-168,79,0.9873,34.7391,22.0435,7.5575,174.9496,217.2057,35.7962,891.0587
-336,79,0.9905,33.9520,22.0087,6.7713,151.4152,208.3116,22.3287,1149.4512
-720,79,0.9955,34.2675,21.1439,4.4287,156.9501,194.1369,21.6681,941.7712

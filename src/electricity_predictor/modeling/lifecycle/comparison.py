@@ -1,3 +1,5 @@
+"""Compare frozen champion and challenger results without promoting models."""
+
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -6,6 +8,9 @@ import pandas as pd
 
 from electricity_predictor.features.feature_engineering import (
   build_target_column_name,
+)
+from electricity_predictor.features.feature_columns import (
+  parse_model_feature_columns,
 )
 from electricity_predictor.modeling.classification.decision_threshold import (
   apply_decision_threshold,
@@ -53,24 +58,6 @@ def load_metadata(
   return metadata.sort_values(
     "horizon_hours"
   ).reset_index(drop=True)
-
-
-def parse_feature_columns(
-  value,
-) -> list[str]:
-  """Restore the ordered model feature list."""
-  columns = [
-    column.strip()
-    for column in str(value).split("|")
-    if column.strip()
-  ]
-
-  if not columns:
-    raise ValueError(
-      "Model metadata contains no feature columns."
-    )
-
-  return columns
 
 
 def validate_features(
@@ -134,7 +121,7 @@ def generate_regression_predictions(
       errors="coerce",
     )
 
-  feature_columns = parse_feature_columns(
+  feature_columns = parse_model_feature_columns(
     metadata_row[
       "feature_columns"
     ]
@@ -303,7 +290,7 @@ def generate_classification_predictions(
 
     return prediction, None
 
-  feature_columns = parse_feature_columns(
+  feature_columns = parse_model_feature_columns(
     metadata_row[
       "feature_columns"
     ]

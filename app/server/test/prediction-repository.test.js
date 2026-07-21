@@ -27,6 +27,7 @@ describe("Prediction repository", () => {
           explanation:
             "Predicted price is favorable compared with the recent market.",
           generated_at: "2026-07-18T19:00:00.000Z",
+          run_detail: "Application pipeline prediction cycle.",
         },
       ],
     });
@@ -39,6 +40,11 @@ describe("Prediction repository", () => {
     expect(pool.query).toHaveBeenCalledWith(
       expect.stringContaining(
         "ORDER BY generated_at DESC, id DESC",
+      ),
+    );
+    expect(pool.query).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "lr.detail AS run_detail",
       ),
     );
   });
@@ -65,12 +71,12 @@ describe("Prediction repository", () => {
     await expect(getLatestFinalizedPrice()).resolves.toBeNull();
   });
 
-  test("loads recent finalized prices with a parameterized limit", async () => {
+  test("loads the default 720-hour market-context window", async () => {
     pool.query.mockResolvedValue({
       rows: [{ actual_price: "20.00" }, { actual_price: "40.00" }],
     });
 
-    const prices = await getRecentFinalizedPrices(720);
+    const prices = await getRecentFinalizedPrices();
 
     expect(prices).toEqual([
       { actual_price: "20.00" },

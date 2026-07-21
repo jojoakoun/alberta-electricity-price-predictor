@@ -1,8 +1,15 @@
+"""Build leakage-safe temporal features for research and production serving."""
+
 from pathlib import Path
 
 import pandas as pd
 
 from electricity_predictor.config import load_configuration
+
+
+# This longest active rolling feature is also the minimum history that serving
+# must load before it can build a candidate without fabricating past values.
+ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS = 24 * 7
 
 
 def load_current_historical_dataset(file_path: Path) -> pd.DataFrame:
@@ -12,7 +19,6 @@ def load_current_historical_dataset(file_path: Path) -> pd.DataFrame:
 
   data = pd.read_csv(file_path)
 
-  # Convert timestamp columns before creating time-based features.
   data["datetime_universal_time"] = pd.to_datetime(data["datetime_universal_time"])
   data["datetime_local_time"] = pd.to_datetime(data["datetime_local_time"])
 
@@ -71,10 +77,10 @@ def add_lag_features(data: pd.DataFrame) -> pd.DataFrame:
   """Add past price values that can help predict the target hour."""
   data = data.copy()
 
-  # Sort by UTC time so each lag uses the true previous hour.
   data = data.sort_values("datetime_universal_time").reset_index(drop=True)
 
-  # Use past actual prices only. This avoids giving the model the current target value.
+  # Observed-price features must precede the source hour. This same rule lets
+  # serving prepare a candidate whose own actual price is not finalized yet.
   data["actual_price_lag_1h"] = data["actual_price"].shift(1)
   data["actual_price_lag_24h"] = data["actual_price"].shift(24)
 
@@ -88,20 +94,19 @@ def add_rolling_features(data: pd.DataFrame) -> pd.DataFrame:
   """Add rolling summaries from past actual prices."""
   data = data.copy()
 
-  # Sort by UTC time so rolling windows follow the true hourly sequence.
   data = data.sort_values("datetime_universal_time").reset_index(drop=True)
 
-  # Shift first so the current target value is not included in its own features.
+  # Shift first so every rolling statistic contains only observations known
+  # before the source hour, matching the production inference contract.
   past_actual_price = data["actual_price"].shift(1)
 
-  # The 24-hour mean captures the recent market level before the target hour.
   data["actual_price_rolling_24h_mean"] = past_actual_price.rolling(24).mean()
 
-  # The 24-hour max captures whether the market recently had a high-price event.
   data["actual_price_rolling_24h_max"] = past_actual_price.rolling(24).max()
 
-  # The 7-day mean captures broader market context before the target hour.
-  data["actual_price_rolling_7d_mean"] = past_actual_price.rolling(24 * 7).mean()
+  data["actual_price_rolling_7d_mean"] = past_actual_price.rolling(
+    ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS
+  ).mean()
 
   return data
 
@@ -128,13 +133,10 @@ def add_horizon_target_features(
 
 def build_basic_modeling_dataset(
   data: pd.DataFrame,
-  horizons_hours: list[int] | None = None,
+  horizons_hours: list[int],
 ) -> pd.DataFrame:
   """Build the modeling dataset with features and future price targets."""
   data = data.copy()
-
-  if horizons_hours is None:
-    horizons_hours = [1, 3, 6, 12, 24]
 
   # Supervised models need finalized actual prices before we can create targets.
   data = data.dropna(subset=["actual_price"])
@@ -142,16 +144,9 @@ def build_basic_modeling_dataset(
   # Row-based lag and target shifts are only safe when every UTC hour is present.
   validate_continuous_hourly_utc_timestamps(data)
 
-  # Add simple time features identified as useful during EDA.
   data = add_time_features(data)
-
-  # Add past price values without leaking the current or future target value.
   data = add_lag_features(data)
-
-  # Add rolling summaries from past prices to describe recent market conditions.
   data = add_rolling_features(data)
-
-  # Add future target prices for each horizon the app will eventually compare.
   data = add_horizon_target_features(
     data=data,
     horizons_hours=horizons_hours,
@@ -159,7 +154,6 @@ def build_basic_modeling_dataset(
 
   target_columns = build_target_column_names(horizons_hours)
 
-  # Keep only columns that are available now and useful for the modeling dataset.
   modeling_columns = [
     "datetime_universal_time",
     "datetime_local_time",
@@ -183,10 +177,7 @@ def build_basic_modeling_dataset(
 
 def write_modeling_dataset(data: pd.DataFrame, output_path: Path) -> Path:
   """Write the modeling dataset to a CSV file."""
-  # Create the processed data folder if it does not exist yet.
   output_path.parent.mkdir(parents=True, exist_ok=True)
-
-  # Save the model-ready dataset so future ML steps can reuse it.
   data.to_csv(output_path, index=False)
 
   return output_path

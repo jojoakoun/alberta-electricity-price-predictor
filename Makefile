@@ -32,6 +32,7 @@ CURL ?= curl
 	app-check \
 	database-check \
 	refresh-data \
+	seed-history \
 	sync-history \
 	sync-and-predict \
 	data-quality \
@@ -119,6 +120,7 @@ help:
 	@echo ""
 	@echo "Data and application"
 	@echo "  make refresh-data                Refresh the historical AESO dataset"
+	@echo "  make seed-history                Seed PostgreSQL once from historical CSV"
 	@echo "  make sync-history                Synchronize historical rows with PostgreSQL"
 	@echo "  make sync-and-predict            Publish one five-horizon prediction run"
 	@echo "  make app-check                   Check Health, Now, and Today endpoints"
@@ -132,7 +134,7 @@ help:
 	@echo "  make project-context             Export project text context"
 	@echo "  make project-zip                 Create the full project ZIP"
 	@echo "  make project-export              Generate all project exports"
-	@echo "  make db-clean CONFIRM=DELETE_LOCAL_DATA"
+	@echo "  make db-clean CONFIRM=YES"
 	@echo "                                   Remove local application data"
 	@echo ""
 
@@ -163,9 +165,9 @@ stop:
 
 
 app-refresh:
-	# Refresh AESO data, synchronize PostgreSQL, and publish predictions.
-	$(MAKE) refresh-data
-	$(MAKE) sync-and-predict
+	# Incrementally refresh PostgreSQL from AESO and publish predictions.
+	$(PYTHON) \
+		-m electricity_predictor.application_pipeline
 
 
 models-install:
@@ -195,9 +197,9 @@ models-install:
 
 
 worker-run:
-	# Production worker: ensure models, refresh data, and publish predictions.
-	$(MAKE) models-install
-	$(MAKE) app-refresh
+	# Canonical production worker: ensure models, refresh data, and predict.
+	$(PYTHON) \
+		-m electricity_predictor.worker.production
 
 
 # ==============================================================================
@@ -364,8 +366,14 @@ refresh-data:
 		src/electricity_predictor/data/pipeline.py
 
 
+seed-history:
+	# One-time bootstrap: seed PostgreSQL from the historical raw CSV.
+	$(PYTHON) \
+		-m electricity_predictor.worker.historical_seed
+
+
 sync-history:
-	# Synchronize the complete refreshed history with PostgreSQL.
+	# Synchronize the complete refreshed research history with PostgreSQL.
 	$(PYTHON) \
 		-m electricity_predictor.worker.importer
 

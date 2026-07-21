@@ -1,6 +1,9 @@
+"""Orchestrate one idempotent forecast cycle from PostgreSQL features."""
+
 from datetime import datetime
 
 from electricity_predictor.config import load_configuration
+from electricity_predictor.logger import get_logger
 from electricity_predictor.worker.decision_context_loader import (
   load_decision_context,
 )
@@ -23,25 +26,31 @@ from electricity_predictor.worker.result_persistence import (
 )
 
 
+LOGGER = get_logger(__name__)
+
+
 def run_worker_cycle() -> dict:
-  """Run one complete application prediction cycle."""
-  generated_at: datetime | None = None
+  """Backfill outcomes, predict five horizons, and persist one source hour."""
+  forecast_source_at: datetime | None = None
 
   try:
     configuration = load_configuration()
     horizons_hours = configuration["modeling"]["horizons_hours"]
 
+    # Refresh runs before this cycle, so backfill can attach newly finalized
+    # observations without replacing any outcome already recorded.
     backfilled_rows = backfill_prediction_actual_prices()
 
-    modeling_data = prepare_model_features()
-    latest_feature_row = modeling_data.tail(1).copy()
+    candidate_features = prepare_model_features()
 
-    generated_at = latest_feature_row.iloc[0][
+    # The database field is named generated_at, but it stores the forecast's
+    # source market-data hour rather than worker wall-clock execution time.
+    forecast_source_at = candidate_features.iloc[0][
       "datetime_universal_time"
     ].to_pydatetime()
 
     predictions = generate_horizon_predictions(
-      feature_row=latest_feature_row,
+      feature_row=candidate_features,
       horizons_hours=horizons_hours,
     )
 
@@ -53,25 +62,29 @@ def run_worker_cycle() -> dict:
     )
 
     run_id = save_prediction_run(
-      generated_at=generated_at,
+      generated_at=forecast_source_at,
       decisions=decisions,
       detail="Application pipeline prediction cycle.",
     )
 
     return {
       "run_id": run_id,
-      "generated_at": generated_at,
+      "generated_at": forecast_source_at,
       "backfilled_rows": backfilled_rows,
       "decisions": decisions,
     }
 
   except Exception as error:
-    failure_time = generated_at
+    # Once selected, the source hour identifies the failed attempt. Earlier
+    # failures use database time and remain excluded from successful-run freshness.
+    failure_time = forecast_source_at
 
     if failure_time is None:
       try:
         failure_time = get_database_time()
       except Exception:
+        # A pre-candidate failure has no source hour. Preserve a useful failure
+        # timestamp even when PostgreSQL itself is unavailable.
         failure_time = datetime.now().astimezone()
 
     try:
@@ -82,7 +95,9 @@ def run_worker_cycle() -> dict:
         ),
       )
     except Exception:
-      pass
+      # Failure recording is secondary: report it, then preserve the original
+      # worker exception for the scheduler and operator.
+      LOGGER.exception("Could not persist the failed worker run.")
 
     raise
 

@@ -113,7 +113,7 @@ def test_worker_remains_a_separate_cron() -> None:
     "deploy"
   ][
     "startCommand"
-  ] == "make worker-run"
+  ] == "wattwise-worker"
 
   assert worker[
     "deploy"

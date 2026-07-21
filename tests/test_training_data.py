@@ -9,7 +9,17 @@ from electricity_predictor.features.training_data import (
 )
 
 
-def test_build_training_dataset_removes_rows_with_missing_engineered_features_or_targets():
+def build_direct_model_features(row_count: int) -> dict[str, list]:
+  return {
+    "forecast_price": [30.0] * row_count,
+    "hour": [12] * row_count,
+    "day_of_week": [2] * row_count,
+    "month": [7] * row_count,
+    "is_weekend": [0] * row_count,
+  }
+
+
+def test_build_training_dataset_removes_rows_with_missing_model_features_or_targets():
   data = pd.DataFrame({
     "datetime_universal_time": pd.to_datetime([
       "2026-01-01 07:00:00",
@@ -42,7 +52,7 @@ def test_build_training_dataset_removes_rows_with_missing_engineered_features_or
 
   result = build_training_dataset(data)
 
-  # Only rows with complete engineered features and complete horizon targets are usable.
+  # Only rows with every artifact input and horizon target are usable.
   assert len(result) == 1
   assert result.loc[0, "actual_price"] == 50.0
   assert result.isna().sum().sum() == 0
@@ -50,6 +60,7 @@ def test_build_training_dataset_removes_rows_with_missing_engineered_features_or
 
 def test_build_training_dataset_removes_rows_with_missing_horizon_targets():
   data = pd.DataFrame({
+    **build_direct_model_features(2),
     "actual_price_lag_1h": [10.0, 20.0],
     "actual_price_lag_24h": [8.0, 18.0],
     "forecast_price_lag_1h": [9.0, 19.0],
@@ -65,13 +76,13 @@ def test_build_training_dataset_removes_rows_with_missing_horizon_targets():
 
   result = build_training_dataset(data)
 
-  # The second row is dropped because its 24h future target is missing.
   assert len(result) == 1
   assert result.loc[0, "actual_price_target_24h"] == 110.0
 
 
 def test_build_training_dataset_resets_index_after_dropping_rows():
   data = pd.DataFrame({
+    **build_direct_model_features(2),
     "actual_price_lag_1h": [None, 10.0],
     "actual_price_lag_24h": [None, 8.0],
     "forecast_price_lag_1h": [None, 9.0],
@@ -87,7 +98,6 @@ def test_build_training_dataset_resets_index_after_dropping_rows():
 
   result = build_training_dataset(data)
 
-  # Resetting the index keeps the training dataset clean after rows are removed.
   assert result.index.tolist() == [0]
 
 
@@ -96,3 +106,33 @@ def test_load_modeling_dataset_rejects_missing_file():
 
   with pytest.raises(FileNotFoundError):
     load_modeling_dataset(missing_file)
+
+
+@pytest.mark.parametrize(
+  "missing_column",
+  ["forecast_price", "hour"],
+)
+def test_build_training_dataset_rejects_missing_direct_model_feature(
+  missing_column,
+):
+  data = pd.DataFrame({
+    **build_direct_model_features(2),
+    "actual_price_lag_1h": [10.0, 20.0],
+    "actual_price_lag_24h": [8.0, 18.0],
+    "forecast_price_lag_1h": [9.0, 19.0],
+    "actual_price_rolling_24h_mean": [11.0, 21.0],
+    "actual_price_rolling_24h_max": [12.0, 22.0],
+    "actual_price_rolling_7d_mean": [13.0, 23.0],
+    "actual_price_target_1h": [30.0, 40.0],
+    "actual_price_target_3h": [50.0, 60.0],
+    "actual_price_target_6h": [70.0, 80.0],
+    "actual_price_target_12h": [90.0, 100.0],
+    "actual_price_target_24h": [110.0, 120.0],
+  })
+  expected_value = data.loc[0, missing_column]
+  data.loc[1, missing_column] = None
+
+  result = build_training_dataset(data)
+
+  assert len(result) == 1
+  assert result.loc[0, missing_column] == expected_value

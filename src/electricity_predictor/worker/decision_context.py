@@ -1,3 +1,5 @@
+"""Derive one worker cycle's price thresholds from finalized observations."""
+
 from dataclasses import dataclass
 
 import pandas as pd

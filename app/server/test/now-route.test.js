@@ -29,11 +29,14 @@ describe("GET /api/v1/now", () => {
     });
   });
 
-  test("returns 404 when no prediction exists", async () => {
+  test("returns 404 when no finalized observed price exists", async () => {
     getNow.mockResolvedValue(null);
 
     const response = await request(createApp()).get("/api/v1/now");
 
     expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      error: "No finalized observed price is available.",
+    });
   });
 });

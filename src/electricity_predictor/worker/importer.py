@@ -1,3 +1,5 @@
+"""Import a research CSV into PostgreSQL outside the recurring worker path."""
+
 from pathlib import Path
 
 import pandas as pd
@@ -17,7 +19,7 @@ DEFAULT_DATASET_PATH = (
 def load_current_history(
   dataset_path: Path = DEFAULT_DATASET_PATH,
 ) -> pd.DataFrame:
-  """Load the current clean pipeline dataset."""
+  """Load the current clean research pipeline dataset."""
   if not dataset_path.exists():
     raise FileNotFoundError(
       f"Current historical dataset not found: {dataset_path}"
@@ -53,7 +55,7 @@ def load_current_history(
 def synchronize_current_history(
   dataset_path: Path = DEFAULT_DATASET_PATH,
 ) -> int:
-  """Synchronize the current pipeline dataset with PostgreSQL."""
+  """Synchronize the current research dataset with PostgreSQL."""
   data = load_current_history(dataset_path)
 
   return upsert_hourly_prices(
@@ -63,7 +65,7 @@ def synchronize_current_history(
 
 
 def main() -> None:
-  """Run the historical synchronization command."""
+  """Run the research dataset synchronization command."""
   synchronized_rows = synchronize_current_history()
 
   print(f"Synchronized hourly price rows: {synchronized_rows}")

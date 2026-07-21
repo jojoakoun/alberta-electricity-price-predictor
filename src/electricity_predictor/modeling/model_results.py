@@ -59,7 +59,6 @@ def build_model_result_row(
 
 def append_model_result(result: dict, output_path: Path) -> Path:
   """Append one model evaluation result to the shared summary file."""
-  # Create the reports folder if this is the first model result.
   output_path.parent.mkdir(parents=True, exist_ok=True)
 
   # Force a stable column order so the CSV remains easy to inspect.
@@ -67,8 +66,6 @@ def append_model_result(result: dict, output_path: Path) -> Path:
 
   if output_path.exists():
     existing_data = pd.read_csv(output_path)
-
-    # Keep previous model results, then add the newest evaluation row.
     result_data = pd.concat([existing_data, result_data], ignore_index=True)
 
   result_data.to_csv(output_path, index=False)

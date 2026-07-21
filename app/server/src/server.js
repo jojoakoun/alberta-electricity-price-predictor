@@ -21,7 +21,8 @@ async function shutdown(signal) {
 
   server.close(async (serverError) => {
     try {
-      // Close database connections before Nodemon restarts the process.
+      // Release database connections so local reloads and production shutdowns
+      // both leave the process cleanly after the listener stops accepting work.
       await pool.end();
     } catch (poolError) {
       console.error("PostgreSQL pool shutdown failed.", poolError);

@@ -1,3 +1,5 @@
+"""Run active regression and classification artifacts for every horizon."""
+
 import pandas as pd
 
 from electricity_predictor.serving.inference import predict_horizon

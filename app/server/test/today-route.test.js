@@ -17,6 +17,12 @@ describe("GET /api/v1/today", () => {
       generatedAt: "2026-07-18T19:00:00.000Z",
       confidence: "high",
       stale: false,
+      futureForecastStatus: "none_remaining",
+      comparison: "unavailable",
+      currentPriceCents: 7,
+      currentObservedAtUtc:
+        "2026-07-18T19:00:00.000Z",
+      priceDifferenceCents: null,
       forecasts: [],
       bestTime: null,
     });
@@ -28,6 +34,9 @@ describe("GET /api/v1/today", () => {
     expect(response.status).toBe(200);
     expect(response.body.generatedAt).toBe(
       "2026-07-18T19:00:00.000Z",
+    );
+    expect(response.body.comparison).toBe(
+      "unavailable",
     );
   });
 

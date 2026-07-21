@@ -1,14 +1,14 @@
-"""Application pipeline entry point."""
+"""Run the PostgreSQL-first refresh and one production prediction cycle."""
 
-from electricity_predictor.worker.importer import (
-  synchronize_current_history,
+from electricity_predictor.worker.operational_refresh import (
+  synchronize_operational_prices,
 )
 from electricity_predictor.worker.runner import run_worker_cycle
 
 
 def run_application_pipeline() -> dict:
-  """Synchronize application data, then run one prediction cycle."""
-  synchronized_rows = synchronize_current_history()
+  """Refresh recent AESO rows before backfill, features, and prediction."""
+  synchronized_rows = synchronize_operational_prices()
   worker_result = run_worker_cycle()
 
   return {

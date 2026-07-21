@@ -18,10 +18,9 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
   features = pd.DataFrame(
     {
       "datetime_universal_time": [
-        pd.Timestamp("2026-07-17 17:00:00", tz="UTC"),
         generated_at,
       ],
-      "feature": [1, 2],
+      "feature": [2],
     }
   )
 
@@ -32,6 +31,7 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
       "spike_probability": 0.245,
       "is_spike": False,
       "spike_threshold": 170.77,
+      "forecast_kind": "model_forecast",
     }
   ]
 
@@ -67,6 +67,11 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
       return_value=features,
     ),
     patch(
+      "electricity_predictor.worker.runner."
+      "backfill_prediction_actual_prices",
+      return_value=0,
+    ),
+    patch(
       "electricity_predictor.worker.runner.generate_horizon_predictions",
       return_value=predictions,
     ) as generate_predictions,
@@ -86,6 +91,9 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
     result = run_worker_cycle()
 
   generate_predictions.assert_called_once()
+  assert generate_predictions.call_args.kwargs[
+    "feature_row"
+  ].equals(features)
   load_context.assert_called_once_with()
   apply_decisions.assert_called_once_with(
     predictions=predictions,
@@ -124,6 +132,9 @@ def test_run_worker_cycle_records_failure() -> None:
       side_effect=failure,
     ),
     patch(
+      "electricity_predictor.worker.runner.generate_horizon_predictions",
+    ) as generate_predictions,
+    patch(
       "electricity_predictor.worker.runner.get_database_time",
       return_value=pd.Timestamp(
         "2026-07-17 18:00:00",
@@ -143,9 +154,55 @@ def test_run_worker_cycle_records_failure() -> None:
       raise AssertionError("Worker failure was not re-raised.")
 
   save_failed_run.assert_called_once()
+  generate_predictions.assert_not_called()
 
   saved_arguments = save_failed_run.call_args.kwargs
 
   assert saved_arguments["detail"] == (
     "ValueError: Feature preparation failed."
+  )
+
+
+def test_run_worker_cycle_preserves_primary_error_when_failure_recording_fails(
+) -> None:
+  primary_error = ValueError("Feature preparation failed.")
+
+  with (
+    patch(
+      "electricity_predictor.worker.runner.load_configuration",
+      return_value={"modeling": {"horizons_hours": [1]}},
+    ),
+    patch(
+      "electricity_predictor.worker.runner."
+      "backfill_prediction_actual_prices",
+      return_value=0,
+    ),
+    patch(
+      "electricity_predictor.worker.runner.prepare_model_features",
+      side_effect=primary_error,
+    ),
+    patch(
+      "electricity_predictor.worker.runner.get_database_time",
+      return_value=pd.Timestamp(
+        "2026-07-17 18:00:00",
+        tz="UTC",
+      ).to_pydatetime(),
+    ),
+    patch(
+      "electricity_predictor.worker.runner.save_failed_prediction_run",
+      side_effect=RuntimeError("Database write failed."),
+    ),
+    patch(
+      "electricity_predictor.worker.runner.LOGGER.exception"
+    ) as log_failure,
+  ):
+    try:
+      run_worker_cycle()
+    except ValueError as error:
+      assert error is primary_error
+    else:
+      raise AssertionError("Worker failure was not re-raised.")
+
+  log_failure.assert_called_once_with(
+    "Could not persist the failed worker run."
   )

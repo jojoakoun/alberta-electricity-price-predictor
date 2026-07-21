@@ -91,8 +91,6 @@ def run_regression_models() -> Path:
   results = []
 
   for horizon_hours in horizons_hours:
-    # Convert a horizon number into the exact target column name used in the dataset.
-    # Example: 24 becomes actual_price_target_24h.
     target_column = build_target_column_name(horizon_hours)
 
     print("")

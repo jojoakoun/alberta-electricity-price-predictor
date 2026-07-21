@@ -1,4 +1,7 @@
 from electricity_predictor.config import load_configuration
+from electricity_predictor.features.feature_columns import (
+  SUPPORTED_FORECAST_HORIZONS_HOURS,
+)
 
 
 def test_load_configuration_returns_project_name() -> None:
@@ -15,3 +18,11 @@ def test_load_configuration_contains_required_paths() -> None:
   assert "raw_data_dir" in configuration["paths"]
   assert "processed_data_dir" in configuration["paths"]
   assert "log_dir" in configuration["paths"]
+
+
+def test_configured_horizons_match_the_shared_production_contract() -> None:
+  configuration = load_configuration()
+
+  assert tuple(
+    configuration["modeling"]["horizons_hours"]
+  ) == SUPPORTED_FORECAST_HORIZONS_HOURS

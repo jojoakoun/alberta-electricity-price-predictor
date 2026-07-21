@@ -4,7 +4,7 @@ const { getToday } = require("../services/today-service");
 
 const router = express.Router();
 
-// Return the five genuine forecasts from the latest successful run.
+// Return five horizon points with provenance and a server-owned comparison.
 router.get("/today", async (req, res, next) => {
   try {
     const today = await getToday();

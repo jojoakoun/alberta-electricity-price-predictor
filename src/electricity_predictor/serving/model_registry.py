@@ -1,3 +1,5 @@
+"""Manage independent active regression and classification model lineages."""
+
 from datetime import UTC, datetime
 import json
 import os
@@ -35,7 +37,7 @@ def current_utc_timestamp() -> str:
 def build_legacy_registry(
   updated_at_utc: str | None = None,
 ) -> dict:
-  """Build the initial registry for existing active models."""
+  """Build the initial registry without merging the two task lineages."""
   return {
     "schema_version": 1,
     "updated_at_utc": (
@@ -222,6 +224,8 @@ def write_active_registry_atomic(
       encoding="utf-8",
     )
 
+    # Readers must see either the previous complete registry or the new one,
+    # never a partially written activation file.
     os.replace(
       temporary_path,
       registry_path,
@@ -264,34 +268,33 @@ def initialize_active_registry(
   )
 
 
+def _resolve_task_metadata_path(
+  registry: dict,
+  task_name: str,
+) -> Path:
+  """Return the normalized metadata path exposed by one registry task."""
+  return Path(
+    str(registry["tasks"][task_name]["metadata_path"])
+  )
+
+
 def resolve_active_metadata_paths(
   registry_path: Path = (
     ACTIVE_MODEL_REGISTRY_PATH
   ),
 ) -> tuple[Path, Path, dict]:
-  """Resolve regression and classification metadata paths."""
+  """Resolve each active task's metadata without conflating its lineage."""
   registry = read_active_registry(
     registry_path=registry_path
   )
 
-  regression_path = Path(
-    registry[
-      "tasks"
-    ][
-      "regression"
-    ][
-      "metadata_path"
-    ]
+  regression_path = _resolve_task_metadata_path(
+    registry=registry,
+    task_name="regression",
   )
-
-  classification_path = Path(
-    registry[
-      "tasks"
-    ][
-      "classification"
-    ][
-      "metadata_path"
-    ]
+  classification_path = _resolve_task_metadata_path(
+    registry=registry,
+    task_name="classification",
   )
 
   return (

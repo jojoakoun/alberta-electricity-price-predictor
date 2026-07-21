@@ -1,12 +1,16 @@
 const { pool } = require("../db/pool");
 
-// Read the five predictions from one coherent successful worker run.
+const MARKET_CONTEXT_LOOKBACK_HOURS = 24 * 30;
+
+// Selecting one run first prevents the API from mixing horizons generated from
+// different source market hours. The service validates the five-horizon set.
 async function getLatestPredictions() {
   const { rows } = await pool.query(`
     WITH latest_run AS (
       SELECT
         id,
-        generated_at
+        generated_at,
+        detail
       FROM prediction_runs
       WHERE status = 'success'
       ORDER BY generated_at DESC, id DESC
@@ -18,7 +22,8 @@ async function getLatestPredictions() {
       p.predicted_price,
       p.recommendation,
       p.explanation,
-      lr.generated_at
+      lr.generated_at,
+      lr.detail AS run_detail
     FROM latest_run AS lr
     INNER JOIN predictions AS p
       ON p.prediction_run_id = lr.id
@@ -28,7 +33,7 @@ async function getLatestPredictions() {
   return rows;
 }
 
-// Read the latest finalized market price for the Now page.
+// Forecast-only rows are excluded because Now must describe an observed price.
 async function getLatestFinalizedPrice() {
   const { rows } = await pool.query(`
     SELECT
@@ -43,8 +48,11 @@ async function getLatestFinalizedPrice() {
   return rows[0] ?? null;
 }
 
-// Read recent finalized prices for consumer-facing market context.
-async function getRecentFinalizedPrices(limit = 720) {
+// Bound the query to the documented 30-day distribution used for market
+// context; the outer order keeps the repository result chronological.
+async function getRecentFinalizedPrices(
+  limit = MARKET_CONTEXT_LOOKBACK_HOURS,
+) {
   const { rows } = await pool.query(
     `
       SELECT actual_price

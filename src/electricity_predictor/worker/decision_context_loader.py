@@ -1,3 +1,5 @@
+"""Load the configured observed-price window for worker decision rules."""
+
 from electricity_predictor.config import load_configuration
 from electricity_predictor.worker.decision_context import (
   DecisionContext,

@@ -111,6 +111,7 @@ def test_predict_horizon_loads_artifacts_and_returns_prediction(
   assert result["decision_threshold"] == pytest.approx(0.45)
   assert result["is_spike"] is True
   assert result["spike_threshold"] == pytest.approx(170.77)
+  assert result["forecast_kind"] == "model_forecast"
 
 
 def test_predict_horizon_supports_regression_rule_baseline(
@@ -173,6 +174,7 @@ def test_predict_horizon_supports_regression_rule_baseline(
 
   assert result["predicted_price"] == pytest.approx(72.5)
   assert result["regression_model"] == "naive_baseline"
+  assert result["forecast_kind"] == "persistence_reference"
 
 
 def test_predict_horizon_rejects_unknown_horizon(tmp_path: Path):

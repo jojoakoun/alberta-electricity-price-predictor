@@ -1,6 +1,8 @@
 from pathlib import Path
 
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
+import pytest
 
 from electricity_predictor.data import pipeline
 from electricity_predictor.data.ingestion import (
@@ -116,25 +118,25 @@ def test_build_clean_historical_dataset_writes_clean_file(
   ]
 
 
-def test_get_api_start_date_after_history_returns_next_day_when_history_ends_at_23h() -> None:
+def test_get_api_start_date_for_history_overlap_includes_final_market_date() -> None:
   data = pd.DataFrame(
     {
       "datetime_universal_time": pd.to_datetime(
         [
-          "2025-07-31 21:00",
-          "2025-07-31 22:00",
-          "2025-07-31 23:00",
+          "2025-08-01 01:00",
+          "2025-08-01 02:00",
+          "2025-08-01 03:00",
         ]
       )
     }
   )
 
-  start_date = pipeline.get_api_start_date_after_history(data)
+  start_date = pipeline.get_api_start_date_for_history_overlap(data)
 
-  assert start_date == "2025-08-01"
+  assert start_date == "2025-07-31"
 
 
-def test_combine_historical_and_api_data_keeps_only_new_api_hours() -> None:
+def test_api_actual_does_not_replace_finalized_historical_actual() -> None:
   historical_data = pd.DataFrame(
     {
       "datetime_universal_time": pd.to_datetime(
@@ -195,6 +197,92 @@ def test_combine_historical_and_api_data_keeps_only_new_api_hours() -> None:
 
   assert historical_23h_price == 50.0
 
+  revised_forecast = combined_data.loc[
+    combined_data["datetime_universal_time"] == pd.Timestamp(
+      "2025-07-31 23:00"
+    ),
+    "forecast_price",
+  ].iloc[0]
+
+  assert revised_forecast == 999.0
+  assert combined_data.loc[
+    combined_data["datetime_universal_time"] == pd.Timestamp(
+      "2025-07-31 23:00"
+    ),
+    "alberta_internal_load",
+  ].iloc[0] == 10100
+
+
+def test_api_actual_fills_null_historical_actual() -> None:
+  historical_data = pd.DataFrame(
+    {
+      "datetime_universal_time": pd.to_datetime(
+        ["2025-07-31 23:00"]
+      ),
+      "datetime_local_time": pd.to_datetime(
+        ["2025-07-31 17:00"]
+      ),
+      "actual_price": [None],
+      "forecast_price": [48.0],
+      "alberta_internal_load": [10100.0],
+    }
+  )
+  api_data = pd.DataFrame(
+    {
+      "datetime_universal_time": pd.to_datetime(
+        ["2025-07-31 23:00"],
+        utc=True,
+      ),
+      "datetime_local_time": pd.to_datetime(
+        ["2025-07-31 17:00"]
+      ),
+      "actual_price": [52.0],
+      "forecast_price": [49.0],
+    }
+  )
+
+  combined_data = pipeline.combine_historical_and_api_data(
+    historical_data=historical_data,
+    api_data=api_data,
+  )
+
+  assert len(combined_data) == 1
+  assert combined_data.iloc[0]["actual_price"] == 52.0
+  assert combined_data.iloc[0]["forecast_price"] == 49.0
+  assert combined_data.iloc[0]["alberta_internal_load"] == 10100.0
+  assert is_numeric_dtype(combined_data["actual_price"])
+  assert is_numeric_dtype(combined_data["forecast_price"])
+  assert is_numeric_dtype(combined_data["alberta_internal_load"])
+  assert combined_data.iloc[0][
+    "datetime_universal_time"
+  ] == pd.Timestamp("2025-07-31 23:00")
+
+
+def test_combine_historical_and_api_data_requires_price_columns() -> None:
+  historical_data = pd.DataFrame(
+    {
+      "datetime_universal_time": pd.to_datetime(
+        ["2025-07-31 23:00"]
+      ),
+      "datetime_local_time": pd.to_datetime(
+        ["2025-07-31 17:00"]
+      ),
+      "actual_price": [52.0],
+      "forecast_price": [49.0],
+      "alberta_internal_load": [10100.0],
+    }
+  )
+  api_data = historical_data.drop(columns="forecast_price")
+
+  with pytest.raises(
+    ValueError,
+    match="API dataset is missing columns.*forecast_price",
+  ):
+    pipeline.combine_historical_and_api_data(
+      historical_data=historical_data,
+      api_data=api_data,
+    )
+
 
 def test_build_current_historical_dataset_uses_mocked_api_and_temp_paths(
   tmp_path: Path,
@@ -245,7 +333,7 @@ def test_build_current_historical_dataset_uses_mocked_api_and_temp_paths(
   output_path = pipeline.build_current_historical_dataset(end_date="2025-08-01")
 
   assert captured_request == {
-    "start_date": "2025-08-01",
+    "start_date": "2025-07-31",
     "end_date": "2025-08-01",
   }
 
@@ -256,3 +344,4 @@ def test_build_current_historical_dataset_uses_mocked_api_and_temp_paths(
 
   assert len(data) == 4
   assert 999.0 not in data["actual_price"].tolist()
+  assert 999.0 in data["forecast_price"].tolist()

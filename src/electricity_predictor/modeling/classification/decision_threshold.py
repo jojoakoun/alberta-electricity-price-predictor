@@ -1,3 +1,5 @@
+"""Select and apply a classification probability decision threshold."""
+
 import numpy as np
 from sklearn.metrics import f1_score
 

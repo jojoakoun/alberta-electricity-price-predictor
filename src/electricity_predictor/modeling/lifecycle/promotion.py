@@ -1,3 +1,5 @@
+"""Validate and manually activate model tasks that passed lifecycle gates."""
+
 import argparse
 from copy import deepcopy
 from datetime import UTC, datetime
@@ -5,6 +7,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from electricity_predictor.features.feature_columns import (
+  SUPPORTED_FORECAST_HORIZONS_HOURS,
+)
 from electricity_predictor.modeling.lifecycle.candidate import (
   read_json_file,
   write_json_file,
@@ -26,14 +31,6 @@ from electricity_predictor.serving.model_registry import (
 ACTIVE_MODEL_HISTORY_DIRECTORY = Path(
   "models/production/history"
 )
-
-EXPECTED_HORIZONS = {
-  1,
-  3,
-  6,
-  12,
-  24,
-}
 
 
 def validate_metadata_bundle(
@@ -88,10 +85,12 @@ def validate_metadata_bundle(
     ].astype(int)
   )
 
-  if horizons != EXPECTED_HORIZONS:
+  if horizons != set(
+    SUPPORTED_FORECAST_HORIZONS_HOURS
+  ):
     raise ValueError(
       f"Candidate {task_name} horizons must be "
-      f"{sorted(EXPECTED_HORIZONS)}, received "
+      f"{list(SUPPORTED_FORECAST_HORIZONS_HOURS)}, received "
       f"{sorted(horizons)}."
     )
 

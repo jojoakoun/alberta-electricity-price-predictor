@@ -15,10 +15,10 @@ describe("Health endpoint", () => {
   });
 
   test("returns HTTP 200 when PostgreSQL is available", async () => {
-    const generatedAt = new Date("2026-07-18T19:00:00.000Z");
+    const forecastSourceAt = new Date("2026-07-18T19:00:00.000Z");
 
     pool.query.mockResolvedValue({
-      rows: [{ generated_at: generatedAt }],
+      rows: [{ forecast_source_at: forecastSourceAt }],
     });
 
     const response = await request(createApp()).get("/api/v1/health");
@@ -26,13 +26,15 @@ describe("Health endpoint", () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       status: "ok",
-      latestRunAt: "2026-07-18T19:00:00.000Z",
+      latestForecastSourceAt: "2026-07-18T19:00:00.000Z",
       dbOk: true,
     });
 
     expect(pool.query).toHaveBeenCalledWith(
       expect.stringContaining("WHERE status = 'success'"),
     );
+    expect(pool.query.mock.calls[0][0]).toContain("generated_at");
+    expect(pool.query.mock.calls[0][0]).not.toContain("created_at");
   });
 
   test("returns null when no successful worker run exists yet", async () => {
@@ -45,7 +47,7 @@ describe("Health endpoint", () => {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       status: "ok",
-      latestRunAt: null,
+      latestForecastSourceAt: null,
       dbOk: true,
     });
   });
@@ -58,7 +60,7 @@ describe("Health endpoint", () => {
     expect(response.status).toBe(503);
     expect(response.body).toEqual({
       status: "error",
-      latestRunAt: null,
+      latestForecastSourceAt: null,
       dbOk: false,
     });
   });

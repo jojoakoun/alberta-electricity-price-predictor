@@ -62,3 +62,13 @@ local/
 
 # Local model lifecycle runtime state
 reports/model_lifecycle/
+
+# Local audit evidence
+codex-*
+claude-*
+audit-*
+# Local project documentation
+docs/
+
+# Generated reports and model evaluation outputs
+reports/

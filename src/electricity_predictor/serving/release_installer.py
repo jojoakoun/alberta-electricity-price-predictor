@@ -1,4 +1,8 @@
+"""Verify and atomically install a complete production model release."""
+
 import csv
+from contextlib import contextmanager
+import fcntl
 from hashlib import sha256
 import json
 import os
@@ -9,17 +13,13 @@ import tarfile
 from urllib.request import urlopen
 from uuid import uuid4
 
+from electricity_predictor.features.feature_columns import (
+  SUPPORTED_FORECAST_HORIZONS_HOURS,
+)
+from electricity_predictor.serving.model_registry import TASK_NAMES
 
 MODEL_RELEASE_URL_ENV = "MODEL_RELEASE_URL"
 MODEL_RELEASE_SHA256_ENV = "MODEL_RELEASE_SHA256"
-
-EXPECTED_HORIZONS = {
-  1,
-  3,
-  6,
-  12,
-  24,
-}
 
 
 def calculate_file_sha256(
@@ -104,7 +104,7 @@ def download_release_archive(
 def validate_archive_members(
   archive: tarfile.TarFile,
 ) -> list[tarfile.TarInfo]:
-  """Reject unsafe or unexpected archive entries."""
+  """Reject traversal, links, and files outside the model release root."""
   members = archive.getmembers()
 
   if not members:
@@ -168,7 +168,7 @@ def extract_release_archive(
   archive_path: Path,
   extraction_root: Path,
 ) -> Path:
-  """Extract one validated archive."""
+  """Validate every member before extracting data-only archive entries."""
   extraction_root.mkdir(
     parents=True,
     exist_ok=True,
@@ -182,6 +182,8 @@ def extract_release_archive(
       archive
     )
 
+    # Python's data filter rejects special files and unsafe metadata in
+    # addition to the explicit path and link checks above.
     archive.extractall(
       path=extraction_root,
       members=members,
@@ -357,11 +359,70 @@ def verify_release_manifest_files(
       )
 
 
+def _validate_release_task(
+  extraction_root: Path,
+  tasks: dict,
+  task_name: str,
+) -> None:
+  """Validate one task's metadata table and referenced artifacts."""
+  if task_name not in tasks:
+    raise ValueError(
+      "Release registry is missing task: "
+      f"{task_name}"
+    )
+
+  metadata_path = resolve_release_path(
+    extraction_root=extraction_root,
+    relative_path=tasks[task_name]["metadata_path"],
+  )
+
+  if not metadata_path.is_file():
+    raise FileNotFoundError(
+      f"Release metadata not found: {metadata_path}"
+    )
+
+  with metadata_path.open(
+    newline="",
+    encoding="utf-8",
+  ) as metadata_stream:
+    rows = list(csv.DictReader(metadata_stream))
+
+  if not rows:
+    raise ValueError(
+      f"Release {task_name} metadata is empty."
+    )
+
+  horizons = [
+    int(row["horizon_hours"])
+    for row in rows
+  ]
+
+  if sorted(horizons) != list(
+    SUPPORTED_FORECAST_HORIZONS_HOURS
+  ):
+    raise ValueError(
+      f"Release {task_name} must contain exactly one row for each horizon "
+      f"{list(SUPPORTED_FORECAST_HORIZONS_HOURS)}."
+    )
+
+  for row in rows:
+    artifact_path = resolve_release_path(
+      extraction_root=extraction_root,
+      relative_path=row["artifact_path"],
+    )
+
+    if not artifact_path.is_file():
+      raise FileNotFoundError(
+        "Release artifact not found: "
+        f"{artifact_path}"
+      )
+
+
 def validate_release_registry(
   extraction_root: Path,
   manifest: dict,
 ) -> dict:
-  """Validate registry metadata and artifact references."""
+  """Validate release identity and each independent task definition."""
   registry_path = (
     extraction_root
     / "models"
@@ -399,73 +460,12 @@ def validate_release_registry(
       "Release registry contains no task definitions."
     )
 
-  for task_name in [
-    "regression",
-    "classification",
-  ]:
-    if task_name not in tasks:
-      raise ValueError(
-        "Release registry is missing task: "
-        f"{task_name}"
-      )
-
-    metadata_path = resolve_release_path(
+  for task_name in TASK_NAMES:
+    _validate_release_task(
       extraction_root=extraction_root,
-      relative_path=tasks[
-        task_name
-      ][
-        "metadata_path"
-      ],
+      tasks=tasks,
+      task_name=task_name,
     )
-
-    if not metadata_path.is_file():
-      raise FileNotFoundError(
-        f"Release metadata not found: {metadata_path}"
-      )
-
-    with metadata_path.open(
-      newline="",
-      encoding="utf-8",
-    ) as metadata_stream:
-      rows = list(
-        csv.DictReader(
-          metadata_stream
-        )
-      )
-
-    if not rows:
-      raise ValueError(
-        f"Release {task_name} metadata is empty."
-      )
-
-    horizons = {
-      int(
-        row[
-          "horizon_hours"
-        ]
-      )
-      for row in rows
-    }
-
-    if horizons != EXPECTED_HORIZONS:
-      raise ValueError(
-        f"Release {task_name} horizons must be "
-        f"{sorted(EXPECTED_HORIZONS)}."
-      )
-
-    for row in rows:
-      artifact_path = resolve_release_path(
-        extraction_root=extraction_root,
-        relative_path=row[
-          "artifact_path"
-        ],
-      )
-
-      if not artifact_path.is_file():
-        raise FileNotFoundError(
-          "Release artifact not found: "
-          f"{artifact_path}"
-        )
 
   return registry
 
@@ -542,12 +542,44 @@ def read_installed_release_id(
   )
 
 
-def install_release_archive(
+@contextmanager
+def acquire_release_install_lock(
+  models_root: Path,
+):
+  """Serialize installation with a POSIX lock on macOS and Railway Linux.
+
+  The lock file intentionally persists. Replacing or deleting it between
+  contenders could give concurrent processes locks on different inodes.
+  """
+  models_root.mkdir(
+    parents=True,
+    exist_ok=True,
+  )
+  lock_path = (
+    models_root / ".release-install.lock"
+  )
+
+  with lock_path.open("a+b") as lock_stream:
+    fcntl.flock(
+      lock_stream.fileno(),
+      fcntl.LOCK_EX,
+    )
+
+    try:
+      yield lock_path
+    finally:
+      fcntl.flock(
+        lock_stream.fileno(),
+        fcntl.LOCK_UN,
+      )
+
+
+def _install_release_archive_under_lock(
   archive_path: Path,
   expected_sha256: str,
   project_root: Path = Path("."),
 ) -> dict:
-  """Verify and atomically install one release archive."""
+  """Verify and install one release while the caller holds the lock."""
   expected_checksum = (
     normalize_expected_sha256(
       expected_sha256
@@ -598,6 +630,7 @@ def install_release_archive(
   )
 
   try:
+    # Verify the complete staged payload before touching the active directory.
     extract_release_archive(
       archive_path=archive_path,
       extraction_root=staging_root,
@@ -641,12 +674,16 @@ def install_release_archive(
       )
 
     if destination_path.exists():
+      # Move the previous release aside atomically so it can be restored if
+      # activating the verified replacement fails.
       os.replace(
         destination_path,
         backup_path,
       )
 
     try:
+      # The directory swap makes the complete registry and its artifacts
+      # visible together; serving never observes a partial installation.
       os.replace(
         source_path,
         destination_path,
@@ -686,6 +723,25 @@ def install_release_archive(
       shutil.rmtree(
         backup_path
       )
+
+
+def install_release_archive(
+  archive_path: Path,
+  expected_sha256: str,
+  project_root: Path = Path("."),
+) -> dict:
+  """Verify and atomically install one serialized release archive."""
+  project_root = project_root.resolve()
+  models_root = project_root / "models"
+
+  with acquire_release_install_lock(
+    models_root
+  ):
+    return _install_release_archive_under_lock(
+      archive_path=archive_path,
+      expected_sha256=expected_sha256,
+      project_root=project_root,
+    )
 
 
 def install_release_from_url(

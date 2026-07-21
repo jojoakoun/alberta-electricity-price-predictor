@@ -197,7 +197,6 @@ if __name__ == "__main__":
 
   model_results = load_model_results(model_results_path)
 
-  # Select one best validation model for each forecast horizon.
   best_regression_models = select_best_regression_models_by_horizon(
     results=model_results,
     metric=DEFAULT_SELECTION_METRIC,

@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import re
+import tomllib
 
 
 CONFIG_PATH = Path(
@@ -71,14 +72,14 @@ def test_worker_uses_railpack() -> None:
   )
 
 
-def test_worker_uses_canonical_make_target() -> None:
+def test_worker_uses_installed_canonical_entry_point() -> None:
   config = load_worker_config()
 
   assert config[
     "deploy"
   ][
     "startCommand"
-  ] == "make worker-run"
+  ] == "wattwise-worker"
 
 
 def test_models_install_supports_remote_release() -> None:
@@ -127,7 +128,7 @@ def test_models_install_supports_local_registry() -> None:
   )
 
 
-def test_worker_prepares_models_before_refresh() -> None:
+def test_make_worker_target_uses_canonical_python_entry_point() -> None:
   makefile = load_makefile()
 
   target = extract_make_target(
@@ -135,21 +136,22 @@ def test_worker_prepares_models_before_refresh() -> None:
     target_name="worker-run",
   )
 
-  models_command = (
-    "$(MAKE) models-install"
+  assert "$(PYTHON)" in target
+  assert (
+    "-m electricity_predictor.worker.production"
+    in target
   )
+  assert "$(MAKE) models-install" not in target
+  assert "$(MAKE) app-refresh" not in target
 
-  refresh_command = (
-    "$(MAKE) app-refresh"
-  )
 
-  assert models_command in target
-  assert refresh_command in target
+def test_worker_entry_point_is_installed_by_python_package() -> None:
+  with Path("pyproject.toml").open("rb") as stream:
+    pyproject = tomllib.load(stream)
 
-  assert target.index(
-    models_command
-  ) < target.index(
-    refresh_command
+  assert (
+    pyproject["project"]["scripts"]["wattwise-worker"]
+    == "electricity_predictor.worker.production:main"
   )
 
 

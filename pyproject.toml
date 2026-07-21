@@ -9,6 +9,9 @@ description = "A machine learning project for Alberta electricity price predicti
 readme = "README.md"
 requires-python = ">=3.14,<3.15"
 
+[project.scripts]
+wattwise-worker = "electricity_predictor.worker.production:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

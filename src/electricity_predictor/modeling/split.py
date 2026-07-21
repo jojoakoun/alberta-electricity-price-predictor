@@ -1,3 +1,5 @@
+"""Create leakage-safe chronological training, validation, and test splits."""
+
 from pathlib import Path
 
 import pandas as pd

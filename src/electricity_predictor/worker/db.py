@@ -1,3 +1,5 @@
+"""Open PostgreSQL connections for operational worker repositories."""
+
 import psycopg
 from psycopg import Connection
 

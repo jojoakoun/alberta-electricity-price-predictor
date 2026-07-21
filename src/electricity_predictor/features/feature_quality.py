@@ -1,3 +1,5 @@
+"""Summarize completeness of engineered research features."""
+
 from pathlib import Path
 
 import pandas as pd
@@ -7,19 +9,16 @@ from electricity_predictor.features.feature_columns import ENGINEERED_FEATURE_CO
 
 def summarize_feature_quality(file_path: Path) -> dict:
   """Summarize missing values created by feature engineering."""
-
   if not file_path.exists():
     raise FileNotFoundError(f"Modeling dataset not found: {file_path}")
 
   data = pd.read_csv(file_path)
 
-  # These checks show whether lag and rolling features created unusable model rows.
   missing_by_column = data.isna().sum()
 
-  # We focus on engineered features because raw target rows were already cleaned earlier.
+  # Raw target rows are cleaned earlier; this report isolates feature losses.
   missing_engineered_features = data[ENGINEERED_FEATURE_COLUMNS].isna().sum()
 
-  # This shows how many rows would remain if we train only on complete feature rows.
   complete_feature_rows = data.dropna(subset=ENGINEERED_FEATURE_COLUMNS)
 
   return {
@@ -32,9 +31,9 @@ def summarize_feature_quality(file_path: Path) -> dict:
     "rows_removed": len(data) - len(complete_feature_rows),
   }
 
+
 def print_feature_quality_summary(summary: dict) -> None:
   """Print a readable feature quality summary."""
-
   print("Feature quality report")
   print("======================")
   print(f"File: {summary['file_path']}")
@@ -51,7 +50,10 @@ def print_feature_quality_summary(summary: dict) -> None:
   print()
   print("Rows after dropping missing engineered features")
   print("-----------------------------------------------")
-  print(f"Rows remaining: {summary['rows_after_dropping_missing_engineered_features']:,}")
+  print(
+    "Rows remaining: "
+    f"{summary['rows_after_dropping_missing_engineered_features']:,}"
+  )
   print(f"Rows removed: {summary['rows_removed']:,}")
 
 

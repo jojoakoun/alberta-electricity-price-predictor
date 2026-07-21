@@ -1,32 +1,27 @@
-# React + TypeScript + Vite
+# WattWise client
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The WattWise browser application is a React frontend written in JavaScript and
+JSX. Vite provides the development server, production build, and Vitest test
+environment; Oxlint checks the source.
 
-Currently, two official plugins are available:
+## Commands
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Run these commands from the repository root:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm --prefix app/client run dev
+npm --prefix app/client test
+npm --prefix app/client run lint
+npm --prefix app/client run build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The development server forwards `/api` requests to the local Express service
+at `http://127.0.0.1:8000`. The production build targets ECMAScript 2016 and is
+served by Express from `app/client/dist`.
+
+## Runtime contracts
+
+Responses from the Now and Today APIs are validated at the network boundary.
+The Today API owns price comparison and best-time selection; the browser only
+renders those decisions. The +24-hour persistence reference remains visible
+for context but cannot be highlighted as a savings opportunity.

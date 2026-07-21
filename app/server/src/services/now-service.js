@@ -1,90 +1,89 @@
 const {
-  getLatestPredictions,
   getLatestFinalizedPrice,
   getRecentFinalizedPrices,
-} = require("../repositories/prediction-repository");
+} = require(
+  "../repositories/prediction-repository"
+);
 
 const {
   dollarsPerMwhToCentsPerKwh,
 } = require("../utils/price");
 
 const {
-  normalizeRecommendation,
-} = require("../utils/recommendation");
-
-const {
-  getExplanationKey,
-} = require("../utils/explanation");
-
-const {
-  getFreshness,
+  getObservedPriceFreshness,
 } = require("../utils/freshness");
 
 const {
-  getMarketContext,
+  getCurrentMarketDecision,
 } = require("../utils/market-context");
 
 const {
   getActionKey,
 } = require("../utils/action");
 
+/**
+ * Build Now from the latest finalized observed price and recent market context.
+ *
+ * `generatedAt` intentionally equals the observation hour because this
+ * recommendation does not depend on a prediction run or worker execution time.
+ */
 async function getNow() {
-  const predictions = await getLatestPredictions();
+  const [
+    latestObservedPrice,
+    recentPrices,
+  ] = await Promise.all([
+    getLatestFinalizedPrice(),
+    getRecentFinalizedPrices(),
+  ]);
 
-  if (predictions.length === 0) {
+  if (!latestObservedPrice) {
     return null;
   }
 
-  const prediction = predictions.find(
-    (row) => row.horizon_hours === 1,
+  const observedDate = new Date(
+    latestObservedPrice.datetime_utc,
   );
 
-  if (!prediction) {
-    throw new Error("The latest prediction run is missing the 1-hour forecast.");
+  if (Number.isNaN(observedDate.getTime())) {
+    throw new Error(
+      "The latest finalized price has an invalid timestamp.",
+    );
   }
 
-  const latestPrice = await getLatestFinalizedPrice();
+  const observedAtUtc = (
+    observedDate.toISOString()
+  );
 
-  if (!latestPrice) {
-    throw new Error("No finalized market price is available.");
-  }
-
-  const recentPrices = await getRecentFinalizedPrices();
-
-  const observedAtUtc = latestPrice.datetime_utc
-    ? new Date(latestPrice.datetime_utc).toISOString()
-    : undefined;
-
-  const recommendation = normalizeRecommendation(
-    prediction.recommendation,
+  const decision = getCurrentMarketDecision(
+    latestObservedPrice.actual_price,
+    recentPrices,
   );
 
   return {
-    generatedAt: prediction.generated_at,
-    ...getFreshness(prediction.generated_at),
+    generatedAt: observedAtUtc,
+
+    ...getObservedPriceFreshness(
+      observedAtUtc,
+    ),
 
     price: {
       value: dollarsPerMwhToCentsPerKwh(
-        latestPrice.actual_price,
+        latestObservedPrice.actual_price,
       ),
       unit: "¢/kWh",
-      ...(observedAtUtc
-        ? { observedAtUtc }
-        : {}),
+      observedAtUtc,
     },
 
     recommendation: {
-      level: recommendation,
-      explanationKey: getExplanationKey(
-        prediction.explanation,
+      level: decision.level,
+      explanationKey:
+        decision.explanationKey,
+      actionKey: getActionKey(
+        decision.level,
       ),
-      actionKey: getActionKey(recommendation),
     },
 
-    contextKey: getMarketContext(
-      latestPrice.actual_price,
-      recentPrices,
-    ),
+    contextKey: decision.contextKey,
   };
 }
 

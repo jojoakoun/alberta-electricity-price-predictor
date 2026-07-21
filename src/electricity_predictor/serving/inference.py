@@ -1,22 +1,22 @@
+"""Load active artifacts and produce one provenance-aware horizon forecast."""
+
 from pathlib import Path
 
 import joblib
 import pandas as pd
 
+from electricity_predictor.features.feature_columns import (
+  parse_model_feature_columns,
+)
 from electricity_predictor.serving.model_registry import (
   ACTIVE_MODEL_REGISTRY_PATH,
-  LEGACY_CLASSIFICATION_METADATA_PATH,
-  LEGACY_REGRESSION_METADATA_PATH,
   resolve_active_metadata_paths,
 )
 
 
-REGRESSION_METADATA_PATH = (
-  LEGACY_REGRESSION_METADATA_PATH
-)
-CLASSIFICATION_METADATA_PATH = (
-  LEGACY_CLASSIFICATION_METADATA_PATH
-)
+# Research decision tools historically import this name from serving. Keep the
+# public alias while all parsing behavior lives in the shared feature contract.
+parse_feature_columns = parse_model_feature_columns
 
 
 def load_model_metadata(
@@ -41,23 +41,6 @@ def load_model_metadata(
     raise ValueError(f"Model metadata is empty: {metadata_path}")
 
   return metadata
-
-
-def parse_feature_columns(feature_columns: str) -> list[str]:
-  """Parse the ordered feature list stored in model metadata."""
-  if not isinstance(feature_columns, str) or not feature_columns.strip():
-    raise ValueError("Model metadata contains no feature columns.")
-
-  columns = [
-    column.strip()
-    for column in feature_columns.split("|")
-    if column.strip()
-  ]
-
-  if not columns:
-    raise ValueError("Model metadata contains no valid feature columns.")
-
-  return columns
 
 
 def prepare_feature_row(
@@ -151,6 +134,23 @@ def predict_regression_value(
   prediction = artifact.predict(feature_row)
 
   return float(prediction[0])
+
+
+def get_forecast_kind(artifact) -> str:
+  """Return the provenance carried with one regression output.
+
+  A persistence rule remains visible as a reference forecast, but downstream
+  product logic can use this provenance to keep it out of savings claims.
+  """
+  if (
+    isinstance(artifact, dict)
+    and artifact.get("model_type") == "rule_baseline"
+    and artifact.get("prediction_column")
+    == "actual_price_lag_1h"
+  ):
+    return "persistence_reference"
+
+  return "model_forecast"
 
 
 def predict_classification_value(
@@ -270,10 +270,10 @@ def predict_horizon(
     horizon_hours=horizon_hours,
   )
 
-  regression_features = parse_feature_columns(
+  regression_features = parse_model_feature_columns(
     regression_row["feature_columns"]
   )
-  classification_features = parse_feature_columns(
+  classification_features = parse_model_feature_columns(
     classification_row["feature_columns"]
   )
 
@@ -316,4 +316,7 @@ def predict_horizon(
     ),
     "regression_model": regression_row["model_name"],
     "classification_model": classification_row["model_name"],
+    "forecast_kind": get_forecast_kind(
+      regression_artifact
+    ),
   }

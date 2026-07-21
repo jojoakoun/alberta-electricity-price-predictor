@@ -1,3 +1,5 @@
+"""Create complete research training rows from engineered model features."""
+
 from pathlib import Path
 
 import pandas as pd
@@ -14,22 +16,18 @@ def load_modeling_dataset(file_path: Path) -> pd.DataFrame:
 
 
 def build_training_dataset(data: pd.DataFrame) -> pd.DataFrame:
-  """Build a model-ready training dataset from the modeling dataset."""
+  """Keep rows with every required feature and future target available."""
   data = data.copy()
 
-  # Rows must have complete engineered features and complete future targets.
+  # Training cannot accept a row missing any artifact input or future target.
   data = data.dropna(subset=TRAINING_REQUIRED_COLUMNS)
 
-  # Reset the index so downstream modeling code receives a clean row order.
   return data.reset_index(drop=True)
 
 
 def write_training_dataset(data: pd.DataFrame, output_path: Path) -> Path:
   """Write the training dataset to a CSV file."""
-  # Create the processed data folder if it does not exist yet.
   output_path.parent.mkdir(parents=True, exist_ok=True)
-
-  # Save the clean training dataset for regression model development.
   data.to_csv(output_path, index=False)
 
   return output_path

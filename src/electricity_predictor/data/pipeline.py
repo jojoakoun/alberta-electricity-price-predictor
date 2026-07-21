@@ -1,3 +1,5 @@
+"""Rebuild research CSV datasets; the recurring worker does not use this path."""
+
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -20,7 +22,6 @@ def get_pipeline_paths() -> tuple[Path, Path]:
   interim_data_dir = Path(configuration["paths"]["interim_data_dir"])
   csv_name = configuration["data"]["historical_csv_name"]
 
-  # Build the full path to the raw historical CSV.
   raw_csv_path = raw_data_dir / csv_name
 
   return raw_csv_path, interim_data_dir
@@ -39,7 +40,6 @@ def build_clean_historical_dataset() -> Path:
   raw_csv_path, interim_data_dir = get_pipeline_paths()
   output_path = interim_data_dir / "csv_historical_prices_clean.csv"
 
-  # Create the output folder if it does not exist yet.
   interim_data_dir.mkdir(parents=True, exist_ok=True)
 
   data = load_historical_data(raw_csv_path)
@@ -48,51 +48,177 @@ def build_clean_historical_dataset() -> Path:
   return output_path
 
 
-def get_api_start_date_after_history(historical_data: pd.DataFrame) -> str:
-  """Get the first API date needed after the historical CSV ends."""
-  last_historical_time = historical_data["datetime_universal_time"].max()
+def get_api_start_date_for_history_overlap(
+  historical_data: pd.DataFrame,
+) -> str:
+  """Return the final historical Alberta date so AESO can revise that day."""
+  last_historical_time = pd.Timestamp(
+    historical_data["datetime_universal_time"].max()
+  )
 
-  # AESO accepts dates, so we convert the next missing hour to yyyy-mm-dd.
-  next_missing_hour = last_historical_time + pd.Timedelta(hours=1)
+  if last_historical_time.tzinfo is None:
+    last_historical_time = last_historical_time.tz_localize("UTC")
+  else:
+    last_historical_time = last_historical_time.tz_convert("UTC")
 
-  return next_missing_hour.strftime("%Y-%m-%d")
+  final_market_date = last_historical_time.tz_convert(
+    ZoneInfo("America/Edmonton")
+  )
+
+  return final_market_date.strftime("%Y-%m-%d")
 
 
 def combine_historical_and_api_data(
   historical_data: pd.DataFrame,
   api_data: pd.DataFrame,
 ) -> pd.DataFrame:
-  """Combine historical CSV data with new AESO API data."""
-  last_historical_time = historical_data["datetime_universal_time"].max()
+  """Merge research history with AESO rows using explicit field precedence.
 
-  # API data should extend the historical CSV, not replace existing rows.
-  api_data = api_data[api_data["datetime_universal_time"] > last_historical_time]
+  Finalized historical actuals are immutable. AESO actuals fill only missing
+  observations, while the newest non-null AESO forecast is an approved revision.
+  """
+  timestamp_column = "datetime_universal_time"
+  historical_required_columns = {
+    timestamp_column,
+    "datetime_local_time",
+    "actual_price",
+    "forecast_price",
+    "alberta_internal_load",
+  }
+  api_required_columns = {
+    timestamp_column,
+    "datetime_local_time",
+    "actual_price",
+    "forecast_price",
+  }
 
-  # Combine the original history with only the new API hours.
-  combined_data = pd.concat([historical_data, api_data], ignore_index=True)
+  for source_name, source_data, required_columns in [
+    (
+      "Historical",
+      historical_data,
+      historical_required_columns,
+    ),
+    ("API", api_data, api_required_columns),
+  ]:
+    missing_columns = required_columns - set(source_data.columns)
 
-  # The combined dataset must keep one row per UTC hour.
-  if combined_data["datetime_universal_time"].duplicated().any():
-    raise ValueError("Combined dataset contains duplicate UTC timestamps.")
+    if missing_columns:
+      raise ValueError(
+        f"{source_name} dataset is missing columns: "
+        f"{sorted(missing_columns)}"
+      )
 
-  # Keep the final dataset in chronological order.
-  combined_data = combined_data.sort_values("datetime_universal_time").reset_index(drop=True)
+  historical_data = historical_data.copy()
+  api_data = api_data.copy()
 
-  return combined_data
+  for source_name, source_data in [
+    ("Historical", historical_data),
+    ("API", api_data),
+  ]:
+    source_data[timestamp_column] = pd.to_datetime(
+      source_data[timestamp_column],
+      utc=True,
+    ).dt.tz_localize(None)
+
+    if source_data[timestamp_column].duplicated().any():
+      raise ValueError(
+        f"{source_name} dataset contains duplicate UTC timestamps."
+      )
+
+  historical_by_time = historical_data.set_index(timestamp_column)
+  api_by_time = api_data.set_index(timestamp_column)
+  combined_index = historical_by_time.index.union(
+    api_by_time.index
+  ).sort_values()
+
+  def aligned_column(
+    source_data: pd.DataFrame,
+    column_name: str,
+  ) -> pd.Series:
+    """Align one optional source column to the union of hourly timestamps."""
+    if column_name not in source_data.columns:
+      return pd.Series(index=combined_index, dtype="object")
+
+    return source_data[column_name].reindex(combined_index)
+
+  historical_local_time = aligned_column(
+    historical_by_time,
+    "datetime_local_time",
+  )
+  api_local_time = aligned_column(
+    api_by_time,
+    "datetime_local_time",
+  )
+  historical_actual = aligned_column(
+    historical_by_time,
+    "actual_price",
+  )
+  api_actual = aligned_column(
+    api_by_time,
+    "actual_price",
+  )
+  historical_forecast = aligned_column(
+    historical_by_time,
+    "forecast_price",
+  )
+  api_forecast = aligned_column(
+    api_by_time,
+    "forecast_price",
+  )
+  historical_load = aligned_column(
+    historical_by_time,
+    "alberta_internal_load",
+  )
+  api_load = aligned_column(
+    api_by_time,
+    "alberta_internal_load",
+  )
+
+  combined_actual = pd.to_numeric(
+    historical_actual.combine_first(api_actual),
+    errors="raise",
+  )
+  combined_forecast = pd.to_numeric(
+    api_forecast.combine_first(historical_forecast),
+    errors="raise",
+  )
+  combined_load = pd.to_numeric(
+    historical_load.combine_first(api_load),
+    errors="raise",
+  )
+  combined_data = pd.DataFrame(
+    {
+      timestamp_column: combined_index,
+      "datetime_local_time": historical_local_time.combine_first(
+        api_local_time
+      ).to_numpy(),
+      # Finalized historical actuals win; API actuals only fill nulls.
+      "actual_price": combined_actual.to_numpy(),
+      # The newest non-null API forecast is an approved revision.
+      "forecast_price": combined_forecast.to_numpy(),
+      "alberta_internal_load": combined_load.to_numpy(),
+    }
+  )
+
+  return combined_data.reset_index(drop=True)
 
 
 def build_current_historical_dataset(end_date: str | None = None) -> Path:
-  """Build a historical dataset updated with AESO API data."""
+  """Build the research CSV used for model development and lifecycle runs.
+
+  This full-history rebuild is deliberately separate from the PostgreSQL-first
+  recurring worker.
+  """
   raw_csv_path, interim_data_dir = get_pipeline_paths()
   output_path = interim_data_dir / "current_historical_prices_clean.csv"
 
-  # Create the output folder if it does not exist yet.
   interim_data_dir.mkdir(parents=True, exist_ok=True)
 
   historical_data = load_historical_data(raw_csv_path)
-  start_date = get_api_start_date_after_history(historical_data)
+  start_date = get_api_start_date_for_history_overlap(
+    historical_data
+  )
 
-  # Use today's Alberta date when no end date is provided.
   if end_date is None:
     end_date = get_current_api_end_date()
 

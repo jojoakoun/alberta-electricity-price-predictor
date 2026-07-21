@@ -7,7 +7,8 @@ function formatAlbertaTime(value) {
     throw new TypeError("A valid timestamp is required.");
   }
 
-  // Return the local clock time expected by the consumer UI.
+  // IANA timezone conversion keeps Alberta daylight-saving changes out of the
+  // client and avoids fixed-offset timestamp errors.
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: ALBERTA_TIME_ZONE,
     hour: "numeric",

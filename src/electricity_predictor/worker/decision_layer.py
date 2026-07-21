@@ -1,3 +1,5 @@
+"""Convert horizon predictions into threshold-based consumer decisions."""
+
 from electricity_predictor.worker.decision_context import (
   DecisionContext,
 )
@@ -8,7 +10,6 @@ def make_recommendation(
   context: DecisionContext,
 ) -> dict:
   """Convert one prediction into a business recommendation."""
-
   price = float(prediction["predicted_price"])
 
   if price >= context.avoid_threshold:
@@ -50,7 +51,6 @@ def apply_decision_layer(
   context: DecisionContext,
 ) -> list[dict]:
   """Apply the decision policy to all horizon predictions."""
-
   return [
     make_recommendation(
       prediction=prediction,

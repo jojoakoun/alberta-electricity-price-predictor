@@ -1,3 +1,5 @@
+"""Inspect research CSVs for gaps, duplicates, and incomplete price rows."""
+
 from pathlib import Path
 
 import pandas as pd
@@ -11,7 +13,9 @@ def summarize_dataset(file_path: Path) -> dict:
   data = pd.read_csv(file_path)
 
   # Convert UTC timestamps before checking date range and duplicates.
-  data["datetime_universal_time"] = pd.to_datetime(data["datetime_universal_time"])
+  data["datetime_universal_time"] = pd.to_datetime(
+    data["datetime_universal_time"]
+  )
 
   summary = {
     "file_path": str(file_path),
@@ -20,15 +24,21 @@ def summarize_dataset(file_path: Path) -> dict:
     "columns": data.columns.tolist(),
     "min_utc_time": data["datetime_universal_time"].min(),
     "max_utc_time": data["datetime_universal_time"].max(),
-    "duplicate_utc_timestamps": int(data["datetime_universal_time"].duplicated().sum()),
+    "duplicate_utc_timestamps": int(
+      data["datetime_universal_time"].duplicated().sum()
+    ),
     "missing_values": data.isna().sum().to_dict(),
   }
 
   if "actual_price" in data.columns:
-    summary["zero_actual_price_count"] = int((data["actual_price"] == 0).sum())
+    summary["zero_actual_price_count"] = int(
+      (data["actual_price"] == 0).sum()
+    )
 
   if "forecast_price" in data.columns:
-    summary["zero_forecast_price_count"] = int((data["forecast_price"] == 0).sum())
+    summary["zero_forecast_price_count"] = int(
+      (data["forecast_price"] == 0).sum()
+    )
 
   return summary
 
@@ -53,6 +63,7 @@ def find_missing_hourly_timestamps(file_path: Path) -> pd.DatetimeIndex:
 
   return missing_times
 
+
 def find_rows_with_missing_values(file_path: Path, column: str) -> pd.DataFrame:
   """Return rows where a selected column has missing values."""
   if not file_path.exists():
@@ -61,13 +72,16 @@ def find_rows_with_missing_values(file_path: Path, column: str) -> pd.DataFrame:
   data = pd.read_csv(file_path)
 
   # Convert timestamps to make the output easier to inspect.
-  data["datetime_universal_time"] = pd.to_datetime(data["datetime_universal_time"])
+  data["datetime_universal_time"] = pd.to_datetime(
+    data["datetime_universal_time"]
+  )
   data["datetime_local_time"] = pd.to_datetime(data["datetime_local_time"])
 
   if column not in data.columns:
     raise ValueError(f"Column not found: {column}")
 
   return data[data[column].isna()]
+
 
 def count_recent_incomplete_price_rows(file_path: Path) -> int:
   """Count rows where the actual price is not finalized yet."""
@@ -78,6 +92,7 @@ def count_recent_incomplete_price_rows(file_path: Path) -> int:
 
   if "actual_price" not in data.columns:
     raise ValueError("Column not found: actual_price")
+
   return int(data["actual_price"].isna().sum())
 
 
@@ -102,7 +117,8 @@ def print_quality_summary(summary: dict) -> None:
 
   if "zero_forecast_price_count" in summary:
     print(f"Zero forecast price count: {summary['zero_forecast_price_count']}")
-    
+
+
 if __name__ == "__main__":
   dataset_path = Path("data/interim/current_historical_prices_clean.csv")
   summary = summarize_dataset(dataset_path)
@@ -110,11 +126,11 @@ if __name__ == "__main__":
   missing_times = find_missing_hourly_timestamps(dataset_path)
   print("\nMissing hourly UTC timestamps:")
   print(f"  - Count: {len(missing_times)}")
-  
+
   if len(missing_times) > 0:
     print(f"  - First missing: {missing_times.min()}")
     print(f"  - Last missing: {missing_times.max()}")
-    
+
   missing_actual_price_rows = find_rows_with_missing_values(
     dataset_path,
     "actual_price",
@@ -122,7 +138,7 @@ if __name__ == "__main__":
 
   print("\nRows with missing actual_price:")
   print(missing_actual_price_rows)
-  
+
   incomplete_price_count = count_recent_incomplete_price_rows(dataset_path)
 
   print("\nRecent incomplete actual_price rows:")

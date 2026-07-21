@@ -2,7 +2,6 @@ const { Pool } = require("pg");
 
 const { env } = require("../config/env");
 
-// Create one shared PostgreSQL connection pool.
 const pool = new Pool({
   connectionString: env.databaseUrl,
   max: 10,

@@ -66,7 +66,7 @@ def test_add_horizon_target_features_creates_future_price_targets():
   assert pd.isna(result.loc[1, "actual_price_target_3h"])
 
 
-def test_build_basic_modeling_dataset_removes_missing_target_rows():
+def test_build_basic_modeling_dataset_removes_unfinalized_source_rows():
   data = pd.DataFrame({
     "datetime_universal_time": pd.to_datetime([
       "2026-01-01 07:00:00",
@@ -82,7 +82,7 @@ def test_build_basic_modeling_dataset_removes_missing_target_rows():
 
   result = build_basic_modeling_dataset(data, horizons_hours=[1])
 
-  # A supervised model cannot create reliable targets from rows without finalized actual_price.
+  # Research features require a finalized source observation before targets are built.
   assert len(result) == 1
   assert result["actual_price"].tolist() == [30.24]
 
@@ -135,7 +135,7 @@ def test_build_basic_modeling_dataset_adds_lag_features():
 
   result = build_basic_modeling_dataset(data, horizons_hours=[1])
 
-  # Lag features must use previous values, not the current target value.
+  # Lag features must use values before the source hour.
   assert pd.isna(result.loc[0, "actual_price_lag_1h"])
   assert result.loc[1, "actual_price_lag_1h"] == 30.00
   assert result.loc[2, "actual_price_lag_1h"] == 40.00
@@ -160,7 +160,7 @@ def test_build_basic_modeling_dataset_adds_rolling_features():
 
   result = build_basic_modeling_dataset(data, horizons_hours=[1])
 
-  # Rolling features must use past values only, so the current target is excluded.
+  # Rolling features must use observations strictly before the source hour.
   assert pd.isna(result.loc[23, "actual_price_rolling_24h_mean"])
   assert result.loc[24, "actual_price_rolling_24h_mean"] == 12.5
   assert result.loc[24, "actual_price_rolling_24h_max"] == 24.0

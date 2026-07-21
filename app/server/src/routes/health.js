@@ -4,11 +4,11 @@ const { pool } = require("../db/pool");
 
 const router = express.Router();
 
-// Confirm database access and report the latest successful worker run.
+// generated_at is the forecast's source market hour, not worker execution time.
 router.get("/health", async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT generated_at
+      SELECT generated_at AS forecast_source_at
       FROM prediction_runs
       WHERE status = 'success'
       ORDER BY generated_at DESC
@@ -17,13 +17,13 @@ router.get("/health", async (req, res) => {
 
     res.status(200).json({
       status: "ok",
-      latestRunAt: result.rows[0]?.generated_at ?? null,
+      latestForecastSourceAt: result.rows[0]?.forecast_source_at ?? null,
       dbOk: true,
     });
   } catch {
     res.status(503).json({
       status: "error",
-      latestRunAt: null,
+      latestForecastSourceAt: null,
       dbOk: false,
     });
   }

@@ -1,6 +1,0 @@
-model_name,horizon_hours,split,true_negative,false_positive,false_negative,true_positive
-random_forest_classifier_tuned,1,test,12160,562,236,146
-random_forest_classifier_tuned,3,test,12453,269,297,85
-random_forest_classifier_tuned,6,test,12442,280,325,57
-random_forest_classifier_tuned,12,test,12291,431,330,52
-random_forest_classifier_tuned,24,test,12550,172,344,38
