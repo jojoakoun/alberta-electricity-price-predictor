@@ -458,38 +458,32 @@ baseline:
 
 linear-regression:
 	# Train and evaluate Linear Regression.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/linear/linear_regression.py
+	$(PYTHON) -m electricity_predictor.modeling.regression.linear.linear_regression
 
 
 ridge-regression:
 	# Train and evaluate Ridge Regression.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
+	$(PYTHON) -m electricity_predictor.modeling.regression.ridge.ridge_regression
 
 
 lasso-regression:
 	# Train and evaluate Lasso Regression.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
+	$(PYTHON) -m electricity_predictor.modeling.regression.lasso.lasso_regression
 
 
 lasso-tuning:
 	# Tune Lasso with chronological TimeSeriesSplit.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
+	$(PYTHON) -m electricity_predictor.modeling.regression.lasso.lasso_tuning
 
 
 elastic-net-regression:
 	# Train and evaluate Elastic Net Regression.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
+	$(PYTHON) -m electricity_predictor.modeling.regression.elastic_net.elastic_net_regression
 
 
 elastic-net-tuning:
 	# Tune Elastic Net with chronological TimeSeriesSplit.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
+	$(PYTHON) -m electricity_predictor.modeling.regression.elastic_net.elastic_net_tuning
 
 
 regression-models:

@@ -13,7 +13,10 @@ from electricity_predictor.modeling.model_results import (
   append_model_result,
   build_model_result_row,
 )
-from electricity_predictor.modeling.split import load_training_dataset
+from electricity_predictor.modeling.split import (
+  TRAINING_DATASET_PATH,
+  load_training_dataset,
+)
 from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
 from electricity_predictor.modeling.regression.ridge.ridge_regression import (
   evaluate_ridge_regression_model,
@@ -131,7 +134,8 @@ def build_tuned_ridge_result(
   )
 
 
-if __name__ == "__main__":
+def main() -> None:
+  """Run the standalone Ridge tuning research workflow."""
   configuration = load_configuration()
 
   results_path = Path("reports/model_results.csv")
@@ -180,3 +184,7 @@ if __name__ == "__main__":
   print(f"Validation MAE: {validation_scores['mae']:.2f}")
   print(f"Validation RMSE: {validation_scores['rmse']:.2f}")
   print(f"Results written to: {written_results_path}")
+
+
+if __name__ == "__main__":
+  main()

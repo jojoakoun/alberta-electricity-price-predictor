@@ -12,7 +12,10 @@ from electricity_predictor.modeling.model_results import (
   append_model_result,
   build_model_result_row,
 )
-from electricity_predictor.modeling.split import load_training_dataset
+from electricity_predictor.modeling.split import (
+  TRAINING_DATASET_PATH,
+  load_training_dataset,
+)
 from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
 from electricity_predictor.modeling.split import split_time_series_data_from_config
 
@@ -129,7 +132,8 @@ def print_random_forest_summary(
   print(f"Results written to: {results_path}")
 
 
-if __name__ == "__main__":
+def main() -> None:
+  """Run the standalone Random Forest Regression research workflow."""
   configuration = load_configuration()
 
   results_path = Path("reports/model_results.csv")
@@ -182,3 +186,7 @@ if __name__ == "__main__":
     random_state=RANDOM_FOREST_RANDOM_STATE,
     n_jobs=RANDOM_FOREST_N_JOBS,
   )
+
+
+if __name__ == "__main__":
+  main()
