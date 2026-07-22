@@ -4,7 +4,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from electricity_predictor.worker.db import get_database_connection
+from electricity_predictor.storage.postgres import (
+  get_database_connection,
+)
 
 
 WINDOWS = [72, 168, 336, 720]

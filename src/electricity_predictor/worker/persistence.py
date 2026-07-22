@@ -4,7 +4,9 @@ from datetime import datetime
 
 import pandas as pd
 
-from electricity_predictor.worker.db import get_database_connection
+from electricity_predictor.storage.postgres import (
+  get_database_connection,
+)
 
 
 def get_database_time() -> datetime:

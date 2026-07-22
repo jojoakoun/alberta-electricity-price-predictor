@@ -6,7 +6,9 @@ from datetime import datetime, timedelta
 from electricity_predictor.features.feature_columns import (
   SUPPORTED_FORECAST_HORIZONS_HOURS,
 )
-from electricity_predictor.worker.db import get_database_connection
+from electricity_predictor.storage.postgres import (
+  get_database_connection,
+)
 
 
 FORECAST_KINDS = frozenset({
