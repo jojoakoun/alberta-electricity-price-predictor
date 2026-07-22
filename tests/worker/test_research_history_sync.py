@@ -1,13 +1,36 @@
+from importlib.util import find_spec
 from pathlib import Path
 from unittest.mock import patch
 
 import pandas as pd
 import pytest
 
-from electricity_predictor.worker.importer import (
+from electricity_predictor.worker.research_history_sync import (
   load_current_history,
   synchronize_current_history,
 )
+
+
+def test_relocated_module_contract() -> None:
+  assert find_spec(
+    "electricity_predictor.worker.research_history_sync"
+  ) is not None
+  assert find_spec("electricity_predictor.worker.importer") is None
+
+
+def test_sync_history_target_uses_relocated_module() -> None:
+  makefile = Path("Makefile").read_text(encoding="utf-8")
+  target = makefile.split("sync-history:\n", 1)[1].split(
+    "\n\n", 1
+  )[0]
+
+  assert (
+    "$(PYTHON) -m "
+    "electricity_predictor.worker.research_history_sync"
+    in target
+  )
+  assert "electricity_predictor.worker.importer" not in target
+  assert "make sync-history" in makefile
 
 
 def test_load_current_history_returns_sorted_required_columns(
@@ -68,7 +91,8 @@ def test_synchronize_current_history_calls_bulk_upsert(
   ).to_csv(dataset_path, index=False)
 
   with patch(
-    "electricity_predictor.worker.importer.upsert_hourly_prices",
+    "electricity_predictor.worker.research_history_sync."
+    "upsert_hourly_prices",
     return_value=1,
   ) as upsert:
     synchronized_rows = synchronize_current_history(dataset_path)

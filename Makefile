@@ -373,8 +373,7 @@ seed-history:
 
 sync-history:
 	# Synchronize the complete refreshed research history with PostgreSQL.
-	$(PYTHON) \
-		-m electricity_predictor.worker.importer
+	$(PYTHON) -m electricity_predictor.worker.research_history_sync
 
 
 sync-and-predict:
