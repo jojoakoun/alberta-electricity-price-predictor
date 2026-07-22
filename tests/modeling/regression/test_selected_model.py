@@ -1,0 +1,202 @@
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pandas as pd
+import pytest
+
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
+)
+from electricity_predictor.modeling.regression.selected_model import (
+  get_optional_int_parameter,
+  load_selected_regression_models,
+  parse_model_parameters,
+  predict_selected_regression_model,
+  train_selected_regression_model,
+)
+
+
+MODULE_PATH = "electricity_predictor.modeling.regression.selected_model"
+
+
+def make_modeling_data() -> pd.DataFrame:
+  data = {
+    column: [float(index), float(index + 1)]
+    for index, column in enumerate(MODEL_FEATURE_COLUMNS)
+  }
+  data["actual_price_target_1h"] = [40.0, 41.0]
+  return pd.DataFrame(data, index=[4, 9])
+
+
+def test_parameter_parsing_preserves_saved_values() -> None:
+  parameters = parse_model_parameters(
+    "best_alpha=10.0; max_iter=10000; ignored; note=a=b"
+  )
+
+  assert parameters == {
+    "best_alpha": "10.0",
+    "max_iter": "10000",
+    "note": "a=b",
+  }
+  assert parse_model_parameters("") == {}
+  assert parse_model_parameters(None) == {}
+  assert get_optional_int_parameter(
+    parameters={"max_depth": "None"},
+    names=["max_depth"],
+    default=20,
+  ) is None
+
+
+def test_load_selected_models_validates_and_sorts_rows(tmp_path: Path) -> None:
+  selected_path = tmp_path / "selected.csv"
+  pd.DataFrame([
+    {
+      "model_name": "naive_baseline",
+      "horizon_hours": 24,
+      "model_parameters": "prediction_column=actual_price_lag_1h",
+      "selection_metric": "mae",
+      "selection_rule": "lowest_validation_mae_within_horizon",
+    },
+    {
+      "model_name": "linear_regression",
+      "horizon_hours": 1,
+      "model_parameters": "fit_intercept=True",
+      "selection_metric": "mae",
+      "selection_rule": "lowest_validation_mae_within_horizon",
+    },
+  ]).to_csv(selected_path, index=False)
+
+  selected = load_selected_regression_models(selected_path)
+
+  assert selected["horizon_hours"].tolist() == [1, 24]
+
+
+def test_load_selected_models_preserves_exact_errors(tmp_path: Path) -> None:
+  missing_path = tmp_path / "missing.csv"
+
+  with pytest.raises(FileNotFoundError) as missing_error:
+    load_selected_regression_models(missing_path)
+
+  assert str(missing_error.value) == (
+    f"Best regression model file not found: {missing_path}"
+  )
+
+  incomplete_path = tmp_path / "incomplete.csv"
+  pd.DataFrame({"model_name": ["linear_regression"]}).to_csv(
+    incomplete_path,
+    index=False,
+  )
+
+  with pytest.raises(ValueError) as columns_error:
+    load_selected_regression_models(incomplete_path)
+
+  assert str(columns_error.value) == (
+    "Best model file is missing columns: "
+    "['horizon_hours', 'model_parameters', "
+    "'selection_metric', 'selection_rule']"
+  )
+
+
+@pytest.mark.parametrize(
+  ("model_name", "parameters", "trainer_name", "expected_parameters"),
+  [
+    ("linear_regression", "fit_intercept=True", "train_linear_regression_model", {}),
+    ("ridge_regression", "", "train_ridge_regression_model", {"alpha": 1.0}),
+    ("ridge_regression_tuned", "best_alpha=100.0", "train_ridge_regression_model", {"alpha": 100.0}),
+    ("lasso_regression", "", "train_lasso_regression_model", {"alpha": 1.0, "max_iter": 10000}),
+    ("lasso_regression_tuned", "best_alpha=10.0; max_iter=20000", "train_lasso_regression_model", {"alpha": 10.0, "max_iter": 20000}),
+    ("elastic_net_regression", "", "train_elastic_net_regression_model", {"alpha": 1.0, "l1_ratio": 0.5, "max_iter": 10000}),
+    ("elastic_net_regression_tuned", "alpha=0.1; l1_ratio=0.75; max_iter=20000", "train_elastic_net_regression_model", {"alpha": 0.1, "l1_ratio": 0.75, "max_iter": 20000}),
+    ("random_forest_regressor", "", "train_random_forest_model", {"n_estimators": 100, "max_depth": None, "min_samples_leaf": 1, "random_state": 42}),
+    ("random_forest_regressor_tuned", "n_estimators=200; max_depth=None; min_samples_leaf=2; random_state=7", "train_random_forest_model", {"n_estimators": 200, "max_depth": None, "min_samples_leaf": 2, "random_state": 7}),
+  ],
+)
+def test_training_dispatch_preserves_estimator_parameters(
+  model_name: str,
+  parameters: str,
+  trainer_name: str,
+  expected_parameters: dict,
+) -> None:
+  train_data = make_modeling_data()
+  fitted_model = object()
+
+  with patch(
+    f"{MODULE_PATH}.{trainer_name}",
+    return_value=fitted_model,
+  ) as trainer:
+    result = train_selected_regression_model(
+      selected_model={
+        "model_name": model_name,
+        "model_parameters": parameters,
+      },
+      train_data=train_data,
+      target_column="actual_price_target_1h",
+    )
+
+  assert result is fitted_model
+  trainer.assert_called_once_with(
+    train_data=train_data,
+    target_column="actual_price_target_1h",
+    **expected_parameters,
+  )
+
+
+def test_tuned_and_unknown_models_preserve_exact_errors() -> None:
+  data = make_modeling_data()
+
+  with pytest.raises(ValueError) as parameters_error:
+    train_selected_regression_model(
+      selected_model={
+        "model_name": "ridge_regression_tuned",
+        "model_parameters": "cv_splits=3",
+      },
+      train_data=data,
+      target_column="actual_price_target_1h",
+    )
+
+  assert str(parameters_error.value) == (
+    "Tuned model ridge_regression_tuned is missing required parameters: "
+    "['best_alpha']. Refusing to retrain with default hyperparameters."
+  )
+
+  with pytest.raises(ValueError) as model_error:
+    train_selected_regression_model(
+      selected_model={"model_name": "gradient_boosting", "model_parameters": ""},
+      train_data=data,
+      target_column="actual_price_target_1h",
+    )
+
+  assert str(model_error.value) == (
+    "Unsupported selected regression model: gradient_boosting"
+  )
+
+
+def test_prediction_uses_exact_feature_order_and_preserves_index() -> None:
+  data = make_modeling_data()
+  model = Mock()
+  model.predict.return_value = [50.0, 51.0]
+
+  predictions = predict_selected_regression_model(
+    selected_model={"model_name": "linear_regression"},
+    model=model,
+    data=data,
+  )
+
+  pd.testing.assert_frame_equal(
+    model.predict.call_args.args[0],
+    data[MODEL_FEATURE_COLUMNS],
+  )
+  assert predictions.tolist() == [50.0, 51.0]
+  assert predictions.index.tolist() == [4, 9]
+
+
+def test_baseline_prediction_uses_previous_observed_price() -> None:
+  data = make_modeling_data()
+
+  predictions = predict_selected_regression_model(
+    selected_model={"model_name": "naive_baseline"},
+    model=None,
+    data=data,
+  )
+
+  assert predictions.equals(data["actual_price_lag_1h"])

@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import joblib
 from sklearn.linear_model import LinearRegression
@@ -145,12 +146,17 @@ def test_save_selected_regression_models_round_trip(tmp_path: Path) -> None:
   output_dir = tmp_path / "models"
   metadata_path = output_dir / "metadata.csv"
 
-  written_path = save_selected_regression_models(
-    best_model_path=best_model_path,
-    training_dataset_path=training_path,
-    output_dir=output_dir,
-    metadata_path=metadata_path,
-  )
+  with patch(
+    "electricity_predictor.modeling.regression.save_selected_models."
+    "train_selected_regression_model",
+    return_value=LinearRegression(),
+  ) as train_model:
+    written_path = save_selected_regression_models(
+      best_model_path=best_model_path,
+      training_dataset_path=training_path,
+      output_dir=output_dir,
+      metadata_path=metadata_path,
+    )
 
   metadata = pd.read_csv(written_path)
   assert len(metadata) == 2
@@ -160,6 +166,7 @@ def test_save_selected_regression_models_round_trip(tmp_path: Path) -> None:
   assert metadata["sklearn_version"].notna().all()
   assert metadata.loc[0, "feature_columns"].split("|")[0] == "forecast_price"
   assert metadata["training_start_utc"].notna().all()
+  train_model.assert_called_once()
 
   # The learned artifact must reload as a working estimator.
   learned = joblib.load(metadata.loc[0, "artifact_path"])

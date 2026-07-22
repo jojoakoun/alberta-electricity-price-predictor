@@ -1,8 +1,10 @@
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
+from sklearn.linear_model import LinearRegression
 
 from electricity_predictor.features.feature_columns import (
   MODEL_FEATURE_COLUMNS,
@@ -188,6 +190,16 @@ def prepare_test_candidate(
   )
 
 
+def predict_exact_target(
+  selected_model: dict,
+  model,
+  data: pd.DataFrame,
+) -> pd.Series:
+  """Return deterministic predictions without fitting a candidate model."""
+  horizon_hours = int(selected_model["horizon_hours"])
+  return data[f"actual_price_target_{horizon_hours}h"]
+
+
 def test_train_regression_candidate_isolated(
   tmp_path: Path,
 ):
@@ -231,16 +243,25 @@ def test_train_regression_candidate_isolated(
     index=False,
   )
 
-  (
-    metadata_path,
-    report_path,
-    updated_manifest,
-  ) = train_regression_candidate(
-    candidate_manifest_path=(
-      candidate_manifest_path
-    ),
-    best_model_path=best_model_path,
-  )
+  with patch(
+    "electricity_predictor.modeling.lifecycle.regression_candidate."
+    "train_selected_regression_model",
+    return_value=LinearRegression(),
+  ) as train_model, patch(
+    "electricity_predictor.modeling.lifecycle.regression_candidate."
+    "predict_selected_regression_model",
+    side_effect=predict_exact_target,
+  ) as predict_model:
+    (
+      metadata_path,
+      report_path,
+      updated_manifest,
+    ) = train_regression_candidate(
+      candidate_manifest_path=(
+        candidate_manifest_path
+      ),
+      best_model_path=best_model_path,
+    )
 
   metadata = pd.read_csv(
     metadata_path
@@ -287,6 +308,9 @@ def test_train_regression_candidate_isolated(
     updated_manifest["status"]
     == "partially_trained"
   )
+
+  train_model.assert_called_once()
+  assert predict_model.call_count == 2
 
 
 def test_candidate_rejects_changed_dataset(

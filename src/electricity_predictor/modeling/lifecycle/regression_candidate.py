@@ -14,13 +14,15 @@ from electricity_predictor.modeling.lifecycle.frozen_splits import (
   load_frozen_candidate_splits,
   resolve_latest_candidate_manifest_path,
 )
-from electricity_predictor.modeling.regression.baseline.naive_baseline import (
-  evaluate_naive_baseline,
+from electricity_predictor.modeling.metrics import (
+  mean_absolute_error_value,
+  root_mean_squared_error_value,
 )
-from electricity_predictor.modeling.regression.final_test_evaluation import (
+from electricity_predictor.modeling.regression.selected_model import (
+  BEST_MODEL_PATH as BEST_REGRESSION_MODEL_PATH,
   load_selected_regression_models,
+  predict_selected_regression_model,
   train_selected_regression_model,
-  evaluate_trained_selected_regression_model,
 )
 from electricity_predictor.modeling.regression.save_selected_models import (
   build_model_artifact_filename,
@@ -32,10 +34,6 @@ from electricity_predictor.modeling.split import (
   DATETIME_COLUMN,
 )
 
-
-BEST_REGRESSION_MODEL_PATH = Path(
-  "reports/best_regression_model.csv"
-)
 
 CANDIDATE_METADATA_COLUMNS = [
   "model_version",
@@ -332,11 +330,6 @@ def train_regression_candidate(
       selected_model["model_name"]
       == "naive_baseline"
     ):
-      scores = evaluate_naive_baseline(
-        data=test_data,
-        target_column=target_column,
-      )
-
       artifact = (
         build_naive_baseline_artifact(
           selected_model=selected_model,
@@ -354,14 +347,16 @@ def train_regression_candidate(
         )
       )
 
-      scores = (
-        evaluate_trained_selected_regression_model(
-          selected_model=selected_model,
-          model=artifact,
-          evaluation_data=test_data,
-          target_column=target_column,
-        )
-      )
+    predictions = predict_selected_regression_model(
+      selected_model=selected_model,
+      model=artifact,
+      data=test_data,
+    )
+    target = test_data[target_column]
+    scores = {
+      "mae": mean_absolute_error_value(target, predictions),
+      "rmse": root_mean_squared_error_value(target, predictions),
+    }
 
     artifact_path = (
       artifact_directory

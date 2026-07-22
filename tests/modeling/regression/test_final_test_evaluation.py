@@ -1,12 +1,10 @@
+from unittest.mock import patch
+
 import pandas as pd
-import pytest
 
 from electricity_predictor.modeling.regression.final_test_evaluation import (
   build_final_test_result,
   evaluate_selected_regression_model,
-  get_optional_int_parameter,
-  parse_model_parameters,
-  train_selected_regression_model,
 )
 
 
@@ -36,29 +34,6 @@ def make_regression_data() -> pd.DataFrame:
   return pd.DataFrame(rows)
 
 
-def test_parse_model_parameters_returns_key_value_pairs() -> None:
-  parameters = parse_model_parameters(
-    "best_alpha=10.0; max_iter=10000; cv_splits=3; cv_mae=83.5"
-  )
-
-  assert parameters["best_alpha"] == "10.0"
-  assert parameters["max_iter"] == "10000"
-  assert parameters["cv_splits"] == "3"
-  assert parameters["cv_mae"] == "83.5"
-
-
-def test_get_optional_int_parameter_handles_none_string() -> None:
-  parameters = {"max_depth": "None"}
-
-  result = get_optional_int_parameter(
-    parameters=parameters,
-    names=["max_depth"],
-    default=20,
-  )
-
-  assert result is None
-
-
 def test_evaluate_selected_regression_model_returns_test_scores() -> None:
   data = make_regression_data()
   selected_model = {
@@ -67,16 +42,29 @@ def test_evaluate_selected_regression_model_returns_test_scores() -> None:
     "model_parameters": "fit_intercept=True",
   }
 
-  scores = evaluate_selected_regression_model(
-    selected_model=selected_model,
-    train_data=data.iloc[:6],
-    evaluation_data=data.iloc[6:],
-    target_column="actual_price_target_1h",
-  )
+  evaluation_data = data.iloc[6:]
+  predictions = evaluation_data["actual_price_target_1h"].copy()
+
+  with patch(
+    "electricity_predictor.modeling.regression.final_test_evaluation."
+    "train_selected_regression_model",
+    return_value=object(),
+  ) as train_model, patch(
+    "electricity_predictor.modeling.regression.final_test_evaluation."
+    "predict_selected_regression_model",
+    return_value=predictions,
+  ) as predict_model:
+    scores = evaluate_selected_regression_model(
+      selected_model=selected_model,
+      train_data=data.iloc[:6],
+      evaluation_data=evaluation_data,
+      target_column="actual_price_target_1h",
+    )
 
   assert set(scores.keys()) == {"mae", "rmse"}
-  assert scores["mae"] >= 0
-  assert scores["rmse"] >= 0
+  assert scores == {"mae": 0.0, "rmse": 0.0}
+  train_model.assert_called_once()
+  predict_model.assert_called_once()
 
 
 def test_build_final_test_result_uses_test_split_and_horizon() -> None:
@@ -113,60 +101,16 @@ def test_evaluate_selected_regression_model_uses_baseline_without_training() -> 
 
   # Empty train data proves the baseline path never trains anything:
   # any attempt to fit a model on zero rows would raise.
-  scores = evaluate_selected_regression_model(
-    selected_model=selected_model,
-    train_data=data.iloc[0:0],
-    evaluation_data=data,
-    target_column="actual_price_target_1h",
-  )
-
-  assert set(scores.keys()) == {"mae", "rmse"}
-
-
-def test_evaluate_selected_regression_model_rejects_unknown_model() -> None:
-  data = make_regression_data()
-  selected_model = {
-    "model_name": "gradient_boosting",
-    "horizon_hours": 1,
-    "model_parameters": "",
-  }
-
-  with pytest.raises(ValueError, match="Unsupported selected regression model"):
-    evaluate_selected_regression_model(
+  with patch(
+    "electricity_predictor.modeling.regression.final_test_evaluation."
+    "train_selected_regression_model"
+  ) as train_model:
+    scores = evaluate_selected_regression_model(
       selected_model=selected_model,
-      train_data=data,
+      train_data=data.iloc[0:0],
       evaluation_data=data,
       target_column="actual_price_target_1h",
     )
 
-
-def test_train_selected_regression_model_applies_tuned_ridge_alpha() -> None:
-  data = make_regression_data()
-  selected_model = {
-    "model_name": "ridge_regression_tuned",
-    "model_parameters": "best_alpha=100.0; cv_splits=3; cv_mae=54.8; cv_rmse=107.4",
-  }
-
-  model = train_selected_regression_model(
-    selected_model=selected_model,
-    train_data=data,
-    target_column="actual_price_target_1h",
-  )
-
-  # The retrained model must carry the selected alpha, not the default 1.0.
-  assert model.alpha == 100.0
-
-
-def test_train_selected_regression_model_rejects_tuned_model_without_tuned_parameters() -> None:
-  data = make_regression_data()
-  selected_model = {
-    "model_name": "ridge_regression_tuned",
-    "model_parameters": "cv_splits=3",
-  }
-
-  with pytest.raises(ValueError, match="missing required parameters"):
-    train_selected_regression_model(
-      selected_model=selected_model,
-      train_data=data,
-      target_column="actual_price_target_1h",
-    )
+  assert set(scores.keys()) == {"mae", "rmse"}
+  train_model.assert_not_called()

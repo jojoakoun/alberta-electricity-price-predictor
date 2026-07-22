@@ -7,7 +7,7 @@ import sklearn
 from electricity_predictor.config import load_configuration
 from electricity_predictor.features.feature_engineering import build_target_column_name
 from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
-from electricity_predictor.modeling.regression.final_test_evaluation import (
+from electricity_predictor.modeling.regression.selected_model import (
   BEST_MODEL_PATH,
   load_selected_regression_models,
   train_selected_regression_model,
