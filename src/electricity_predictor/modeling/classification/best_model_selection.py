@@ -2,16 +2,20 @@ from pathlib import Path
 
 import pandas as pd
 
+from electricity_predictor.modeling.model_results import (
+  CLASSIFICATION_VALIDATION_RESULTS_PATH,
+)
 
 VALID_SELECTION_METRICS = ["f1", "recall", "precision", "accuracy"]
 DEFAULT_SELECTION_METRIC = "f1"
 
-MODEL_RESULTS_PATH = Path("reports/model_results.csv")
 BEST_CLASSIFICATION_MODEL_PATH = Path("reports/best_classification_model.csv")
 
 
-def load_model_results(file_path: Path = MODEL_RESULTS_PATH) -> pd.DataFrame:
-  """Load the shared model results summary."""
+def load_model_results(
+  file_path: Path = CLASSIFICATION_VALIDATION_RESULTS_PATH,
+) -> pd.DataFrame:
+  """Load the classification validation results summary."""
   if not file_path.exists():
     raise FileNotFoundError(f"Model results file not found: {file_path}")
 

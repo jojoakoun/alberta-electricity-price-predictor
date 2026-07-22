@@ -9,16 +9,21 @@ from electricity_predictor.config import load_configuration
 from electricity_predictor.features.feature_engineering import (
   build_target_column_name,
 )
+from electricity_predictor.features.feature_columns import (
+  parse_model_feature_columns,
+)
+from electricity_predictor.modeling.decision.price_policy import classify_price
+from electricity_predictor.modeling.decision.thresholds import (
+  DECISION_WINDOW_HOURS,
+  build_rolling_price_thresholds,
+)
 from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
-from electricity_predictor.serving.inference import (
-  parse_feature_columns,
-)
 
 
-WINDOW_HOURS = 720
+WINDOW_HOURS = DECISION_WINDOW_HOURS
 
 RECOMMENDED_QUANTILES = [
   0.10,
@@ -42,21 +47,6 @@ OUTPUT_PATH = Path(
 )
 
 
-def classify_price(
-  price: float,
-  recommended_threshold: float,
-  avoid_threshold: float,
-) -> str:
-  """Classify one price from dynamic thresholds."""
-  if price >= avoid_threshold:
-    return "Avoid"
-
-  if price <= recommended_threshold:
-    return "Recommended"
-
-  return "Acceptable"
-
-
 def generate_predictions(
   data: pd.DataFrame,
   metadata_row: dict,
@@ -66,7 +56,7 @@ def generate_predictions(
     Path(str(metadata_row["artifact_path"]))
   )
 
-  feature_columns = parse_feature_columns(
+  feature_columns = parse_model_feature_columns(
     metadata_row["feature_columns"]
   )
 
@@ -91,35 +81,11 @@ def build_thresholds(
   avoid_iqr_multiplier: float,
 ) -> pd.DataFrame:
   """Build leakage-safe rolling thresholds."""
-  historical = pd.to_numeric(
-    prices,
-    errors="coerce",
-  ).shift(1)
-
-  recommended = historical.rolling(
-    WINDOW_HOURS,
-    min_periods=WINDOW_HOURS,
-  ).quantile(recommended_quantile)
-
-  q1 = historical.rolling(
-    WINDOW_HOURS,
-    min_periods=WINDOW_HOURS,
-  ).quantile(0.25)
-
-  q3 = historical.rolling(
-    WINDOW_HOURS,
-    min_periods=WINDOW_HOURS,
-  ).quantile(0.75)
-
-  return pd.DataFrame(
-    {
-      "recommended_threshold": recommended,
-      "avoid_threshold": (
-        q3
-        + avoid_iqr_multiplier * (q3 - q1)
-      ),
-    },
-    index=prices.index,
+  return build_rolling_price_thresholds(
+    prices=prices,
+    window_hours=WINDOW_HOURS,
+    recommended_quantile=recommended_quantile,
+    avoid_iqr_multiplier=avoid_iqr_multiplier,
   )
 
 

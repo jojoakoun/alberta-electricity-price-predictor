@@ -16,6 +16,7 @@ from electricity_predictor.modeling.classification.target_builder import (
 )
 from electricity_predictor.modeling.metrics import calculate_classification_metrics
 from electricity_predictor.modeling.model_results import (
+  CLASSIFICATION_VALIDATION_RESULTS_PATH,
   append_model_result,
   build_model_result_row,
 )
@@ -36,7 +37,6 @@ GRADIENT_BOOSTING_TUNING_SPLITS = 3
 TIME_SERIES_CV_GAP_HOURS = get_time_series_cv_gap_hours(
   load_configuration()["modeling"]
 )
-MODEL_RESULTS_PATH = Path("reports/model_results.csv")
 
 
 def evaluate_gradient_boosting_parameters_with_time_series_cv(
@@ -187,7 +187,7 @@ def build_tuned_gradient_boosting_result(
 
 def run_tuned_gradient_boosting(
   training_dataset_path: Path = TRAINING_DATASET_PATH,
-  results_path: Path = MODEL_RESULTS_PATH,
+  results_path: Path = CLASSIFICATION_VALIDATION_RESULTS_PATH,
 ) -> Path:
   """Tune and evaluate Gradient Boosting for every forecast horizon."""
   configuration = load_configuration()

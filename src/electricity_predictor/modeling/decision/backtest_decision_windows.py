@@ -7,6 +7,7 @@ import pandas as pd
 from electricity_predictor.modeling.decision.analyze_decision_windows import (
   load_finalized_hourly_prices,
 )
+from electricity_predictor.modeling.decision.price_policy import classify_price
 
 
 WINDOWS = [336, 720]
@@ -21,21 +22,6 @@ DETAIL_OUTPUT_PATH = Path(
 SUMMARY_OUTPUT_PATH = Path(
   "reports/decision_policy_backtest_summary.csv"
 )
-
-
-def classify_price(
-  price: float,
-  recommended_threshold: float,
-  avoid_threshold: float,
-) -> str:
-  """Assign one price-only recommendation."""
-  if price >= avoid_threshold:
-    return "Avoid"
-
-  if price <= recommended_threshold:
-    return "Recommended"
-
-  return "Acceptable"
 
 
 def backtest_window(

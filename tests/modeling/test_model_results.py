@@ -1,11 +1,43 @@
+from pathlib import Path
+
 import pandas as pd
 
 from electricity_predictor.modeling.model_results import (
+  CLASSIFICATION_VALIDATION_RESULTS_PATH,
   MODEL_RESULT_COLUMNS,
+  REGRESSION_VALIDATION_RESULTS_PATH,
   append_model_result,
   build_model_result_row,
   write_model_results,
 )
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_validation_report_paths_are_task_specific() -> None:
+  assert REGRESSION_VALIDATION_RESULTS_PATH == Path(
+    "reports/regression_validation_results.csv"
+  )
+  assert CLASSIFICATION_VALIDATION_RESULTS_PATH == Path(
+    "reports/classification_validation_results.csv"
+  )
+  assert (
+    REGRESSION_VALIDATION_RESULTS_PATH
+    != CLASSIFICATION_VALIDATION_RESULTS_PATH
+  )
+
+
+def test_modeling_source_has_no_combined_validation_report_path() -> None:
+  modeling_root = PROJECT_ROOT / "src/electricity_predictor/modeling"
+
+  references = [
+    path.relative_to(PROJECT_ROOT)
+    for path in modeling_root.rglob("*.py")
+    if 'reports/model_results.csv' in path.read_text(encoding="utf-8")
+  ]
+
+  assert references == []
 
 
 def test_build_model_result_row_fills_regression_metrics():

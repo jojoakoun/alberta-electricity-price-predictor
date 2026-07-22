@@ -8,6 +8,7 @@ from electricity_predictor.modeling.metrics import (
   root_mean_squared_error_value,
 )
 from electricity_predictor.modeling.model_results import (
+  REGRESSION_VALIDATION_RESULTS_PATH,
   append_model_result,
   build_model_result_row,
 )
@@ -74,7 +75,7 @@ def print_baseline_summary(scores: dict[str, float], row_count: int, results_pat
 if __name__ == "__main__":
   configuration = load_configuration()
 
-  results_path = Path("reports/model_results.csv")
+  results_path = REGRESSION_VALIDATION_RESULTS_PATH
   modeling_config = configuration["modeling"]
 
   training_data = load_training_dataset(TRAINING_DATASET_PATH)

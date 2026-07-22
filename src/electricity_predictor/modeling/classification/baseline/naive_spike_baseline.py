@@ -11,6 +11,7 @@ from electricity_predictor.modeling.metrics import (
   calculate_classification_metrics,
 )
 from electricity_predictor.modeling.model_results import (
+  CLASSIFICATION_VALIDATION_RESULTS_PATH,
   append_model_result,
   build_model_result_row,
 )
@@ -23,7 +24,6 @@ from electricity_predictor.modeling.split import (
 
 CLASSIFICATION_BASELINE_NAME = "naive_spike_baseline"
 BASELINE_PRICE_COLUMN = "actual_price_lag_1h"
-MODEL_RESULTS_PATH = Path("reports/model_results.csv")
 
 
 def predict_spike_persistence(
@@ -85,7 +85,7 @@ def build_classification_baseline_result(
 
 def run_classification_baseline(
   training_dataset_path: Path = TRAINING_DATASET_PATH,
-  results_path: Path = MODEL_RESULTS_PATH,
+  results_path: Path = CLASSIFICATION_VALIDATION_RESULTS_PATH,
 ) -> Path:
   """Evaluate the naive spike baseline for all configured horizons."""
   configuration = load_configuration()

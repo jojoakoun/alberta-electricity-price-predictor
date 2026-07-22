@@ -9,6 +9,7 @@ from electricity_predictor.modeling.metrics import (
   root_mean_squared_error_value,
 )
 from electricity_predictor.modeling.model_results import (
+  REGRESSION_VALIDATION_RESULTS_PATH,
   append_model_result,
   build_model_result_row,
 )
@@ -66,7 +67,7 @@ def build_linear_regression_result(
   horizon_hours: int | None = None,
 ) -> dict:
   """Build the model result row for Linear Regression."""
-  # Store the horizon so model_results.csv can compare forecast distances.
+  # Store the horizon so the regression report can compare forecast distances.
   return build_model_result_row(
     model_name="linear_regression",
     task="regression",
@@ -99,7 +100,7 @@ def main() -> None:
   """Run the standalone Linear Regression research workflow."""
   configuration = load_configuration()
 
-  results_path = Path("reports/model_results.csv")
+  results_path = REGRESSION_VALIDATION_RESULTS_PATH
   modeling_config = configuration["modeling"]
 
   training_data = load_training_dataset(TRAINING_DATASET_PATH)

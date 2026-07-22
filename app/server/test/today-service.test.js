@@ -1,10 +1,16 @@
 jest.mock("../src/repositories/prediction-repository");
+jest.mock("../src/repositories/hourly-price-repository");
 jest.mock("../src/utils/explanation");
 jest.mock("../src/utils/forecast-time");
 jest.mock("../src/utils/freshness");
 jest.mock("../src/utils/recommendation");
 
-const repository = require("../src/repositories/prediction-repository");
+const predictionRepository = require(
+  "../src/repositories/prediction-repository"
+);
+const hourlyPriceRepository = require(
+  "../src/repositories/hourly-price-repository"
+);
 const explanation = require("../src/utils/explanation");
 const forecastTime = require("../src/utils/forecast-time");
 const freshness = require("../src/utils/freshness");
@@ -61,10 +67,10 @@ describe("Today service", () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    repository.getLatestPredictions.mockResolvedValue(
+    predictionRepository.getLatestPredictions.mockResolvedValue(
       buildPredictions(),
     );
-    repository.getLatestFinalizedPrice.mockResolvedValue({
+    hourlyPriceRepository.getLatestFinalizedPrice.mockResolvedValue({
       datetime_utc: "2026-07-18T19:00:00.000Z",
       actual_price: "70.00",
     });
@@ -134,12 +140,12 @@ describe("Today service", () => {
   });
 
   test("treats equality after public rounding as no expected saving", async () => {
-    repository.getLatestPredictions.mockResolvedValue(
+    predictionRepository.getLatestPredictions.mockResolvedValue(
       buildPredictions({
         prices: [84.2, 61.444, 72, 90, 105],
       }),
     );
-    repository.getLatestFinalizedPrice.mockResolvedValue({
+    hourlyPriceRepository.getLatestFinalizedPrice.mockResolvedValue({
       datetime_utc: "2026-07-18T19:00:00.000Z",
       actual_price: "61.449",
     });
@@ -153,7 +159,7 @@ describe("Today service", () => {
   });
 
   test("reports that the current observed price is lower when every eligible forecast is higher", async () => {
-    repository.getLatestFinalizedPrice.mockResolvedValue({
+    hourlyPriceRepository.getLatestFinalizedPrice.mockResolvedValue({
       datetime_utc: "2026-07-18T19:00:00.000Z",
       actual_price: "50.00",
     });
@@ -166,7 +172,7 @@ describe("Today service", () => {
   });
 
   test("keeps the persistence reference visible but excludes it from best-time selection", async () => {
-    repository.getLatestPredictions.mockResolvedValue(
+    predictionRepository.getLatestPredictions.mockResolvedValue(
       buildPredictions({
         prices: [84.2, 61.4, 72, 90, 10],
       }),
@@ -183,7 +189,7 @@ describe("Today service", () => {
   });
 
   test("preserves truthful provenance for existing successful runs", async () => {
-    repository.getLatestPredictions.mockResolvedValue(
+    predictionRepository.getLatestPredictions.mockResolvedValue(
       buildPredictions({
         prices: [84.2, 61.4, 72, 90, 10],
         runDetail:
@@ -200,7 +206,7 @@ describe("Today service", () => {
   });
 
   test("does not create an opportunity when legacy provenance is unknown", async () => {
-    repository.getLatestPredictions.mockResolvedValue(
+    predictionRepository.getLatestPredictions.mockResolvedValue(
       buildPredictions({
         runDetail: "Unrecognized legacy run.",
       }),
@@ -221,7 +227,7 @@ describe("Today service", () => {
   });
 
   test("rejects corrupt versioned provenance instead of silently falling back", async () => {
-    repository.getLatestPredictions.mockResolvedValue(
+    predictionRepository.getLatestPredictions.mockResolvedValue(
       buildPredictions({
         runDetail: "{not-json",
       }),
@@ -233,7 +239,7 @@ describe("Today service", () => {
   });
 
   test("keeps an eligible best time but marks comparison unavailable without an observed price", async () => {
-    repository.getLatestFinalizedPrice.mockResolvedValue(null);
+    hourlyPriceRepository.getLatestFinalizedPrice.mockResolvedValue(null);
 
     const today = await getToday(viewedAt);
 
@@ -246,7 +252,7 @@ describe("Today service", () => {
   });
 
   test("distinguishes passed targets from forecasts that are not cheaper", async () => {
-    repository.getLatestPredictions.mockResolvedValue(
+    predictionRepository.getLatestPredictions.mockResolvedValue(
       buildPredictions({
         targets: [
           "2026-07-18T10:00:00.000Z",
@@ -268,7 +274,7 @@ describe("Today service", () => {
   });
 
   test("does not turn a future persistence reference into an opportunity when model targets passed", async () => {
-    repository.getLatestPredictions.mockResolvedValue(
+    predictionRepository.getLatestPredictions.mockResolvedValue(
       buildPredictions({
         targets: [
           "2026-07-18T10:00:00.000Z",
@@ -289,13 +295,13 @@ describe("Today service", () => {
   });
 
   test("returns null when no prediction run exists", async () => {
-    repository.getLatestPredictions.mockResolvedValue([]);
+    predictionRepository.getLatestPredictions.mockResolvedValue([]);
 
     await expect(getToday(viewedAt)).resolves.toBeNull();
   });
 
   test("rejects an incomplete prediction set", async () => {
-    repository.getLatestPredictions.mockResolvedValue([
+    predictionRepository.getLatestPredictions.mockResolvedValue([
       {
         horizon_hours: 1,
       },

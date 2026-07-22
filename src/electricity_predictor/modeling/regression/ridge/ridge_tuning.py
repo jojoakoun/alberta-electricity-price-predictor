@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 
@@ -10,6 +8,7 @@ from electricity_predictor.modeling.metrics import (
   root_mean_squared_error_value,
 )
 from electricity_predictor.modeling.model_results import (
+  REGRESSION_VALIDATION_RESULTS_PATH,
   append_model_result,
   build_model_result_row,
 )
@@ -138,7 +137,7 @@ def main() -> None:
   """Run the standalone Ridge tuning research workflow."""
   configuration = load_configuration()
 
-  results_path = Path("reports/model_results.csv")
+  results_path = REGRESSION_VALIDATION_RESULTS_PATH
   modeling_config = configuration["modeling"]
 
   training_data = load_training_dataset(TRAINING_DATASET_PATH)

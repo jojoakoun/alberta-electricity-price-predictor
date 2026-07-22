@@ -1,3 +1,4 @@
+from inspect import signature
 from pathlib import Path
 
 import pandas as pd
@@ -8,6 +9,9 @@ from electricity_predictor.modeling.classification.best_model_selection import (
   load_model_results,
   select_best_classification_models_by_horizon,
   validate_selection_metric,
+)
+from electricity_predictor.modeling.model_results import (
+  CLASSIFICATION_VALIDATION_RESULTS_PATH,
 )
 
 
@@ -92,3 +96,10 @@ def test_load_model_results_rejects_missing_file(
 ):
   with pytest.raises(FileNotFoundError):
     load_model_results(tmp_path / "missing.csv")
+
+
+def test_model_selection_loads_classification_validation_report_by_default() -> None:
+  assert (
+    signature(load_model_results).parameters["file_path"].default
+    == CLASSIFICATION_VALIDATION_RESULTS_PATH
+  )

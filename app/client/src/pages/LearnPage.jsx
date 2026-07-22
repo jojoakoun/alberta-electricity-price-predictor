@@ -1,5 +1,5 @@
-import "../styles/product-pages.css";
-import { AudienceNotice } from "../components/AudienceNotice";
+import "../styles/learn.css";
+import { AudienceNotice } from "../components/learn/AudienceNotice";
 
 import { AppReveal } from "../components/motion/AppReveal";
 import { ConfidenceLevels } from "../components/learn/ConfidenceLevels";

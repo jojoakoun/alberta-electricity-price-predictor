@@ -11,6 +11,7 @@ from electricity_predictor.modeling.classification.target_builder import (
 )
 from electricity_predictor.modeling.metrics import calculate_classification_metrics
 from electricity_predictor.modeling.model_results import (
+  CLASSIFICATION_VALIDATION_RESULTS_PATH,
   append_model_result,
   build_model_result_row,
 )
@@ -25,7 +26,6 @@ from electricity_predictor.modeling.split import (
 
 
 CLASSIFICATION_FEATURE_COLUMNS = MODEL_FEATURE_COLUMNS
-MODEL_RESULTS_PATH = Path("reports/model_results.csv")
 
 
 def train_gradient_boosting_classifier(
@@ -118,7 +118,7 @@ def build_gradient_boosting_result(
 
 def run_gradient_boosting_classifier(
   training_dataset_path: Path = TRAINING_DATASET_PATH,
-  results_path: Path = MODEL_RESULTS_PATH,
+  results_path: Path = CLASSIFICATION_VALIDATION_RESULTS_PATH,
 ) -> Path:
   """Train and evaluate Gradient Boosting for all configured horizons."""
   configuration = load_configuration()

@@ -3,6 +3,13 @@ from pathlib import Path
 import pandas as pd
 
 
+REGRESSION_VALIDATION_RESULTS_PATH = Path(
+  "reports/regression_validation_results.csv"
+)
+CLASSIFICATION_VALIDATION_RESULTS_PATH = Path(
+  "reports/classification_validation_results.csv"
+)
+
 MODEL_RESULT_COLUMNS = [
   "model_name",
   "task",
@@ -58,7 +65,7 @@ def build_model_result_row(
 
 
 def append_model_result(result: dict, output_path: Path) -> Path:
-  """Append one model evaluation result to the shared summary file."""
+  """Append one model evaluation result to its task summary file."""
   output_path.parent.mkdir(parents=True, exist_ok=True)
 
   # Force a stable column order so the CSV remains easy to inspect.

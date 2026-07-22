@@ -2,290 +2,26 @@ import {
   useId,
 } from "react";
 
-import { copy } from "../copy";
-import { isLowerPriceOpportunity } from "../domain/today";
+import { copy } from "../../copy";
+import { isLowerPriceOpportunity } from "../../domain/today";
 import {
   formatAlbertaDay,
   formatAlbertaTime,
   formatNumber,
-} from "../i18n/formatters";
-
-const WIDTH = 760;
-const HEIGHT = 380;
-
-const PLOT_LEFT = 112;
-const PLOT_RIGHT = WIDTH - 38;
-const PLOT_TOP = 56;
-const PLOT_BOTTOM = 255;
-
-function scaleY(value, domainMinimum, domainMaximum) {
-  const range = Math.max(
-    domainMaximum - domainMinimum,
-    0.1,
-  );
-
-  return (
-    PLOT_TOP
-    + (
-      (domainMaximum - value)
-      / range
-    )
-      * (PLOT_BOTTOM - PLOT_TOP)
-  );
-}
-
-function buildChartPoints(
-  forecasts,
-  domainMinimum,
-  domainMaximum,
-) {
-  const chartWidth =
-    PLOT_RIGHT - PLOT_LEFT;
-
-  // Even visual spacing keeps the five authentic horizons readable without
-  // inventing intermediate hourly forecast points.
-  return forecasts.map(
-    (forecast, index) => ({
-      forecast,
-      x:
-        PLOT_LEFT
-        + (
-          index
-          * chartWidth
-        )
-          / Math.max(
-            forecasts.length - 1,
-            1,
-          ),
-      y: scaleY(
-        forecast.priceCents,
-        domainMinimum,
-        domainMaximum,
-      ),
-    }),
-  );
-}
-
-function buildSmoothPath(points) {
-  if (points.length === 0) {
-    return "";
-  }
-
-  if (points.length === 1) {
-    return `M ${points[0].x} ${points[0].y}`;
-  }
-
-  let path =
-    `M ${points[0].x} ${points[0].y}`;
-
-  for (
-    let index = 0;
-    index < points.length - 1;
-    index += 1
-  ) {
-    const current = points[index];
-    const next = points[index + 1];
-
-    const midpointX =
-      (current.x + next.x) / 2;
-
-    path += [
-      ` C ${midpointX} ${current.y}`,
-      `${midpointX} ${next.y}`,
-      `${next.x} ${next.y}`,
-    ].join(" ");
-  }
-
-  return path;
-}
-
-function getPriceLabelY(
-  points,
-  index,
-) {
-  const point = points[index];
-  const previous = points[index - 1];
-
-  const closeToPrevious =
-    previous !== undefined
-    && Math.abs(point.y - previous.y) < 34;
-
-  const offset =
-    closeToPrevious && index % 2 === 1
-      ? -38
-      : -19;
-
-  return Math.max(
-    point.y + offset,
-    24,
-  );
-}
-
-function buildDayGroups(
-  points,
-  forecastSourceTimeUtc,
-) {
-  return points.reduce(
-    (groups, point) => {
-      const label = formatAlbertaDay(
-        point.forecast.targetTimeUtc,
-        forecastSourceTimeUtc,
-      );
-
-      const currentGroup =
-        groups[groups.length - 1];
-
-      if (
-        currentGroup
-        && currentGroup.label === label
-      ) {
-        currentGroup.endX = point.x;
-
-        return groups;
-      }
-
-      groups.push({
-        label,
-        startX: point.x,
-        endX: point.x,
-      });
-
-      return groups;
-    },
-    [],
-  );
-}
-
-function getHorizontalOffset(x) {
-  const percentage =
-    (
-      (x - PLOT_LEFT)
-      / (PLOT_RIGHT - PLOT_LEFT)
-    )
-    * 100;
-
-  return `${Math.min(
-    100,
-    Math.max(
-      0,
-      percentage,
-    ),
-  )}%`;
-}
-
-function buildTrendGradientStops(
-  points,
-  bestPointIndex,
-) {
-  const regularColor =
-    "var(--color-okay)";
-
-  const bestColor =
-    "var(--color-brand)";
-
-  if (
-    points.length === 0
-    || bestPointIndex < 0
-  ) {
-    return [
-      {
-        offset: "0%",
-        color: regularColor,
-      },
-      {
-        offset: "100%",
-        color: regularColor,
-      },
-    ];
-  }
-
-  const bestPoint =
-    points[bestPointIndex];
-
-  if (bestPointIndex === 0) {
-    const nextPoint =
-      points[Math.min(
-        1,
-        points.length - 1,
-      )];
-
-    return [
-      {
-        offset: "0%",
-        color: bestColor,
-      },
-      {
-        offset: getHorizontalOffset(
-          nextPoint.x,
-        ),
-        color: regularColor,
-      },
-      {
-        offset: "100%",
-        color: regularColor,
-      },
-    ];
-  }
-
-  const previousPoint =
-    points[bestPointIndex - 1];
-
-  if (
-    bestPointIndex
-    === points.length - 1
-  ) {
-    return [
-      {
-        offset: "0%",
-        color: regularColor,
-      },
-      {
-        offset: getHorizontalOffset(
-          previousPoint.x,
-        ),
-        color: regularColor,
-      },
-      {
-        offset: getHorizontalOffset(
-          bestPoint.x,
-        ),
-        color: bestColor,
-      },
-    ];
-  }
-
-  const nextPoint =
-    points[bestPointIndex + 1];
-
-  return [
-    {
-      offset: "0%",
-      color: regularColor,
-    },
-    {
-      offset: getHorizontalOffset(
-        previousPoint.x,
-      ),
-      color: regularColor,
-    },
-    {
-      offset: getHorizontalOffset(
-        bestPoint.x,
-      ),
-      color: bestColor,
-    },
-    {
-      offset: getHorizontalOffset(
-        nextPoint.x,
-      ),
-      color: regularColor,
-    },
-    {
-      offset: "100%",
-      color: regularColor,
-    },
-  ];
-}
+} from "../../i18n/formatters";
+import {
+  buildChartPoints,
+  buildDayGroups,
+  buildGridLines,
+  buildPriceDomain,
+  buildSmoothPath,
+  buildTrendGradientStops,
+  CHART_HEIGHT,
+  CHART_WIDTH,
+  getPriceLabelY,
+  PLOT_LEFT,
+  PLOT_RIGHT,
+} from "./timeline-geometry";
 
 export function TimelineOverview({
   forecasts,
@@ -305,35 +41,10 @@ export function TimelineOverview({
     return null;
   }
 
-  const forecastPrices = forecasts.map(
-    (forecast) => forecast.priceCents,
-  );
-
-  const rawMinimum = Math.min(
-    ...forecastPrices,
-  );
-
-  const rawMaximum = Math.max(
-    ...forecastPrices,
-  );
-
-  const rawRange = Math.max(
-    rawMaximum - rawMinimum,
-    0.5,
-  );
-
-  const verticalMargin = Math.max(
-    rawRange * 0.16,
-    0.4,
-  );
-
-  const domainMinimum = Math.max(
-    0,
-    rawMinimum - verticalMargin,
-  );
-
-  const domainMaximum =
-    rawMaximum + verticalMargin;
+  const {
+    domainMinimum,
+    domainMaximum,
+  } = buildPriceDomain(forecasts);
 
   const points = buildChartPoints(
     forecasts,
@@ -362,22 +73,17 @@ export function TimelineOverview({
       bestPointIndex,
     );
 
-  const gridValues = Array.from(
-    { length: 4 },
-    (_, index) =>
-      domainMaximum
-      - (
-        index
-        * (
-          domainMaximum
-          - domainMinimum
-        )
-      ) / 3,
+  const gridLines = buildGridLines(
+    domainMinimum,
+    domainMaximum,
   );
 
   const dayGroups = buildDayGroups(
     points,
-    forecastSourceTimeUtc,
+    (targetTimeUtc) => formatAlbertaDay(
+      targetTimeUtc,
+      forecastSourceTimeUtc,
+    ),
   );
 
   const persistenceReference =
@@ -450,7 +156,7 @@ export function TimelineOverview({
         className="block h-auto w-full"
         preserveAspectRatio="xMidYMid meet"
         role="img"
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
       >
         <defs>
           <linearGradient
@@ -474,44 +180,32 @@ export function TimelineOverview({
           </linearGradient>
         </defs>
 
-        {gridValues.map(
-          (value, index) => {
-            const y =
-              PLOT_TOP
-              + (
-                index
-                * (
-                  PLOT_BOTTOM
-                  - PLOT_TOP
-                )
-              ) / 3;
+        {gridLines.map(
+          ({ value, y }, index) => (
+            <g key={index}>
+              <line
+                className="stroke-[var(--color-border)]"
+                strokeDasharray="4 7"
+                strokeWidth="1"
+                x1={PLOT_LEFT}
+                x2={PLOT_RIGHT}
+                y1={y}
+                y2={y}
+              />
 
-            return (
-              <g key={index}>
-                <line
-                  className="stroke-[var(--color-border)]"
-                  strokeDasharray="4 7"
-                  strokeWidth="1"
-                  x1={PLOT_LEFT}
-                  x2={PLOT_RIGHT}
-                  y1={y}
-                  y2={y}
-                />
-
-                <text
-                  className={[
-                    "fill-[var(--color-text-muted)]",
-                    "text-[12px]",
-                  ].join(" ")}
-                  textAnchor="end"
-                  x={PLOT_LEFT - 26}
-                  y={y + 4}
-                >
-                  {formatNumber(value, 1)}¢
-                </text>
-              </g>
-            );
-          },
+              <text
+                className={[
+                  "fill-[var(--color-text-muted)]",
+                  "text-[12px]",
+                ].join(" ")}
+                textAnchor="end"
+                x={PLOT_LEFT - 26}
+                y={y + 4}
+              >
+                {formatNumber(value, 1)}¢
+              </text>
+            </g>
+          ),
         )}
 
         <path

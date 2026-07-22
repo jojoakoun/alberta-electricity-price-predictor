@@ -6,15 +6,15 @@ import {
   Star,
 } from "lucide-react";
 
-import { copy } from "../copy";
+import { copy } from "../../copy";
 import {
   formatAlbertaDay,
   formatAlbertaTime,
   formatNumber,
-} from "../i18n/formatters";
-import { isLowerPriceOpportunity } from "../domain/today";
-import { Card } from "./Card";
-import { StatusBadge } from "./StatusBadge";
+} from "../../i18n/formatters";
+import { isLowerPriceOpportunity } from "../../domain/today";
+import { Card } from "../Card";
+import { StatusBadge } from "../StatusBadge";
 
 function requireDifference(comparison, difference) {
   if (difference === null) {

@@ -2,6 +2,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from electricity_predictor.modeling.model_results import (
+  REGRESSION_VALIDATION_RESULTS_PATH,
+)
 
 # These are the only regression metrics we allow for best-model selection.
 # Lower MAE and lower RMSE both mean better prediction performance.
@@ -192,7 +195,7 @@ def print_best_models_summary(best_models: list[dict], output_path: Path) -> Non
 
 
 if __name__ == "__main__":
-  model_results_path = Path("reports/model_results.csv")
+  model_results_path = REGRESSION_VALIDATION_RESULTS_PATH
   best_model_path = Path("reports/best_regression_model.csv")
 
   model_results = load_model_results(model_results_path)

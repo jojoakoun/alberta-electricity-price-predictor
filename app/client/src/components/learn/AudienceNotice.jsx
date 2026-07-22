@@ -3,7 +3,7 @@ import {
   House,
 } from "lucide-react";
 
-import { copy } from "../copy";
+import { copy } from "../../copy";
 
 export function AudienceNotice() {
   return (

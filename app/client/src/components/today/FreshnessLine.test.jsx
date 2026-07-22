@@ -10,7 +10,7 @@ import {
   test,
 } from "vitest";
 
-import { setLanguage } from "../i18n/language";
+import { setLanguage } from "../../i18n/language";
 import { FreshnessLine } from "./FreshnessLine";
 
 afterEach(() => {

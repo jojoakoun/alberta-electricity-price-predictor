@@ -11,13 +11,11 @@ def test_load_configuration_returns_project_name() -> None:
   assert configuration["project"]["name"] == "Alberta Electricity Price Predictor"
 
 
-def test_load_configuration_contains_required_paths() -> None:
-  # These paths are needed by future data, model, and logging modules.
+def test_load_configuration_contains_consumed_data_paths() -> None:
   configuration = load_configuration()
 
   assert "raw_data_dir" in configuration["paths"]
-  assert "processed_data_dir" in configuration["paths"]
-  assert "log_dir" in configuration["paths"]
+  assert "interim_data_dir" in configuration["paths"]
 
 
 def test_configured_horizons_match_the_shared_production_contract() -> None:

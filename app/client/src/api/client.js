@@ -1,4 +1,4 @@
-import { getPublicApiErrorMessage } from "./contracts";
+import { getPublicApiErrorMessage } from "./error-contract";
 
 export class ApiError extends Error {
   constructor(message, status) {

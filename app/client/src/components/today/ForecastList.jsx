@@ -4,13 +4,13 @@ import {
   TriangleAlert,
 } from "lucide-react";
 
-import { copy } from "../copy";
+import { copy } from "../../copy";
 import {
   formatAlbertaTime,
   formatNumber,
-} from "../i18n/formatters";
-import { isLowerPriceOpportunity } from "../domain/today";
-import { StatusBadge } from "./StatusBadge";
+} from "../../i18n/formatters";
+import { isLowerPriceOpportunity } from "../../domain/today";
+import { StatusBadge } from "../StatusBadge";
 
 export function ForecastList({
   forecasts,

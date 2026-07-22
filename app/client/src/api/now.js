@@ -1,5 +1,5 @@
 import { getJson } from "./client";
-import { validateNowApiResponse } from "./contracts";
+import { validateNowApiResponse } from "./now-contract";
 
 export function fetchNow(signal) {
   return getJson(

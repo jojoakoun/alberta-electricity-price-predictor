@@ -8,6 +8,9 @@ import pytest
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH as SHARED_TRAINING_DATASET_PATH,
 )
+from electricity_predictor.modeling.model_results import (
+  REGRESSION_VALIDATION_RESULTS_PATH,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -224,7 +227,7 @@ def test_main_forwards_shared_training_path_without_fitting(
   )
   build_result = Mock(return_value=sentinel.result)
   append_model_result = Mock(
-    return_value=Path("reports/model_results.csv")
+    return_value=REGRESSION_VALIDATION_RESULTS_PATH
   )
 
   monkeypatch.setattr(
@@ -305,7 +308,7 @@ def test_main_forwards_shared_training_path_without_fitting(
   build_result.assert_called_once()
   append_model_result.assert_called_once_with(
     result=sentinel.result,
-    output_path=Path("reports/model_results.csv"),
+    output_path=REGRESSION_VALIDATION_RESULTS_PATH,
   )
 
 

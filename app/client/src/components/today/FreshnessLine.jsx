@@ -1,7 +1,7 @@
 import { Clock3 } from "lucide-react";
 
-import { copy } from "../copy";
-import { formatAlbertaTime } from "../i18n/formatters";
+import { copy } from "../../copy";
+import { formatAlbertaTime } from "../../i18n/formatters";
 
 export function FreshnessLine({
   sourceDataAtUtc,

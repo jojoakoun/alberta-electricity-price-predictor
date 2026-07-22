@@ -1,5 +1,6 @@
 import { ProjectAudience } from "../components/project/ProjectAudience";
-import "../components/project/project-motion.css";
+import "../styles/project.css";
+import "../styles/project-motion.css";
 
 import { DeveloperProfile } from "../components/project/DeveloperProfile";
 import { EngineeringJourney } from "../components/project/EngineeringJourney";

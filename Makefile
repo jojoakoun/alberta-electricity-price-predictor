@@ -144,8 +144,8 @@ help:
 # ==============================================================================
 
 install:
-	# Install Python dependencies and register the local package.
-	$(PIP) install -r requirements.txt
+	# Install runtime, research, and test dependencies for local development.
+	$(PIP) install -r requirements-dev.txt
 	$(PIP) install -e .
 
 	# Install backend and frontend dependencies.

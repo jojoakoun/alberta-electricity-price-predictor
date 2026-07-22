@@ -1,5 +1,5 @@
 jest.mock(
-  "../src/repositories/prediction-repository"
+  "../src/repositories/hourly-price-repository"
 );
 
 jest.mock("../src/utils/price");
@@ -8,7 +8,7 @@ jest.mock("../src/utils/market-context");
 jest.mock("../src/utils/action");
 
 const repository = require(
-  "../src/repositories/prediction-repository"
+  "../src/repositories/hourly-price-repository"
 );
 
 const price = require(

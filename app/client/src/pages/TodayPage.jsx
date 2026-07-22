@@ -1,4 +1,4 @@
-import "../styles/product-pages.css";
+import "../styles/today.css";
 
 import {
   CalendarClock,
@@ -12,14 +12,14 @@ import {
 
 import { useTodayQuery } from "../api/useTodayQuery";
 import { AppReveal } from "../components/motion/AppReveal";
-import { BestTimeCard } from "../components/BestTimeCard";
+import { BestTimeCard } from "../components/today/BestTimeCard";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { DelayedBanner } from "../components/DelayedBanner";
-import { ForecastList } from "../components/ForecastList";
-import { FreshnessLine } from "../components/FreshnessLine";
+import { ForecastList } from "../components/today/ForecastList";
+import { FreshnessLine } from "../components/today/FreshnessLine";
 import { StatusBadge } from "../components/StatusBadge";
-import { TimelineOverview } from "../components/TimelineOverview";
+import { TimelineOverview } from "../components/today/TimelineOverview";
 import { copy } from "../copy";
 
 export function TodayPage() {

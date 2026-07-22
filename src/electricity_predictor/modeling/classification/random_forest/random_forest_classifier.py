@@ -10,6 +10,7 @@ from electricity_predictor.modeling.classification.target_builder import (
 )
 from electricity_predictor.modeling.metrics import calculate_classification_metrics
 from electricity_predictor.modeling.model_results import (
+  CLASSIFICATION_VALIDATION_RESULTS_PATH,
   append_model_result,
   build_model_result_row,
 )
@@ -24,7 +25,6 @@ from electricity_predictor.modeling.split import (
 
 
 CLASSIFICATION_FEATURE_COLUMNS = MODEL_FEATURE_COLUMNS
-MODEL_RESULTS_PATH = Path("reports/model_results.csv")
 
 
 def train_random_forest_classifier(
@@ -108,7 +108,7 @@ def build_random_forest_result(
 
 def run_random_forest_classifier(
   training_dataset_path: Path = TRAINING_DATASET_PATH,
-  results_path: Path = MODEL_RESULTS_PATH,
+  results_path: Path = CLASSIFICATION_VALIDATION_RESULTS_PATH,
 ) -> Path:
   """Train and evaluate Random Forest for all configured horizons."""
   configuration = load_configuration()

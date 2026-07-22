@@ -4,13 +4,13 @@ import {
   Gauge,
 } from "lucide-react";
 
-import { copy } from "../copy";
+import { copy } from "../../copy";
 import {
   formatAlbertaTime,
   formatNumber,
-} from "../i18n/formatters";
-import { Card } from "./Card";
-import { StatusBadge } from "./StatusBadge";
+} from "../../i18n/formatters";
+import { Card } from "../Card";
+import { StatusBadge } from "../StatusBadge";
 
 export function RecommendationCard({
   data,

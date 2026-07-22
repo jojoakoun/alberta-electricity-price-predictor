@@ -884,6 +884,14 @@ alberta-electricity-price-predictor/
 
 ## Main Commands
 
+### Dependency scopes
+
+`make install` installs `requirements-dev.txt`, which includes the research and
+runtime dependency files without changing their pinned versions. Railway uses
+only `requirements.txt`; plotting dependencies live in
+`requirements-research.txt`, and test dependencies live in
+`requirements-dev.txt`.
+
 ### Local application
 
 | Command | Purpose |
@@ -954,7 +962,6 @@ cp .env.example .env
 Main variables:
 
 ```env
-APP_ENV=development
 LOG_LEVEL=INFO
 
 AESO_API_BASE_URL=https://apimgw.aeso.ca/public/poolprice-api/v1.1

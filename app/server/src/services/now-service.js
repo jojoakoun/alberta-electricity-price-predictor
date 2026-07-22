@@ -2,7 +2,7 @@ const {
   getLatestFinalizedPrice,
   getRecentFinalizedPrices,
 } = require(
-  "../repositories/prediction-repository"
+  "../repositories/hourly-price-repository"
 );
 
 const {

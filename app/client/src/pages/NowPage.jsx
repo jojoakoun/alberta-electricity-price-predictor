@@ -1,4 +1,4 @@
-import "../styles/product-pages.css";
+import "../styles/now.css";
 
 import {
   ArrowRight,
@@ -12,7 +12,7 @@ import { AppReveal } from "../components/motion/AppReveal";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { DelayedBanner } from "../components/DelayedBanner";
-import { RecommendationCard } from "../components/RecommendationCard";
+import { RecommendationCard } from "../components/now/RecommendationCard";
 import { StatusBadge } from "../components/StatusBadge";
 import { copy } from "../copy";
 

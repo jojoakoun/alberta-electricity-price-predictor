@@ -9,16 +9,21 @@ from electricity_predictor.config import load_configuration
 from electricity_predictor.features.feature_engineering import (
   build_target_column_name,
 )
+from electricity_predictor.features.feature_columns import (
+  parse_model_feature_columns,
+)
+from electricity_predictor.modeling.decision.price_policy import classify_price
+from electricity_predictor.modeling.decision.thresholds import (
+  DECISION_WINDOW_HOURS,
+  build_rolling_price_thresholds,
+)
 from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
-from electricity_predictor.serving.inference import (
-  parse_feature_columns,
-)
 
 
-WINDOW_HOURS = 720
+WINDOW_HOURS = DECISION_WINDOW_HOURS
 
 REGRESSION_METADATA_PATH = Path(
   "models/regression/selected_regression_model_metadata.csv"
@@ -38,51 +43,16 @@ LABEL_ORDER = {
 }
 
 
-def classify_price(
-  price: float,
-  recommended_threshold: float,
-  avoid_threshold: float,
-) -> str:
-  """Classify one price using dynamic thresholds."""
-  if price >= avoid_threshold:
-    return "Avoid"
-
-  if price <= recommended_threshold:
-    return "Recommended"
-
-  return "Acceptable"
-
-
 def build_dynamic_thresholds(
   data: pd.DataFrame,
   window_hours: int,
 ) -> pd.DataFrame:
   """Calculate leakage-safe thresholds from preceding actual prices."""
-  prices = pd.to_numeric(
-    data["actual_price"],
-    errors="coerce",
-  )
-
-  historical = prices.shift(1)
-
-  q1 = historical.rolling(
-    window=window_hours,
-    min_periods=window_hours,
-  ).quantile(0.25)
-
-  q3 = historical.rolling(
-    window=window_hours,
-    min_periods=window_hours,
-  ).quantile(0.75)
-
-  iqr = q3 - q1
-
-  return pd.DataFrame(
-    {
-      "recommended_threshold": q1,
-      "avoid_threshold": q3 + (1.5 * iqr),
-    },
-    index=data.index,
+  return build_rolling_price_thresholds(
+    prices=data["actual_price"],
+    window_hours=window_hours,
+    recommended_quantile=0.25,
+    avoid_iqr_multiplier=1.5,
   )
 
 
@@ -95,7 +65,7 @@ def generate_regression_predictions(
     Path(str(metadata_row["artifact_path"]))
   )
 
-  feature_columns = parse_feature_columns(
+  feature_columns = parse_model_feature_columns(
     metadata_row["feature_columns"]
   )
 
