@@ -99,20 +99,23 @@ Every successful prediction run must contain exactly:
 ## System Architecture
 
 ```text
-One-time bootstrap
-Historical CSV -> make seed-history -> PostgreSQL hourly_prices
+Database reconstruction and research refresh
+Historical CSV + AESO API -> make refresh-data -> clean historical dataset
+-> make sync-history -> PostgreSQL hourly_prices
 
 Recurring operational worker
 PostgreSQL latest hour -> bounded AESO overlap -> normalize and upsert
 -> PostgreSQL inference window -> five predictions -> PostgreSQL persistence
 -> Express REST API -> React application
 
-Separate research workflow
-Historical CSV + AESO API -> interim/processed datasets -> benchmark reports
+Separate model-development workflow
+Clean historical dataset -> feature engineering -> training datasets
+-> benchmark reports
 ```
 
 PostgreSQL is the steady-state operational source of truth. The historical CSV
-is a one-time seed and research input; it is not an hourly Railway dependency.
+is an input to the explicit research refresh workflow; the recurring Railway
+worker does not read raw, interim, or processed CSV files.
 
 The model lifecycle operates separately from the hourly application worker:
 
@@ -428,17 +431,11 @@ Canonical command:
 make worker-run
 ```
 
-The separate one-time database bootstrap is:
-
-```bash
-make seed-history
-```
-
-That is the local wrapper. An environment without Make can run:
-
-```bash
-python -m electricity_predictor.worker.historical_seed
-```
+Database reconstruction for local research or recovery uses `make refresh-data`
+followed by `make sync-history`. The first command rebuilds the clean historical
+dataset from the historical CSV and AESO API, and the second synchronizes that
+canonical dataset into PostgreSQL. Neither command belongs to the recurring
+worker path.
 
 `railway.worker.json` is configured to invoke the installed
 `wattwise-worker` entry point directly. The recurring worker never reads
@@ -900,7 +897,8 @@ only `requirements.txt`; plotting dependencies live in
 | `make stop` | Stop local application processes |
 | `make app-refresh` | Refresh AESO data and publish predictions |
 | `make worker-run` | Install models and execute one operational worker cycle |
-| `make seed-history` | Seed PostgreSQL once from the historical bootstrap CSV |
+| `make refresh-data` | Rebuild the clean historical dataset from CSV and AESO |
+| `make sync-history` | Synchronize the clean historical dataset into PostgreSQL |
 
 ### Verification
 

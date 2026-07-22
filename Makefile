@@ -32,7 +32,6 @@ CURL ?= curl
 	app-check \
 	database-check \
 	refresh-data \
-	seed-history \
 	sync-history \
 	sync-and-predict \
 	data-quality \
@@ -120,7 +119,6 @@ help:
 	@echo ""
 	@echo "Data and application"
 	@echo "  make refresh-data                Refresh the historical AESO dataset"
-	@echo "  make seed-history                Seed PostgreSQL once from historical CSV"
 	@echo "  make sync-history                Synchronize historical rows with PostgreSQL"
 	@echo "  make sync-and-predict            Publish one five-horizon prediction run"
 	@echo "  make app-check                   Check Health, Now, and Today endpoints"
@@ -364,11 +362,6 @@ refresh-data:
 	$(PYTHON) \
 		src/electricity_predictor/data/pipeline.py
 
-
-seed-history:
-	# One-time bootstrap: seed PostgreSQL from the historical raw CSV.
-	$(PYTHON) \
-		-m electricity_predictor.worker.historical_seed
 
 
 sync-history:
