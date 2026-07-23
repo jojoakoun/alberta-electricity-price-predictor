@@ -24,6 +24,17 @@ from electricity_predictor.modeling.regression.lasso.lasso_regression import (
 from electricity_predictor.modeling.regression.linear.linear_regression import (
   train_linear_regression_model,
 )
+from electricity_predictor.modeling.regression.hist_gradient_boosting.hist_gradient_boosting import (
+  HIST_GRADIENT_BOOSTING_EARLY_STOPPING,
+  HIST_GRADIENT_BOOSTING_L2_REGULARIZATION,
+  HIST_GRADIENT_BOOSTING_LEARNING_RATE,
+  HIST_GRADIENT_BOOSTING_LOSS,
+  HIST_GRADIENT_BOOSTING_MAX_ITER,
+  HIST_GRADIENT_BOOSTING_MAX_LEAF_NODES,
+  HIST_GRADIENT_BOOSTING_MIN_SAMPLES_LEAF,
+  HIST_GRADIENT_BOOSTING_RANDOM_STATE,
+  train_hist_gradient_boosting_model,
+)
 from electricity_predictor.modeling.regression.random_forest.random_forest import (
   RANDOM_FOREST_MAX_DEPTH,
   RANDOM_FOREST_MIN_SAMPLES_LEAF,
@@ -63,6 +74,16 @@ TUNED_REQUIRED_PARAMETERS = {
   "ridge_regression_tuned": ["best_alpha"],
   "lasso_regression_tuned": ["best_alpha"],
   "elastic_net_regression_tuned": ["alpha", "l1_ratio"],
+  "hist_gradient_boosting_regressor_tuned": [
+    "loss",
+    "learning_rate",
+    "max_iter",
+    "max_leaf_nodes",
+    "min_samples_leaf",
+    "l2_regularization",
+    "early_stopping",
+    "random_state",
+  ],
   "random_forest_regressor_tuned": [
     "n_estimators",
     "max_depth",
@@ -144,6 +165,31 @@ def get_optional_int_parameter(
   return int(value)
 
 
+def get_bool_parameter(
+  parameters: dict[str, str],
+  names: list[str],
+  default: bool,
+) -> bool:
+  """Read a boolean parameter from saved model metadata."""
+  value = get_parameter_value(parameters, names)
+
+  if value is None:
+    return default
+
+  normalized_value = value.strip().lower()
+
+  if normalized_value == "true":
+    return True
+
+  if normalized_value == "false":
+    return False
+
+  raise ValueError(
+    f"Invalid boolean parameter for {names}: {value}. "
+    "Expected True or False."
+  )
+
+
 def load_selected_regression_models(
   file_path: Path = BEST_MODEL_PATH,
 ) -> pd.DataFrame:
@@ -210,6 +256,67 @@ def train_selected_regression_model(
       alpha=alpha,
       l1_ratio=l1_ratio,
       max_iter=max_iter,
+      target_column=target_column,
+    )
+
+  if model_name in [
+    "hist_gradient_boosting_regressor",
+    "hist_gradient_boosting_regressor_tuned",
+  ]:
+    loss = (
+      get_parameter_value(
+        parameters,
+        ["loss"],
+        HIST_GRADIENT_BOOSTING_LOSS,
+      )
+      or HIST_GRADIENT_BOOSTING_LOSS
+    )
+    learning_rate = get_float_parameter(
+      parameters,
+      ["learning_rate"],
+      HIST_GRADIENT_BOOSTING_LEARNING_RATE,
+    )
+    max_iter = get_int_parameter(
+      parameters,
+      ["max_iter"],
+      HIST_GRADIENT_BOOSTING_MAX_ITER,
+    )
+    max_leaf_nodes = get_int_parameter(
+      parameters,
+      ["max_leaf_nodes"],
+      HIST_GRADIENT_BOOSTING_MAX_LEAF_NODES,
+    )
+    min_samples_leaf = get_int_parameter(
+      parameters,
+      ["min_samples_leaf"],
+      HIST_GRADIENT_BOOSTING_MIN_SAMPLES_LEAF,
+    )
+    l2_regularization = get_float_parameter(
+      parameters,
+      ["l2_regularization"],
+      HIST_GRADIENT_BOOSTING_L2_REGULARIZATION,
+    )
+    early_stopping = get_bool_parameter(
+      parameters,
+      ["early_stopping"],
+      HIST_GRADIENT_BOOSTING_EARLY_STOPPING,
+    )
+    random_state = get_int_parameter(
+      parameters,
+      ["random_state"],
+      HIST_GRADIENT_BOOSTING_RANDOM_STATE,
+    )
+
+    return train_hist_gradient_boosting_model(
+      train_data=train_data,
+      loss=loss,
+      learning_rate=learning_rate,
+      max_iter=max_iter,
+      max_leaf_nodes=max_leaf_nodes,
+      min_samples_leaf=min_samples_leaf,
+      l2_regularization=l2_regularization,
+      early_stopping=early_stopping,
+      random_state=random_state,
       target_column=target_column,
     )
 

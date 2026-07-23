@@ -8,6 +8,7 @@ from electricity_predictor.features.feature_columns import (
   MODEL_FEATURE_COLUMNS,
 )
 from electricity_predictor.modeling.regression.selected_model import (
+  get_bool_parameter,
   get_optional_int_parameter,
   load_selected_regression_models,
   parse_model_parameters,
@@ -200,3 +201,72 @@ def test_baseline_prediction_uses_previous_observed_price() -> None:
   )
 
   assert predictions.equals(data["actual_price_lag_1h"])
+
+
+def test_hist_gradient_boosting_dispatch_preserves_saved_parameters() -> None:
+  train_data = make_modeling_data()
+  fitted_model = object()
+  parameters = (
+    "loss=absolute_error; "
+    "learning_rate=0.05; "
+    "max_iter=200; "
+    "max_leaf_nodes=15; "
+    "min_samples_leaf=50; "
+    "l2_regularization=1.5; "
+    "early_stopping=False; "
+    "random_state=7"
+  )
+
+  with patch(
+    f"{MODULE_PATH}.train_hist_gradient_boosting_model",
+    return_value=fitted_model,
+  ) as trainer:
+    result = train_selected_regression_model(
+      selected_model={
+        "model_name": "hist_gradient_boosting_regressor_tuned",
+        "model_parameters": parameters,
+      },
+      train_data=train_data,
+      target_column="actual_price_target_1h",
+    )
+
+  assert result is fitted_model
+  trainer.assert_called_once_with(
+    train_data=train_data,
+    loss="absolute_error",
+    learning_rate=0.05,
+    max_iter=200,
+    max_leaf_nodes=15,
+    min_samples_leaf=50,
+    l2_regularization=1.5,
+    early_stopping=False,
+    random_state=7,
+    target_column="actual_price_target_1h",
+  )
+
+
+def test_hist_gradient_boosting_tuned_requires_complete_parameters() -> None:
+  with pytest.raises(ValueError) as parameters_error:
+    train_selected_regression_model(
+      selected_model={
+        "model_name": "hist_gradient_boosting_regressor_tuned",
+        "model_parameters": "learning_rate=0.05",
+      },
+      train_data=make_modeling_data(),
+      target_column="actual_price_target_1h",
+    )
+
+  assert str(parameters_error.value) == (
+    "Tuned model hist_gradient_boosting_regressor_tuned is missing required "
+    "parameters: ['loss', 'max_iter', 'max_leaf_nodes', 'min_samples_leaf', "
+    "'l2_regularization', 'early_stopping', 'random_state']. "
+    "Refusing to retrain with default hyperparameters."
+  )
+
+
+def test_boolean_parameter_reader_preserves_saved_false_value() -> None:
+  assert get_bool_parameter(
+    parameters={"early_stopping": "False"},
+    names=["early_stopping"],
+    default=True,
+  ) is False
