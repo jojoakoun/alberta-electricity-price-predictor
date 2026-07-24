@@ -9,7 +9,7 @@ from sklearn.ensemble import (
   HistGradientBoostingRegressor,
 )
 
-from electricity_predictor.modeling.live_contract.save_candidate_models import (
+from electricity_predictor.modeling.live_contract.train_live_candidate_models import (
   CLASSIFICATION_RESULTS_PATH,
   REGRESSION_RESULTS_PATH,
   build_classification_model,

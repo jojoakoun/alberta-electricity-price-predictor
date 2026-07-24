@@ -622,7 +622,7 @@ def write_manifest(
   return manifest
 
 
-def build_candidate_bundle() -> dict:
+def train_live_candidate_model_bundle() -> dict:
   """Build a clean isolated ten-model candidate bundle."""
   regression_results = (
     load_selected_results(
@@ -734,7 +734,7 @@ def build_candidate_bundle() -> dict:
 
 def main() -> None:
   """Train and report the isolated candidate model bundle."""
-  summary = build_candidate_bundle()
+  summary = train_live_candidate_model_bundle()
 
   print(
     "selected_live_contract="

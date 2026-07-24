@@ -176,7 +176,7 @@ def write_dataset(
   return output_path
 
 
-def build_and_write_live_datasets() -> tuple[
+def build_and_save_live_model_datasets() -> tuple[
   Path,
   Path,
   pd.DataFrame,
@@ -218,7 +218,7 @@ def main() -> None:
     training_path,
     modeling_data,
     training_data,
-  ) = build_and_write_live_datasets()
+  ) = build_and_save_live_model_datasets()
 
   print(
     "selected_live_contract="

@@ -10,7 +10,7 @@ from electricity_predictor.features.feature_columns import (
 from electricity_predictor.features.live_feature_contract import (
   SELECTED_LIVE_FEATURE_COLUMNS,
 )
-from electricity_predictor.modeling.live_contract.dataset import (
+from electricity_predictor.modeling.live_contract.live_model_datasets import (
   build_live_modeling_dataset,
   build_live_training_dataset,
 )
