@@ -297,6 +297,9 @@ def describe_training_period(
 def train_regression_candidates(
   training_data: pd.DataFrame,
   results: pd.DataFrame,
+  artifact_directory: Path = (
+    REGRESSION_DIRECTORY
+  ),
 ) -> list[dict]:
   """Fit and save all five regression candidate artifacts."""
   metadata_rows = []
@@ -330,7 +333,7 @@ def train_regression_candidates(
     )
 
     artifact_path = (
-      REGRESSION_DIRECTORY
+      artifact_directory
       / f"live_regression_model_{horizon}h.joblib"
     )
 
@@ -408,6 +411,9 @@ def train_regression_candidates(
 def train_classification_candidates(
   training_data: pd.DataFrame,
   results: pd.DataFrame,
+  artifact_directory: Path = (
+    CLASSIFICATION_DIRECTORY
+  ),
 ) -> list[dict]:
   """Fit and save all five classification candidate artifacts."""
   metadata_rows = []
@@ -485,7 +491,7 @@ def train_classification_candidates(
     )
 
     artifact_path = (
-      CLASSIFICATION_DIRECTORY
+      artifact_directory
       / f"live_classification_model_{horizon}h.joblib"
     )
 
@@ -562,6 +568,7 @@ def train_classification_candidates(
 def write_manifest(
   regression_metadata: list[dict],
   classification_metadata: list[dict],
+  manifest_path: Path = MANIFEST_PATH,
 ) -> dict:
   """Write one bundle manifest for later worker activation."""
   artifacts = [
@@ -610,7 +617,12 @@ def write_manifest(
       artifacts,
   }
 
-  MANIFEST_PATH.write_text(
+  manifest_path.parent.mkdir(
+    parents=True,
+    exist_ok=True,
+  )
+
+  manifest_path.write_text(
     json.dumps(
       manifest,
       indent=2,
