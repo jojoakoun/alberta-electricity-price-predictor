@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,10 +31,6 @@ TRAINING_DATASET_PATH = Path(
 CANDIDATE_ROOT = Path("models/live_candidate")
 FINAL_ROOT = Path("models/live_final")
 TEMP_ROOT = Path("models/.live_final_tmp")
-
-ACTIVE_REGISTRY_PATH = Path(
-  "models/production/active_models.json"
-)
 
 EXPECTED_HORIZONS = {1, 3, 6, 12, 24}
 
@@ -489,156 +484,10 @@ def write_manifest(
   )
 
 
-def activate_final_models() -> None:
-  """Archive and atomically activate both live model tasks."""
-  if not ACTIVE_REGISTRY_PATH.exists():
-    raise FileNotFoundError(
-      "Active production registry is missing: "
-      f"{ACTIVE_REGISTRY_PATH}"
-    )
-
-  registry = json.loads(
-    ACTIVE_REGISTRY_PATH.read_text(
-      encoding="utf-8"
-    )
-  )
-
-  tasks = registry.get(
-    "tasks"
-  )
-
-  if not isinstance(
-    tasks,
-    dict,
-  ):
-    raise ValueError(
-      "Active registry is missing its tasks object."
-    )
-
-  for task_name in (
-    "regression",
-    "classification",
-  ):
-    if task_name not in tasks:
-      raise ValueError(
-        "Active registry is missing task: "
-        f"{task_name}"
-      )
-
-  activated_at = (
-    datetime.now(
-      timezone.utc
-    ).isoformat()
-  )
-
-  version = (
-    "live-final-"
-    + datetime.now(
-      timezone.utc
-    ).strftime(
-      "%Y%m%dT%H%M%SZ"
-    )
-  )
-
-  history_directory = (
-    ACTIVE_REGISTRY_PATH.parent
-    / "history"
-  )
-
-  history_directory.mkdir(
-    parents=True,
-    exist_ok=True,
-  )
-
-  history_path = (
-    history_directory
-    / (
-      datetime.now(
-        timezone.utc
-      ).strftime(
-        "%Y%m%dT%H%M%SZ"
-      )
-      + "-active_models.json"
-    )
-  )
-
-  history_path.write_text(
-    json.dumps(
-      registry,
-      indent=2,
-      sort_keys=True,
-    )
-    + "\n",
-    encoding="utf-8",
-  )
-
-  tasks[
-    "regression"
-  ]["metadata_path"] = str(
-    FINAL_ROOT
-    / "regression_metadata.csv"
-  )
-
-  tasks[
-    "classification"
-  ]["metadata_path"] = str(
-    FINAL_ROOT
-    / "classification_metadata.csv"
-  )
-
-  for task_name in (
-    "regression",
-    "classification",
-  ):
-    tasks[
-      task_name
-    ]["source"] = "live_final"
-
-    tasks[
-      task_name
-    ]["model_version"] = version
-
-    tasks[
-      task_name
-    ]["promoted_at_utc"] = (
-      activated_at
-    )
-
-    tasks[
-      task_name
-    ].pop(
-      "active_version",
-      None,
-    )
-
-  registry[
-    "updated_at_utc"
-  ] = activated_at
-
-  temporary_registry_path = (
-    ACTIVE_REGISTRY_PATH.with_suffix(
-      ".json.tmp"
-    )
-  )
-
-  temporary_registry_path.write_text(
-    json.dumps(
-      registry,
-      indent=2,
-      sort_keys=True,
-    )
-    + "\n",
-    encoding="utf-8",
-  )
-
-  os.replace(
-    temporary_registry_path,
-    ACTIVE_REGISTRY_PATH,
-  )
 
 
-def run_final_fit() -> dict:
-  """Build, verify, install, and activate the final local bundle."""
+def refit_live_models() -> dict:
+  """Build, verify, and install the refitted live model bundle."""
 
   data = load_training_data()
 
@@ -733,8 +582,6 @@ def run_final_fit() -> dict:
 
   TEMP_ROOT.rename(FINAL_ROOT)
 
-  activate_final_models()
-
   return {
     "selected_live_contract": (
       SELECTED_LIVE_FEATURE_CONTRACT
@@ -760,19 +607,22 @@ def run_final_fit() -> dict:
       len(regression_metadata)
       + len(classification_metadata)
     ),
-    "active_registry": str(
-      ACTIVE_REGISTRY_PATH
-    ),
+    "final_model_directory":
+      str(
+        FINAL_ROOT
+      ),
+    "activation_performed":
+      False,
     "protected_test_evaluated": False,
   }
 
 
 def main() -> None:
-  """Run the final local model fit."""
+  """Run the refit-only live model workflow."""
 
-  result = run_final_fit()
+  result = refit_live_models()
 
-  print("LIVE FINAL MODEL FIT")
+  print("LIVE MODEL REFIT")
   print("====================")
 
   for key, value in result.items():

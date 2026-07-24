@@ -202,6 +202,50 @@ def archive_active_registry(
   return history_path
 
 
+def build_candidate_active_registry(
+  candidate_manifest: dict,
+  candidate_manifest_path: Path,
+  task_names: list[str],
+  promoted_at: str,
+) -> dict:
+  """Build registry entries directly from approved candidate metadata."""
+  registry = {
+    "schema_version": 1,
+    "updated_at_utc": promoted_at,
+    "tasks": {},
+  }
+
+  for task_name in task_names:
+    task = candidate_manifest[
+      "tasks"
+    ][task_name]
+
+    registry[
+      "tasks"
+    ][task_name] = {
+      "model_version":
+        candidate_manifest[
+          "model_version"
+        ],
+      "metadata_path":
+        str(
+          task[
+            "metadata_path"
+          ]
+        ),
+      "source":
+        "candidate",
+      "candidate_manifest_path":
+        str(
+          candidate_manifest_path
+        ),
+      "promoted_at_utc":
+        promoted_at,
+    }
+
+  return registry
+
+
 def promote_candidate_tasks(
   candidate_manifest_path: Path,
   task_names: list[str],
@@ -211,8 +255,12 @@ def promote_candidate_tasks(
   history_directory: Path = (
     ACTIVE_MODEL_HISTORY_DIRECTORY
   ),
-) -> tuple[Path, Path, dict]:
-  """Promote selected candidate tasks through the active registry."""
+) -> tuple[
+  Path,
+  Path | None,
+  dict,
+]:
+  """Promote approved tasks or create the first active registry."""
   if not task_names:
     raise ValueError(
       "At least one promotion task is required."
@@ -235,6 +283,37 @@ def promote_candidate_tasks(
       "Candidate must be evaluated before promotion."
     )
 
+  champion_status = (
+    candidate_manifest.get(
+      "current_champion",
+      {},
+    ).get(
+      "status"
+    )
+  )
+
+  first_activation = (
+    champion_status
+    == "no_active_models"
+  )
+
+  if first_activation:
+    if set(
+      unique_task_names
+    ) != set(
+      TASK_NAMES
+    ):
+      raise ValueError(
+        "First activation requires both regression "
+        "and classification tasks."
+      )
+
+    if registry_path.exists():
+      raise FileExistsError(
+        "First activation cannot overwrite an "
+        f"existing active registry: {registry_path}"
+      )
+
   for task_name in unique_task_names:
     validate_task_promotion_gate(
       candidate_manifest=(
@@ -243,55 +322,78 @@ def promote_candidate_tasks(
       task_name=task_name,
     )
 
-  initialize_active_registry(
-    registry_path=registry_path
-  )
-
-  current_registry = read_active_registry(
-    registry_path=registry_path
-  )
-
-  history_path = archive_active_registry(
-    registry=current_registry,
-    history_directory=history_directory,
-  )
-
-  updated_registry = deepcopy(
-    current_registry
-  )
-
   promoted_at = (
     current_utc_timestamp()
   )
 
-  for task_name in unique_task_names:
-    task = candidate_manifest[
-      "tasks"
-    ][task_name]
+  history_path: Path | None = None
+
+  if first_activation:
+    updated_registry = (
+      build_candidate_active_registry(
+        candidate_manifest=(
+          candidate_manifest
+        ),
+        candidate_manifest_path=(
+          candidate_manifest_path
+        ),
+        task_names=list(
+          TASK_NAMES
+        ),
+        promoted_at=promoted_at,
+      )
+    )
+  else:
+    initialize_active_registry(
+      registry_path=registry_path
+    )
+
+    current_registry = (
+      read_active_registry(
+        registry_path=registry_path
+      )
+    )
+
+    history_path = (
+      archive_active_registry(
+        registry=current_registry,
+        history_directory=(
+          history_directory
+        ),
+      )
+    )
+
+    updated_registry = deepcopy(
+      current_registry
+    )
+
+    candidate_entries = (
+      build_candidate_active_registry(
+        candidate_manifest=(
+          candidate_manifest
+        ),
+        candidate_manifest_path=(
+          candidate_manifest_path
+        ),
+        task_names=(
+          unique_task_names
+        ),
+        promoted_at=promoted_at,
+      )
+    )
+
+    for task_name in unique_task_names:
+      updated_registry[
+        "tasks"
+      ][task_name] = (
+        candidate_entries[
+          "tasks"
+        ][task_name]
+      )
 
     updated_registry[
-      "tasks"
-    ][task_name] = {
-      "model_version": (
-        candidate_manifest[
-          "model_version"
-        ]
-      ),
-      "metadata_path": str(
-        task[
-          "metadata_path"
-        ]
-      ),
-      "source": "candidate",
-      "candidate_manifest_path": str(
-        candidate_manifest_path
-      ),
-      "promoted_at_utc": promoted_at,
-    }
-
-  updated_registry[
-    "updated_at_utc"
-  ] = promoted_at
+      "updated_at_utc"
+    ] = promoted_at
 
   written_registry_path = (
     write_active_registry_atomic(
@@ -318,17 +420,32 @@ def promote_candidate_tasks(
 
   promotion.update(
     {
-      "mode": "manual",
-      "promoted_at_utc": promoted_at,
-      "promoted_tasks": sorted(
-        promoted_tasks
-      ),
-      "active_registry_path": str(
-        written_registry_path
-      ),
-      "previous_registry_snapshot": str(
-        history_path
-      ),
+      "mode":
+        "manual",
+      "activation_kind":
+        (
+          "first_activation"
+          if first_activation
+          else "champion_replacement"
+        ),
+      "promoted_at_utc":
+        promoted_at,
+      "promoted_tasks":
+        sorted(
+          promoted_tasks
+        ),
+      "active_registry_path":
+        str(
+          written_registry_path
+        ),
+      "previous_registry_snapshot":
+        (
+          str(
+            history_path
+          )
+          if history_path is not None
+          else None
+        ),
     }
   )
 
@@ -342,6 +459,7 @@ def promote_candidate_tasks(
     history_path,
     updated_registry,
   )
+
 
 
 def rollback_active_registry(

@@ -291,3 +291,283 @@ def test_classification_failed_gate_cannot_promote(
         tmp_path / "history"
       ),
     )
+
+def prepare_first_activation_fixture(
+  tmp_path: Path,
+) -> tuple[
+  Path,
+  Path,
+  Path,
+]:
+  candidate_regression = (
+    write_metadata_bundle(
+      tmp_path
+      / "first-candidate-regression",
+      "regression",
+    )
+  )
+
+  candidate_classification = (
+    write_metadata_bundle(
+      tmp_path
+      / "first-candidate-classification",
+      "classification",
+    )
+  )
+
+  candidate_manifest = {
+    "schema_version":
+      1,
+    "status":
+      "evaluated",
+    "model_version":
+      "first-active-candidate",
+    "current_champion": {
+      "status":
+        "no_active_models",
+    },
+    "tasks": {
+      "regression": {
+        "status":
+          "completed",
+        "metadata_path":
+          str(
+            candidate_regression
+          ),
+      },
+      "classification": {
+        "status":
+          "completed",
+        "metadata_path":
+          str(
+            candidate_classification
+          ),
+      },
+    },
+    "comparison": {
+      "status":
+        "not_required",
+      "reason":
+        "no_active_models",
+      "regression_gate_pass":
+        True,
+      "classification_gate_pass":
+        True,
+      "promotion_ready":
+        True,
+    },
+  }
+
+  candidate_manifest_path = (
+    tmp_path
+    / "first-candidate.json"
+  )
+
+  candidate_manifest_path.write_text(
+    json.dumps(
+      candidate_manifest
+    ),
+    encoding="utf-8",
+  )
+
+  return (
+    candidate_manifest_path,
+    candidate_regression,
+    candidate_classification,
+  )
+
+
+def test_first_activation_creates_candidate_registry_without_snapshot(
+  tmp_path: Path,
+):
+  (
+    candidate_manifest_path,
+    candidate_regression,
+    candidate_classification,
+  ) = prepare_first_activation_fixture(
+    tmp_path
+  )
+
+  registry_path = (
+    tmp_path
+    / "production"
+    / "active_models.json"
+  )
+
+  history_directory = (
+    tmp_path
+    / "production"
+    / "history"
+  )
+
+  (
+    written_registry_path,
+    history_path,
+    registry,
+  ) = promote_candidate_tasks(
+    candidate_manifest_path=(
+      candidate_manifest_path
+    ),
+    task_names=[
+      "regression",
+      "classification",
+    ],
+    registry_path=registry_path,
+    history_directory=history_directory,
+  )
+
+  assert written_registry_path == (
+    registry_path
+  )
+
+  assert history_path is None
+
+  assert not history_directory.exists()
+
+  assert registry[
+    "tasks"
+  ][
+    "regression"
+  ][
+    "metadata_path"
+  ] == str(
+    candidate_regression
+  )
+
+  assert registry[
+    "tasks"
+  ][
+    "classification"
+  ][
+    "metadata_path"
+  ] == str(
+    candidate_classification
+  )
+
+  assert {
+    registry[
+      "tasks"
+    ][task_name][
+      "model_version"
+    ]
+    for task_name in (
+      "regression",
+      "classification",
+    )
+  } == {
+    "first-active-candidate",
+  }
+
+  written_manifest = json.loads(
+    candidate_manifest_path.read_text(
+      encoding="utf-8"
+    )
+  )
+
+  assert written_manifest[
+    "promotion"
+  ][
+    "activation_kind"
+  ] == "first_activation"
+
+  assert written_manifest[
+    "promotion"
+  ][
+    "previous_registry_snapshot"
+  ] is None
+
+
+def test_first_activation_rejects_partial_task_selection(
+  tmp_path: Path,
+):
+  (
+    candidate_manifest_path,
+    _,
+    _,
+  ) = prepare_first_activation_fixture(
+    tmp_path
+  )
+
+  with pytest.raises(
+    ValueError,
+    match="requires both regression and classification",
+  ):
+    promote_candidate_tasks(
+      candidate_manifest_path=(
+        candidate_manifest_path
+      ),
+      task_names=[
+        "regression",
+      ],
+      registry_path=(
+        tmp_path
+        / "active_models.json"
+      ),
+      history_directory=(
+        tmp_path
+        / "history"
+      ),
+    )
+
+
+def test_first_activation_rejects_existing_registry(
+  tmp_path: Path,
+):
+  (
+    candidate_manifest_path,
+    candidate_regression,
+    candidate_classification,
+  ) = prepare_first_activation_fixture(
+    tmp_path
+  )
+
+  registry = build_legacy_registry()
+
+  registry[
+    "tasks"
+  ][
+    "regression"
+  ][
+    "metadata_path"
+  ] = str(
+    candidate_regression
+  )
+
+  registry[
+    "tasks"
+  ][
+    "classification"
+  ][
+    "metadata_path"
+  ] = str(
+    candidate_classification
+  )
+
+  registry_path = (
+    tmp_path
+    / "active_models.json"
+  )
+
+  write_active_registry_atomic(
+    registry=registry,
+    registry_path=registry_path,
+  )
+
+  with pytest.raises(
+    FileExistsError,
+    match="cannot overwrite",
+  ):
+    promote_candidate_tasks(
+      candidate_manifest_path=(
+        candidate_manifest_path
+      ),
+      task_names=[
+        "regression",
+        "classification",
+      ],
+      registry_path=registry_path,
+      history_directory=(
+        tmp_path
+        / "history"
+      ),
+    )
