@@ -9,7 +9,7 @@ from sklearn.linear_model import LinearRegression
 from electricity_predictor.features.feature_columns import (
   MODEL_FEATURE_COLUMNS,
 )
-from electricity_predictor.modeling.lifecycle.candidate import (
+from electricity_predictor.modeling.lifecycle.candidate_run import (
   prepare_candidate_run,
 )
 from electricity_predictor.modeling.lifecycle.manifest import (

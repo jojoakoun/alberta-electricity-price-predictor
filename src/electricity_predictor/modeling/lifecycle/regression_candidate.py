@@ -6,7 +6,7 @@ import pandas as pd
 from electricity_predictor.features.feature_engineering import (
   build_target_column_name,
 )
-from electricity_predictor.modeling.lifecycle.candidate import (
+from electricity_predictor.modeling.lifecycle.candidate_run import (
   read_json_file,
   write_json_file,
 )

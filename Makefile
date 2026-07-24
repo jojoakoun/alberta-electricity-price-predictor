@@ -523,7 +523,7 @@ research-rebuild-all:
 lifecycle-status:
 	# Show the scheduler state without training models.
 	$(PYTHON) \
-		-m electricity_predictor.modeling.lifecycle.runner \
+		-m electricity_predictor.modeling.lifecycle.model_retraining_scheduler \
 		--status
 
 	@echo ""
@@ -545,7 +545,7 @@ lifecycle-run:
 		force_flag="--force"; \
 	fi; \
 	$(PYTHON) \
-		-m electricity_predictor.modeling.lifecycle.runner \
+		-m electricity_predictor.modeling.lifecycle.model_retraining_scheduler \
 		$$force_flag
 
 lifecycle-promote:
@@ -560,7 +560,7 @@ lifecycle-promote:
 	fi
 
 	$(PYTHON) \
-		-m electricity_predictor.modeling.lifecycle.promotion \
+		-m electricity_predictor.modeling.lifecycle.model_promotion \
 		--task "$(TASK)"
 
 lifecycle-rollback:
@@ -580,7 +580,7 @@ lifecycle-rollback:
 	fi
 
 	$(PYTHON) \
-		-m electricity_predictor.modeling.lifecycle.promotion \
+		-m electricity_predictor.modeling.lifecycle.model_promotion \
 		--rollback "$(SNAPSHOT)"
 
 release-build:

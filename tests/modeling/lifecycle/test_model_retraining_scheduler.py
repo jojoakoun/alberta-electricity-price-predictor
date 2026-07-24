@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from electricity_predictor.modeling.lifecycle import (
-  runner,
+  model_retraining_scheduler,
 )
 
 
@@ -20,7 +20,7 @@ def make_configuration() -> dict:
 
 def test_schedule_is_due_without_previous_run():
   schedule = (
-    runner.calculate_lifecycle_schedule(
+    model_retraining_scheduler.calculate_lifecycle_schedule(
       state=None,
       interval_days=90,
       now_utc=datetime(
@@ -43,7 +43,7 @@ def test_schedule_is_due_without_previous_run():
 
 def test_schedule_waits_until_ninety_days():
   schedule = (
-    runner.calculate_lifecycle_schedule(
+    model_retraining_scheduler.calculate_lifecycle_schedule(
       state={
         "last_completed_at_utc": (
           "2026-07-20T18:00:00+00:00"
@@ -125,7 +125,7 @@ def test_build_state_from_existing_candidate(
     encoding="utf-8",
   )
 
-  state = runner.build_state_from_candidate(
+  state = model_retraining_scheduler.build_state_from_candidate(
     candidate_manifest_path
   )
 
@@ -149,7 +149,7 @@ def test_runner_skips_before_interval(
     tmp_path / "state.json"
   )
 
-  runner.write_lifecycle_state(
+  model_retraining_scheduler.write_lifecycle_state(
     state={
       "last_completed_at_utc": (
         "2026-07-20T18:00:00+00:00"
@@ -160,7 +160,7 @@ def test_runner_skips_before_interval(
   )
 
   monkeypatch.setattr(
-    runner,
+    model_retraining_scheduler,
     "load_configuration",
     make_configuration,
   )
@@ -171,12 +171,12 @@ def test_runner_skips_before_interval(
     )
 
   monkeypatch.setattr(
-    runner,
+    model_retraining_scheduler,
     "prepare_lifecycle_training_data",
     reject_preparation,
   )
 
-  result = runner.run_lifecycle(
+  result = model_retraining_scheduler.run_scheduled_model_retraining(
     now_utc=datetime(
       2026,
       8,
@@ -242,19 +242,19 @@ def test_runner_executes_steps_without_promotion(
   )
 
   monkeypatch.setattr(
-    runner,
+    model_retraining_scheduler,
     "load_configuration",
     make_configuration,
   )
 
   monkeypatch.setattr(
-    runner,
+    model_retraining_scheduler,
     "discover_latest_candidate_state",
     lambda: None,
   )
 
   monkeypatch.setattr(
-    runner,
+    model_retraining_scheduler,
     "prepare_lifecycle_training_data",
     lambda: calls.append(
       "prepare_data"
@@ -262,7 +262,7 @@ def test_runner_executes_steps_without_promotion(
   )
 
   monkeypatch.setattr(
-    runner,
+    model_retraining_scheduler,
     "materialize_lifecycle_manifest",
     lambda: calls.append(
       "manifest"
@@ -281,13 +281,13 @@ def test_runner_executes_steps_without_promotion(
     )
 
   monkeypatch.setattr(
-    runner,
+    model_retraining_scheduler,
     "prepare_candidate_run",
     prepare_candidate,
   )
 
   monkeypatch.setattr(
-    runner,
+    model_retraining_scheduler,
     "train_regression_candidate",
     lambda **_: calls.append(
       "regression"
@@ -295,7 +295,7 @@ def test_runner_executes_steps_without_promotion(
   )
 
   monkeypatch.setattr(
-    runner,
+    model_retraining_scheduler,
     "train_classification_candidate",
     lambda **_: calls.append(
       "classification"
@@ -340,12 +340,12 @@ def test_runner_executes_steps_without_promotion(
     )
 
   monkeypatch.setattr(
-    runner,
-    "compare_candidate_to_champion",
+    model_retraining_scheduler,
+    "compare_challenger_with_active_models",
     compare_candidate,
   )
 
-  result = runner.run_lifecycle(
+  result = model_retraining_scheduler.run_scheduled_model_retraining(
     force=True,
     now_utc=datetime(
       2026,
@@ -389,7 +389,7 @@ def test_runner_rejects_automatic_promotion(
   monkeypatch,
 ):
   monkeypatch.setattr(
-    runner,
+    model_retraining_scheduler,
     "load_configuration",
     lambda: {
       "model_lifecycle": {
@@ -403,6 +403,6 @@ def test_runner_rejects_automatic_promotion(
     ValueError,
     match="promotion_mode: manual",
   ):
-    runner.run_lifecycle(
+    model_retraining_scheduler.run_scheduled_model_retraining(
       force=True
     )

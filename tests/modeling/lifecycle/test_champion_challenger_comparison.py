@@ -1,6 +1,6 @@
 import pandas as pd
 
-from electricity_predictor.modeling.lifecycle.comparison import (
+from electricity_predictor.modeling.lifecycle.champion_challenger_comparison import (
   build_classification_comparison,
   build_promotion_summary,
   build_regression_comparison,

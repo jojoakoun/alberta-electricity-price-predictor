@@ -15,7 +15,7 @@ from electricity_predictor.features.feature_columns import (
 from electricity_predictor.modeling.classification.decision_threshold import (
   apply_decision_threshold,
 )
-from electricity_predictor.modeling.lifecycle.candidate import (
+from electricity_predictor.modeling.lifecycle.candidate_run import (
   read_json_file,
   write_json_file,
 )
@@ -793,7 +793,7 @@ def build_promotion_summary(
   }
 
 
-def compare_candidate_to_champion(
+def compare_challenger_with_active_models(
   candidate_manifest_path: Path,
 ) -> tuple[Path, Path, Path, dict]:
   """Evaluate champion and candidate on the same frozen test."""
@@ -1084,7 +1084,7 @@ def main() -> None:
     classification_path,
     summary_path,
     summary,
-  ) = compare_candidate_to_champion(
+  ) = compare_challenger_with_active_models(
     candidate_manifest_path=(
       candidate_manifest_path
     )

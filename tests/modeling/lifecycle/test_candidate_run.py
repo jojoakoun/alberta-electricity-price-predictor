@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from electricity_predictor.modeling.lifecycle.candidate import (
+from electricity_predictor.modeling.lifecycle.candidate_run import (
   build_candidate_manifest,
   build_candidate_model_version,
   prepare_candidate_run,

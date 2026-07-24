@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from electricity_predictor.modeling.lifecycle.candidate import (
+from electricity_predictor.modeling.lifecycle.candidate_run import (
   build_candidate_model_version,
   read_json_file,
 )

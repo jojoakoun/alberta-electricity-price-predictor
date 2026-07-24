@@ -5,7 +5,7 @@ import joblib
 import pandas as pd
 import pytest
 
-from electricity_predictor.modeling.lifecycle.promotion import (
+from electricity_predictor.modeling.lifecycle.model_promotion import (
   promote_candidate_tasks,
 )
 from electricity_predictor.serving.model_registry import (

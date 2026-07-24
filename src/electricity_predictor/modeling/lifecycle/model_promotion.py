@@ -10,7 +10,7 @@ import pandas as pd
 from electricity_predictor.features.feature_columns import (
   SUPPORTED_FORECAST_HORIZONS_HOURS,
 )
-from electricity_predictor.modeling.lifecycle.candidate import (
+from electricity_predictor.modeling.lifecycle.candidate_run import (
   read_json_file,
   write_json_file,
 )

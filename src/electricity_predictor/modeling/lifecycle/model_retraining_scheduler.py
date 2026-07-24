@@ -1,3 +1,5 @@
+"""Schedule, train and evaluate model challengers without promotion."""
+
 import argparse
 from datetime import UTC, datetime, timedelta
 import json
@@ -10,15 +12,15 @@ from uuid import uuid4
 from electricity_predictor.config import (
   load_configuration,
 )
-from electricity_predictor.modeling.lifecycle.candidate import (
+from electricity_predictor.modeling.lifecycle.candidate_run import (
   prepare_candidate_run,
   read_json_file,
 )
 from electricity_predictor.modeling.lifecycle.classification_candidate import (
   train_classification_candidate,
 )
-from electricity_predictor.modeling.lifecycle.comparison import (
-  compare_candidate_to_champion,
+from electricity_predictor.modeling.lifecycle.champion_challenger_comparison import (
+  compare_challenger_with_active_models,
 )
 from electricity_predictor.modeling.lifecycle.frozen_splits import (
   resolve_latest_candidate_manifest_path,
@@ -491,7 +493,7 @@ def prepare_lifecycle_training_data() -> None:
     )
 
 
-def run_lifecycle(
+def run_scheduled_model_retraining(
   force: bool = False,
   now_utc: datetime | None = None,
   state_path: Path = (
@@ -597,7 +599,7 @@ def run_lifecycle(
     )
   )
 
-  compare_candidate_to_champion(
+  compare_challenger_with_active_models(
     candidate_manifest_path=(
       candidate_manifest_path
     )
@@ -953,7 +955,7 @@ def main() -> None:
 
     return
 
-  result = run_lifecycle(
+  result = run_scheduled_model_retraining(
     force=arguments.force
   )
 

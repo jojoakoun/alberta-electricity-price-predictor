@@ -24,7 +24,7 @@ from electricity_predictor.modeling.classification.target_builder import (
   build_spike_target_column_name,
   prepare_classification_splits,
 )
-from electricity_predictor.modeling.lifecycle.candidate import (
+from electricity_predictor.modeling.lifecycle.candidate_run import (
   read_json_file,
   write_json_file,
 )
