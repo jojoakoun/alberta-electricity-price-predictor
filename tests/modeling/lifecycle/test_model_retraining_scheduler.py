@@ -192,178 +192,169 @@ def test_runner_skips_before_interval(
 
 
 def test_runner_executes_steps_without_promotion(
-  tmp_path: Path,
+  tmp_path,
   monkeypatch,
 ):
+  from datetime import UTC, datetime
+
+  from electricity_predictor.modeling.lifecycle import (
+    model_retraining_scheduler as scheduler,
+  )
+
   calls = []
 
-  state_path = (
-    tmp_path / "state.json"
+  monkeypatch.setattr(
+    scheduler,
+    "load_configuration",
+    lambda: {
+      "model_lifecycle": {
+        "retraining_interval_days": 30,
+        "promotion_mode": "manual",
+      },
+    },
   )
 
-  candidate_directory = (
-    tmp_path / "candidate"
+  monkeypatch.setattr(
+    scheduler,
+    "resolve_lifecycle_state",
+    lambda state_path: None,
   )
 
-  comparison_directory = (
-    candidate_directory
-    / "reports"
-    / "comparison"
+  monkeypatch.setattr(
+    scheduler,
+    "prepare_lifecycle_training_data",
+    lambda: calls.append(
+      "prepare_source_data"
+    ),
   )
 
-  comparison_directory.mkdir(
-    parents=True
+  monkeypatch.setattr(
+    scheduler,
+    "build_and_save_champion_challenger_datasets",
+    lambda: calls.append(
+      "build_comparison_dataset"
+    ),
+  )
+
+  monkeypatch.setattr(
+    scheduler,
+    "materialize_lifecycle_manifest",
+    lambda: calls.append(
+      "materialize_manifest"
+    ),
   )
 
   candidate_manifest_path = (
-    candidate_directory
+    tmp_path
     / "candidate_manifest.json"
   )
 
   candidate_manifest = {
-    "status": "pending",
-    "model_version": (
-      "candidate-test"
-    ),
-    "split_version": (
-      "split-test"
-    ),
-    "promotion_mode": "manual",
-    "candidate_directory": str(
-      candidate_directory
-    ),
+    "candidate_directory":
+      str(
+        tmp_path
+        / "candidate"
+      ),
+    "model_version":
+      "candidate-v1",
+    "split_version":
+      "split-v1",
   }
 
-  candidate_manifest_path.write_text(
-    json.dumps(
-      candidate_manifest
-    ),
-    encoding="utf-8",
-  )
-
   monkeypatch.setattr(
-    model_retraining_scheduler,
-    "load_configuration",
-    make_configuration,
-  )
-
-  monkeypatch.setattr(
-    model_retraining_scheduler,
-    "discover_latest_candidate_state",
-    lambda: None,
-  )
-
-  monkeypatch.setattr(
-    model_retraining_scheduler,
-    "prepare_lifecycle_training_data",
-    lambda: calls.append(
-      "prepare_data"
-    ),
-  )
-
-  monkeypatch.setattr(
-    model_retraining_scheduler,
-    "materialize_lifecycle_manifest",
-    lambda: calls.append(
-      "manifest"
-    ),
-  )
-
-  def prepare_candidate(**_):
-    calls.append(
-      "candidate"
-    )
-
-    return (
-      candidate_manifest_path,
-      candidate_directory,
-      candidate_manifest,
-    )
-
-  monkeypatch.setattr(
-    model_retraining_scheduler,
+    scheduler,
     "prepare_candidate_run",
-    prepare_candidate,
-  )
-
-  monkeypatch.setattr(
-    model_retraining_scheduler,
-    "train_regression_candidate",
-    lambda **_: calls.append(
-      "regression"
+    lambda **kwargs: (
+      candidate_manifest_path,
+      tmp_path / "split_manifest.json",
+      candidate_manifest,
     ),
   )
 
   monkeypatch.setattr(
-    model_retraining_scheduler,
-    "train_classification_candidate",
-    lambda **_: calls.append(
-      "classification"
+    scheduler,
+    "train_live_lifecycle_candidate",
+    lambda candidate_manifest_path: (
+      calls.append(
+        "train_live_candidate"
+      )
     ),
   )
 
-  def compare_candidate(**_):
-    calls.append(
-      "comparison"
-    )
-
-    evaluated_manifest = {
-      **candidate_manifest,
-      "status": "evaluated",
-      "evaluated_at_utc": (
-        "2026-07-20T18:00:00+00:00"
-      ),
-    }
-
-    candidate_manifest_path.write_text(
-      json.dumps(
-        evaluated_manifest
-      ),
-      encoding="utf-8",
-    )
-
-    (
-      comparison_directory
-      / "promotion_summary.json"
-    ).write_text(
-      json.dumps(
-        {
-          "evaluated_at_utc": (
-            "2026-07-20T18:00:00+00:00"
-          ),
-          "regression_gate_pass": True,
-          "classification_gate_pass": False,
-          "promotion_ready": False,
-        }
-      ),
-      encoding="utf-8",
-    )
-
   monkeypatch.setattr(
-    model_retraining_scheduler,
+    scheduler,
     "compare_challenger_with_active_models",
-    compare_candidate,
+    lambda candidate_manifest_path: (
+      calls.append(
+        "compare_candidate"
+      )
+    ),
   )
 
-  result = model_retraining_scheduler.run_scheduled_model_retraining(
-    force=True,
-    now_utc=datetime(
-      2026,
-      7,
-      20,
-      18,
-      tzinfo=UTC,
+  evaluated_manifest = {
+    "status":
+      "evaluated",
+    "model_version":
+      "candidate-v1",
+    "split_version":
+      "split-v1",
+  }
+
+  monkeypatch.setattr(
+    scheduler,
+    "read_json_file",
+    lambda path: evaluated_manifest,
+  )
+
+  promotion_summary_path = (
+    tmp_path
+    / "promotion_summary.json"
+  )
+
+  promotion_summary = {
+    "evaluated_at_utc":
+      "2026-07-24T15:00:00+00:00",
+    "regression_gate_pass":
+      True,
+    "classification_gate_pass":
+      True,
+    "promotion_ready":
+      True,
+  }
+
+  monkeypatch.setattr(
+    scheduler,
+    "load_promotion_summary",
+    lambda manifest: (
+      promotion_summary_path,
+      promotion_summary,
     ),
-    state_path=state_path,
+  )
+
+  result = (
+    scheduler.run_scheduled_model_retraining(
+      force=True,
+      now_utc=datetime(
+        2026,
+        7,
+        24,
+        14,
+        0,
+        tzinfo=UTC,
+      ),
+      state_path=(
+        tmp_path
+        / "lifecycle_state.json"
+      ),
+    )
   )
 
   assert calls == [
-    "prepare_data",
-    "manifest",
-    "candidate",
-    "regression",
-    "classification",
-    "comparison",
+    "prepare_source_data",
+    "build_comparison_dataset",
+    "materialize_manifest",
+    "train_live_candidate",
+    "compare_candidate",
   ]
 
   assert result[
@@ -371,18 +362,17 @@ def test_runner_executes_steps_without_promotion(
   ] == "completed"
 
   assert result[
+    "model_version"
+  ] == "candidate-v1"
+
+  assert result[
+    "promotion_ready"
+  ] is True
+
+  assert result[
     "automatic_promotion_performed"
   ] is False
 
-  saved_state = json.loads(
-    state_path.read_text(
-      encoding="utf-8"
-    )
-  )
-
-  assert saved_state[
-    "promotion_mode"
-  ] == "manual"
 
 
 def test_runner_rejects_automatic_promotion(

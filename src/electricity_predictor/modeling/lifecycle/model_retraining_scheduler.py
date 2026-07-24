@@ -16,9 +16,6 @@ from electricity_predictor.modeling.lifecycle.candidate_run import (
   prepare_candidate_run,
   read_json_file,
 )
-from electricity_predictor.modeling.lifecycle.classification_candidate import (
-  train_classification_candidate,
-)
 from electricity_predictor.modeling.lifecycle.champion_challenger_comparison import (
   compare_challenger_with_active_models,
 )
@@ -33,8 +30,12 @@ from electricity_predictor.modeling.lifecycle.paths import (
   LATEST_SPLIT_MANIFEST_PATH,
   LIFECYCLE_STATE_PATH,
 )
-from electricity_predictor.modeling.lifecycle.regression_candidate import (
-  train_regression_candidate,
+
+from electricity_predictor.modeling.lifecycle.champion_challenger_dataset import (
+  build_and_save_champion_challenger_datasets,
+)
+from electricity_predictor.modeling.lifecycle.live_candidate_training import (
+  train_live_lifecycle_candidate,
 )
 
 
@@ -569,6 +570,8 @@ def run_scheduled_model_retraining(
 
   prepare_lifecycle_training_data()
 
+  build_and_save_champion_challenger_datasets()
+
   materialize_lifecycle_manifest()
 
   (
@@ -587,17 +590,12 @@ def run_scheduled_model_retraining(
     ),
   )
 
-  train_regression_candidate(
+  train_live_lifecycle_candidate(
     candidate_manifest_path=(
       candidate_manifest_path
     )
   )
 
-  train_classification_candidate(
-    candidate_manifest_path=(
-      candidate_manifest_path
-    )
-  )
 
   compare_challenger_with_active_models(
     candidate_manifest_path=(

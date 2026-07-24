@@ -21,6 +21,10 @@ from electricity_predictor.modeling.split import (
   split_time_series_data,
 )
 
+from electricity_predictor.modeling.lifecycle.champion_challenger_dataset import (
+  CHAMPION_CHALLENGER_TRAINING_DATASET_PATH,
+)
+
 
 def calculate_dataset_sha256(
   dataset_path: Path,
@@ -209,7 +213,7 @@ def write_lifecycle_manifest(
 
 
 def materialize_lifecycle_manifest(
-  dataset_path: Path = TRAINING_DATASET_PATH,
+  dataset_path: Path = CHAMPION_CHALLENGER_TRAINING_DATASET_PATH,
 ) -> tuple[Path, Path, dict]:
   """Create a lifecycle split manifest from current data."""
   configuration = load_configuration()
