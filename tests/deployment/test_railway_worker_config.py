@@ -138,14 +138,14 @@ def test_make_worker_target_uses_canonical_python_entry_point() -> None:
 
   assert "$(PYTHON)" in target
   assert (
-    "-m electricity_predictor.worker.production"
+    "-m electricity_predictor.worker.production_worker"
     in target
   )
   assert "$(MAKE) models-install" not in target
   assert "$(MAKE) app-refresh" not in target
 
 
-def test_operational_pipeline_targets_use_relocated_worker_module() -> None:
+def test_application_prediction_pipeline_target_uses_renamed_worker_module() -> None:
   makefile = load_makefile()
 
   canonical_target = extract_make_target(
@@ -160,7 +160,7 @@ def test_operational_pipeline_targets_use_relocated_worker_module() -> None:
   assert (
     "$(PYTHON) -m "
     "electricity_predictor.worker."
-    "operational_pipeline"
+    "application_prediction_pipeline"
     in canonical_target
   )
   assert (
@@ -169,7 +169,7 @@ def test_operational_pipeline_targets_use_relocated_worker_module() -> None:
   )
   assert "$(MAKE) sync-and-predict" in alias_target
   assert (
-    "electricity_predictor.worker.operational_pipeline"
+    "electricity_predictor.worker.application_prediction_pipeline"
     not in alias_target
   )
 
@@ -180,7 +180,7 @@ def test_worker_entry_point_is_installed_by_python_package() -> None:
 
   assert (
     pyproject["project"]["scripts"]["wattwise-worker"]
-    == "electricity_predictor.worker.production:main"
+    == "electricity_predictor.worker.production_worker:main"
   )
 
 

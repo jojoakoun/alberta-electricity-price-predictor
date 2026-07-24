@@ -1,11 +1,11 @@
-"""Canonical production worker entry point."""
+"""Start the production worker that installs models, refreshes prices and predicts."""
 
 import os
 
 from dotenv import load_dotenv
 
-from electricity_predictor.worker.operational_pipeline import (
-  run_application_pipeline,
+from electricity_predictor.worker.application_prediction_pipeline import (
+  run_application_prediction_pipeline,
 )
 from electricity_predictor.config import PROJECT_ROOT
 from electricity_predictor.serving.model_registry import (
@@ -75,16 +75,16 @@ def ensure_models_available() -> dict:
   }
 
 
-def run_production_worker() -> dict:
+def run_production_prediction_worker() -> dict:
   """Prepare models, synchronize operational data, and predict."""
   ensure_models_available()
 
-  return run_application_pipeline()
+  return run_application_prediction_pipeline()
 
 
 def main() -> None:
   """Run one complete production worker cycle."""
-  result = run_production_worker()
+  result = run_production_prediction_worker()
 
   print(
     "Production worker completed. "

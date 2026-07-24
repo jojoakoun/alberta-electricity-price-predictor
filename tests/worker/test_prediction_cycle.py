@@ -6,10 +6,10 @@ from electricity_predictor.worker.decision_context import (
   DecisionContext,
 )
 
-from electricity_predictor.worker.runner import run_worker_cycle
+from electricity_predictor.worker.prediction_cycle import run_prediction_cycle
 
 
-def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
+def test_run_prediction_cycle_saves_predictions_and_decisions() -> None:
   generated_at = pd.Timestamp(
     "2026-07-17 18:00:00",
     tz="UTC",
@@ -55,7 +55,7 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
 
   with (
     patch(
-      "electricity_predictor.worker.runner.load_configuration",
+      "electricity_predictor.worker.prediction_cycle.load_configuration",
       return_value={
         "modeling": {
           "horizons_hours": [1],
@@ -63,32 +63,32 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
       },
     ),
     patch(
-      "electricity_predictor.worker.runner.prepare_model_features",
+      "electricity_predictor.worker.prediction_cycle.prepare_model_features",
       return_value=features,
     ),
     patch(
-      "electricity_predictor.worker.runner."
+      "electricity_predictor.worker.prediction_cycle."
       "update_predictions_with_final_actual_prices",
       return_value=0,
     ),
     patch(
-      "electricity_predictor.worker.runner.generate_horizon_predictions",
+      "electricity_predictor.worker.prediction_cycle.generate_horizon_predictions",
       return_value=predictions,
     ) as generate_predictions,
     patch(
-      "electricity_predictor.worker.runner.load_decision_context",
+      "electricity_predictor.worker.prediction_cycle.load_decision_context",
       return_value=decision_context,
     ) as load_context,
     patch(
-      "electricity_predictor.worker.runner.apply_decision_layer",
+      "electricity_predictor.worker.prediction_cycle.apply_decision_layer",
       return_value=decisions,
     ) as apply_decisions,
     patch(
-      "electricity_predictor.worker.runner.save_successful_prediction_run",
+      "electricity_predictor.worker.prediction_cycle.save_successful_prediction_run",
       return_value=21,
     ) as save_run,
   ):
-    result = run_worker_cycle()
+    result = run_prediction_cycle()
 
   generate_predictions.assert_called_once()
   assert generate_predictions.call_args.kwargs[
@@ -110,12 +110,12 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
   assert result["decisions"] == decisions
 
 
-def test_run_worker_cycle_records_failure() -> None:
+def test_run_prediction_cycle_records_failure() -> None:
   failure = ValueError("Feature preparation failed.")
 
   with (
     patch(
-      "electricity_predictor.worker.runner.load_configuration",
+      "electricity_predictor.worker.prediction_cycle.load_configuration",
       return_value={
         "modeling": {
           "horizons_hours": [1],
@@ -123,31 +123,31 @@ def test_run_worker_cycle_records_failure() -> None:
       },
     ),
     patch(
-      "electricity_predictor.worker.runner."
+      "electricity_predictor.worker.prediction_cycle."
       "update_predictions_with_final_actual_prices",
       return_value=0,
     ),
     patch(
-      "electricity_predictor.worker.runner.prepare_model_features",
+      "electricity_predictor.worker.prediction_cycle.prepare_model_features",
       side_effect=failure,
     ),
     patch(
-      "electricity_predictor.worker.runner.generate_horizon_predictions",
+      "electricity_predictor.worker.prediction_cycle.generate_horizon_predictions",
     ) as generate_predictions,
     patch(
-      "electricity_predictor.worker.runner.get_current_database_time",
+      "electricity_predictor.worker.prediction_cycle.get_current_database_time",
       return_value=pd.Timestamp(
         "2026-07-17 18:00:00",
         tz="UTC",
       ).to_pydatetime(),
     ),
     patch(
-      "electricity_predictor.worker.runner.save_failed_prediction_run",
+      "electricity_predictor.worker.prediction_cycle.save_failed_prediction_run",
       return_value=32,
     ) as save_failed_run,
   ):
     try:
-      run_worker_cycle()
+      run_prediction_cycle()
     except ValueError as error:
       assert str(error) == "Feature preparation failed."
     else:
@@ -163,41 +163,41 @@ def test_run_worker_cycle_records_failure() -> None:
   )
 
 
-def test_run_worker_cycle_preserves_primary_error_when_failure_recording_fails(
+def test_run_prediction_cycle_preserves_primary_error_when_failure_recording_fails(
 ) -> None:
   primary_error = ValueError("Feature preparation failed.")
 
   with (
     patch(
-      "electricity_predictor.worker.runner.load_configuration",
+      "electricity_predictor.worker.prediction_cycle.load_configuration",
       return_value={"modeling": {"horizons_hours": [1]}},
     ),
     patch(
-      "electricity_predictor.worker.runner."
+      "electricity_predictor.worker.prediction_cycle."
       "update_predictions_with_final_actual_prices",
       return_value=0,
     ),
     patch(
-      "electricity_predictor.worker.runner.prepare_model_features",
+      "electricity_predictor.worker.prediction_cycle.prepare_model_features",
       side_effect=primary_error,
     ),
     patch(
-      "electricity_predictor.worker.runner.get_current_database_time",
+      "electricity_predictor.worker.prediction_cycle.get_current_database_time",
       return_value=pd.Timestamp(
         "2026-07-17 18:00:00",
         tz="UTC",
       ).to_pydatetime(),
     ),
     patch(
-      "electricity_predictor.worker.runner.save_failed_prediction_run",
+      "electricity_predictor.worker.prediction_cycle.save_failed_prediction_run",
       side_effect=RuntimeError("Database write failed."),
     ),
     patch(
-      "electricity_predictor.worker.runner.LOGGER.exception"
+      "electricity_predictor.worker.prediction_cycle.LOGGER.exception"
     ) as log_failure,
   ):
     try:
-      run_worker_cycle()
+      run_prediction_cycle()
     except ValueError as error:
       assert error is primary_error
     else:

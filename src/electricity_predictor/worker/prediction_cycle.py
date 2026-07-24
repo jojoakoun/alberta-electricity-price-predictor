@@ -1,4 +1,4 @@
-"""Orchestrate one idempotent forecast cycle from PostgreSQL features."""
+"""Run one complete prediction cycle from PostgreSQL market data."""
 
 from datetime import datetime
 
@@ -29,7 +29,7 @@ from electricity_predictor.worker.prediction_run_database import (
 LOGGER = get_logger(__name__)
 
 
-def run_worker_cycle() -> dict:
+def run_prediction_cycle() -> dict:
   """Backfill outcomes, predict five horizons, and persist one source hour."""
   forecast_source_at: datetime | None = None
 
@@ -103,8 +103,8 @@ def run_worker_cycle() -> dict:
 
 
 def main() -> None:
-  """Run one complete application pipeline cycle."""
-  result = run_worker_cycle()
+  """Run one complete prediction cycle."""
+  result = run_prediction_cycle()
 
   print(f"Worker cycle completed. Run ID: {result['run_id']}")
 

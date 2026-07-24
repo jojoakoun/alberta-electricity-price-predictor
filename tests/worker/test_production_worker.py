@@ -3,20 +3,20 @@ from unittest.mock import call, patch
 
 import pytest
 
-import electricity_predictor.worker.production as production
-from electricity_predictor.worker.operational_pipeline import (
-  run_application_pipeline,
+import electricity_predictor.worker.production_worker as production
+from electricity_predictor.worker.application_prediction_pipeline import (
+  run_application_prediction_pipeline,
 )
-from electricity_predictor.worker.production import (
+from electricity_predictor.worker.production_worker import (
   ensure_models_available,
-  run_production_worker,
+  run_production_prediction_worker,
 )
 
 
 def test_production_imports_relocated_operational_pipeline() -> None:
   assert (
-    production.run_application_pipeline
-    is run_application_pipeline
+    production.run_application_prediction_pipeline
+    is run_application_prediction_pipeline
   )
 
 
@@ -25,13 +25,13 @@ def test_production_worker_installs_models_before_operational_pipeline() -> None
 
   with (
     patch(
-      "electricity_predictor.worker.production."
+      "electricity_predictor.worker.production_worker."
       "ensure_models_available",
       side_effect=lambda: execution_order.append("models"),
     ) as ensure_models,
     patch(
-      "electricity_predictor.worker.production."
-      "run_application_pipeline",
+      "electricity_predictor.worker.production_worker."
+      "run_application_prediction_pipeline",
       side_effect=lambda: (
         execution_order.append("pipeline")
         or {
@@ -42,7 +42,7 @@ def test_production_worker_installs_models_before_operational_pipeline() -> None
       ),
     ) as run_pipeline,
   ):
-    result = run_production_worker()
+    result = run_production_prediction_worker()
 
   assert execution_order == [
     "models",
@@ -56,20 +56,20 @@ def test_production_worker_installs_models_before_operational_pipeline() -> None
 def test_production_worker_stops_before_pipeline_when_models_fail() -> None:
   with (
     patch(
-      "electricity_predictor.worker.production."
+      "electricity_predictor.worker.production_worker."
       "ensure_models_available",
       side_effect=RuntimeError("Models unavailable."),
     ),
     patch(
-      "electricity_predictor.worker.production."
-      "run_application_pipeline",
+      "electricity_predictor.worker.production_worker."
+      "run_application_prediction_pipeline",
     ) as run_pipeline,
   ):
     with pytest.raises(
       RuntimeError,
       match="Models unavailable",
     ):
-      run_production_worker()
+      run_production_prediction_worker()
 
   run_pipeline.assert_not_called()
 
@@ -85,10 +85,10 @@ def test_ensure_models_installs_complete_remote_release_configuration() -> None:
       clear=True,
     ),
     patch(
-      "electricity_predictor.worker.production.load_dotenv"
+      "electricity_predictor.worker.production_worker.load_dotenv"
     ),
     patch(
-      "electricity_predictor.worker.production."
+      "electricity_predictor.worker.production_worker."
       "install_release_from_environment",
       return_value={"status": "installed"},
     ) as install_release,
@@ -113,7 +113,7 @@ def test_ensure_models_rejects_partial_release_configuration() -> None:
       clear=True,
     ),
     patch(
-      "electricity_predictor.worker.production.load_dotenv"
+      "electricity_predictor.worker.production_worker.load_dotenv"
     ),
   ):
     with pytest.raises(
@@ -132,15 +132,15 @@ def test_ensure_models_accepts_valid_local_registry(
   with (
     patch.dict("os.environ", {}, clear=True),
     patch(
-      "electricity_predictor.worker.production.load_dotenv"
+      "electricity_predictor.worker.production_worker.load_dotenv"
     ),
     patch(
-      "electricity_predictor.worker.production."
+      "electricity_predictor.worker.production_worker."
       "ACTIVE_MODEL_REGISTRY_PATH",
       registry_path,
     ),
     patch(
-      "electricity_predictor.worker.production."
+      "electricity_predictor.worker.production_worker."
       "resolve_active_metadata_paths",
       return_value=(
         tmp_path / "regression.csv",
@@ -161,10 +161,10 @@ def test_ensure_models_rejects_missing_release_and_registry(
   with (
     patch.dict("os.environ", {}, clear=True),
     patch(
-      "electricity_predictor.worker.production.load_dotenv"
+      "electricity_predictor.worker.production_worker.load_dotenv"
     ),
     patch(
-      "electricity_predictor.worker.production."
+      "electricity_predictor.worker.production_worker."
       "ACTIVE_MODEL_REGISTRY_PATH",
       tmp_path / "missing.json",
     ),

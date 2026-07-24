@@ -624,13 +624,13 @@ models-install:
 sync-and-predict:
 	# Canonical operational pipeline: refresh AESO/PostgreSQL state, build inference
 	# features, load active models, and persist one five-horizon prediction run.
-	$(PYTHON) -m electricity_predictor.worker.operational_pipeline
+	$(PYTHON) -m electricity_predictor.worker.application_prediction_pipeline
 
 worker-run:
 	# Production entrypoint: ensure active models, refresh AESO/PostgreSQL data,
 	# generate five horizons, and persist the run; never trains models.
 	$(PYTHON) \
-		-m electricity_predictor.worker.production
+		-m electricity_predictor.worker.production_worker
 
 
 # ==============================================================================

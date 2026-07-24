@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from electricity_predictor.worker.operational_pipeline import (
-  run_application_pipeline,
+from electricity_predictor.worker.application_prediction_pipeline import (
+  run_application_prediction_pipeline,
 )
 
 
@@ -15,7 +15,7 @@ def test_root_application_pipeline_module_is_removed() -> None:
   ) is None
 
 
-def test_run_application_pipeline_synchronizes_then_runs_worker() -> None:
+def test_run_application_prediction_pipeline_synchronizes_then_runs_worker() -> None:
   execution_order: list[str] = []
   worker_result = {
     "run_id": 42,
@@ -24,7 +24,7 @@ def test_run_application_pipeline_synchronizes_then_runs_worker() -> None:
 
   with (
     patch(
-      "electricity_predictor.worker.operational_pipeline."
+      "electricity_predictor.worker.application_prediction_pipeline."
       "synchronize_operational_prices",
       side_effect=lambda: (
         execution_order.append("synchronize")
@@ -32,15 +32,15 @@ def test_run_application_pipeline_synchronizes_then_runs_worker() -> None:
       ),
     ) as synchronize,
     patch(
-      "electricity_predictor.worker.operational_pipeline."
-      "run_worker_cycle",
+      "electricity_predictor.worker.application_prediction_pipeline."
+      "run_prediction_cycle",
       side_effect=lambda: (
         execution_order.append("worker")
         or worker_result
       ),
     ) as worker,
   ):
-    result = run_application_pipeline()
+    result = run_application_prediction_pipeline()
 
   assert execution_order == [
     "synchronize",
@@ -103,15 +103,15 @@ def test_operational_pipeline_runs_without_raw_or_interim_csvs(
       return_value=1,
     ) as upsert,
     patch(
-      "electricity_predictor.worker.operational_pipeline."
-      "run_worker_cycle",
+      "electricity_predictor.worker.application_prediction_pipeline."
+      "run_prediction_cycle",
       return_value={
         "run_id": 44,
         "decisions": [],
       },
     ) as worker,
   ):
-    result = run_application_pipeline()
+    result = run_application_prediction_pipeline()
 
   assert result["synchronized_rows"] == 1
   assert result["run_id"] == 44
