@@ -20,7 +20,6 @@ from electricity_predictor.features.live_feature_contract import (
 )
 from electricity_predictor.modeling.live_contract.live_model_datasets import (
   DATETIME_COLUMN,
-  HISTORICAL_DATASET_PATH,
   LOCAL_DATETIME_COLUMN,
   load_live_feature_source,
   ordered_unique,

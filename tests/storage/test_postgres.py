@@ -11,8 +11,8 @@ from electricity_predictor.storage.postgres import (
   get_database_connection,
 )
 from electricity_predictor.worker import (
-  persistence,
-  result_persistence,
+  hourly_price_database,
+  prediction_run_database,
 )
 
 
@@ -29,11 +29,11 @@ def test_old_worker_database_module_is_absent() -> None:
 
 def test_consumers_import_shared_postgres_connection() -> None:
   assert (
-    persistence.get_database_connection
+    hourly_price_database.get_database_connection
     is get_database_connection
   )
   assert (
-    result_persistence.get_database_connection
+    prediction_run_database.get_database_connection
     is get_database_connection
   )
   assert (

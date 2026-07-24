@@ -7,15 +7,11 @@ from electricity_predictor.config import load_configuration
 from electricity_predictor.modeling.block_bootstrap import (
   calculate_f1_block_bootstrap_interval,
 )
-from electricity_predictor.modeling.classification.baseline.naive_spike_baseline import (
-  evaluate_classification_baseline,
-)
 from electricity_predictor.modeling.classification.decision_threshold import (
   apply_decision_threshold,
   select_f1_decision_threshold,
 )
 from electricity_predictor.modeling.classification.gradient_boosting.gradient_boosting_classifier import (
-  evaluate_gradient_boosting_classifier,
   train_gradient_boosting_classifier,
 )
 from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_classifier import (
@@ -25,11 +21,9 @@ from electricity_predictor.modeling.classification.extra_trees.extra_trees_class
   train_extra_trees_classifier,
 )
 from electricity_predictor.modeling.classification.logistic.logistic_regression import (
-  evaluate_logistic_regression_model,
   train_logistic_regression_model,
 )
 from electricity_predictor.modeling.classification.random_forest.random_forest_classifier import (
-  evaluate_random_forest_classifier,
   train_random_forest_classifier,
 )
 from electricity_predictor.modeling.classification.target_builder import (

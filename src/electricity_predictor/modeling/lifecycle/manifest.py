@@ -16,7 +16,6 @@ from electricity_predictor.modeling.lifecycle.split_plan import (
 )
 from electricity_predictor.modeling.split import (
   DATETIME_COLUMN,
-  TRAINING_DATASET_PATH,
   load_training_dataset,
   split_time_series_data,
 )
