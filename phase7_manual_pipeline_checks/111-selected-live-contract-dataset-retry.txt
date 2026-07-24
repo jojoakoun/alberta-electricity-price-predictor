@@ -1,0 +1,57 @@
+===== PURPOSE =====
+Repair the selected live feature contract test file.
+Resume parallel live dataset creation after the collection failure.
+Do not replace active datasets, train models, run the worker, or alter the registry.
+
+===== PYTHON SYNTAX CHECK =====
+python_syntax_check=PASS
+
+===== TARGETED TESTS =====
+.......................                                                  [100%]
+23 passed in 2.17s
+
+===== BUILD PARALLEL LIVE DATASETS =====
+selected_live_contract=conservative_hybrid
+selected_live_feature_count=14
+live_modeling_rows=57503
+live_training_rows=57286
+live_modeling_dataset=data/processed/live_modeling_dataset.csv
+live_training_dataset=data/processed/live_training_dataset.csv
+
+===== DATASET CONTRACT =====
+
+dataset=modeling
+path=data/processed/live_modeling_dataset.csv
+rows=57503
+columns=22
+first_utc=2020-01-01 07:00:00+00:00
+last_utc=2026-07-24 05:00:00+00:00
+
+dataset=training
+path=data/processed/live_training_dataset.csv
+rows=57286
+columns=22
+first_utc=2020-01-09 06:00:00+00:00
+last_utc=2026-07-23 03:00:00+00:00
+
+selected_live_contract=conservative_hybrid
+selected_live_feature_count=14
+training_required_values_complete=PASS
+existing_active_contract_unchanged=PASS
+
+===== ACTIVE ARTIFACT STATUS =====
+
+===== DIFF FORMAT CHECK =====
+
+test_file_repaired=PASS
+selected_live_contract=conservative_hybrid
+parallel_live_datasets_created=PASS
+existing_datasets_replaced=False
+training_performed=False
+models_saved=False
+active_registry_modified=False
+worker_modified=False
+database_modified=False
+protected_test_invoked=False
+commit_performed=False
+push_performed=False

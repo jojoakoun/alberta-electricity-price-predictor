@@ -1,0 +1,19 @@
+===== PURPOSE =====
+Add ExtraTrees base and tuned classifiers.
+Tuning uses TimeSeriesSplit with the configured 24-hour gap.
+Hyperparameters use CV PR-AUC first and CV F1 as tie-break.
+Decision thresholds use validation only.
+Protected test data is not accessed.
+
+===== EXTRATREES TESTS =====
+............................                                             [100%]
+28 passed in 3.26s
+
+===== IMPORT CHECK =====
+extra_trees_import_status=PASS
+
+===== GIT DIFF CHECK =====
+
+extra_trees_tests_exit_code=0
+extra_trees_import_exit_code=0
+git_diff_check_exit_code=0

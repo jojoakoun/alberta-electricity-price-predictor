@@ -9,7 +9,6 @@ from electricity_predictor.modeling.classification.save_selected_models import (
   build_naive_spike_baseline_artifact,
   save_model_artifact,
   save_selected_classification_models,
-  save_selected_classification_models,
 )
 
 
@@ -119,7 +118,7 @@ def test_save_selected_classification_models_round_trip(
     {
       "model_name": "logistic_regression",
       "horizon_hours": 1,
-      "model_parameters": "C=1.0",
+      "model_parameters": "C=1.0; decision_threshold=0.45",
       "selection_metric": "f1",
       "selection_rule": "highest_validation_f1_within_horizon",
     },
@@ -148,7 +147,7 @@ def test_save_selected_classification_models_round_trip(
     {
       "model_name": "logistic_regression",
       "horizon_hours": 1,
-      "model_parameters": "C=1.0; decision_threshold=0.45",
+      "model_parameters": "C=1.0",
     },
     {
       "model_name": "naive_spike_baseline",
@@ -170,7 +169,8 @@ def test_save_selected_classification_models_round_trip(
   assert len(metadata) == 2
   assert metadata["artifact_path"].notna().all()
   assert metadata["spike_threshold"].notna().all()
-  assert metadata["decision_threshold"].tolist() == [0.45, 0.50]
+  assert metadata["decision_threshold"].iloc[0] == 0.45
+  assert pd.isna(metadata["decision_threshold"].iloc[1])
   assert metadata["training_rows"].tolist() == [60, 60]
 
   learned_artifact = joblib.load(
@@ -193,3 +193,38 @@ def test_save_selected_classification_models_round_trip(
   assert baseline_artifact["spike_threshold"] == pytest.approx(
     metadata["spike_threshold"].iloc[0]
   )
+
+
+def test_build_rule_spike_baseline_artifact_supports_new_baselines():
+  from electricity_predictor.modeling.classification.save_selected_models import (
+    build_rule_spike_baseline_artifact,
+  )
+
+  cases = [
+    (
+      "aeso_forecast_spike_baseline",
+      "forecast_price",
+    ),
+    (
+      "previous_day_spike_baseline",
+      "actual_price_lag_24h",
+    ),
+  ]
+
+  for model_name, expected_column in cases:
+    artifact = build_rule_spike_baseline_artifact(
+      selected_model={
+        "model_name": model_name,
+        "horizon_hours": 6,
+        "model_parameters": (
+          f"prediction_column={expected_column}"
+        ),
+      },
+      target_column="is_spike_target_6h",
+      threshold=170.77,
+    )
+
+    assert artifact["model_name"] == model_name
+    assert artifact["model_type"] == "rule_baseline"
+    assert artifact["prediction_column"] == expected_column
+    assert artifact["spike_threshold"] == 170.77

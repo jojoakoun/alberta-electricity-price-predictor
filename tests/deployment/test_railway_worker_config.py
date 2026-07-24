@@ -148,25 +148,30 @@ def test_make_worker_target_uses_canonical_python_entry_point() -> None:
 def test_operational_pipeline_targets_use_relocated_worker_module() -> None:
   makefile = load_makefile()
 
-  for target_name in (
-    "app-refresh",
-    "sync-and-predict",
-  ):
-    target = extract_make_target(
-      makefile=makefile,
-      target_name=target_name,
-    )
+  canonical_target = extract_make_target(
+    makefile=makefile,
+    target_name="sync-and-predict",
+  )
+  alias_target = extract_make_target(
+    makefile=makefile,
+    target_name="app-refresh",
+  )
 
-    assert (
-      "$(PYTHON) -m "
-      "electricity_predictor.worker."
-      "operational_pipeline"
-      in target
-    )
-    assert (
-      "electricity_predictor.application_pipeline"
-      not in target
-    )
+  assert (
+    "$(PYTHON) -m "
+    "electricity_predictor.worker."
+    "operational_pipeline"
+    in canonical_target
+  )
+  assert (
+    "electricity_predictor.application_pipeline"
+    not in canonical_target
+  )
+  assert "$(MAKE) sync-and-predict" in alias_target
+  assert (
+    "electricity_predictor.worker.operational_pipeline"
+    not in alias_target
+  )
 
 
 def test_worker_entry_point_is_installed_by_python_package() -> None:

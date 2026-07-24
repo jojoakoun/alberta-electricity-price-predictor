@@ -1,0 +1,270 @@
+===== PURPOSE =====
+Verify PostgreSQL, Express, React, and the active model predictions end to end.
+No training, worker execution, protected test, commit, or push occurs.
+
+===== APPLICATION TEST SUITES =====
+# Run the Express API test suite.
+NODE_ENV=test npm --prefix app/server test
+
+> wattwise-server@1.0.0 test
+> jest --runInBand
+
+PASS test/today-service.test.js
+PASS test/today-selection.test.js
+PASS test/forecast-provenance.test.js
+PASS test/now-service.test.js
+PASS test/error-handler.test.js
+PASS test/freshness.test.js
+PASS test/market-context.test.js
+PASS test/production-web.test.js
+PASS test/forecast-time.test.js
+PASS test/env.test.js
+PASS test/health.test.js
+PASS test/today-route.test.js
+PASS test/hourly-price-repository.test.js
+PASS test/prediction-repository.test.js
+PASS test/prediction-run-repository.test.js
+PASS test/app.test.js
+PASS test/now-route.test.js
+PASS test/explanation.test.js
+PASS test/migration-config.test.js
+PASS test/price.test.js
+PASS test/time.test.js
+PASS test/action.test.js
+PASS test/recommendation.test.js
+PASS test/pool.test.js
+
+Test Suites: 24 passed, 24 total
+Tests:       125 passed, 125 total
+Snapshots:   0 total
+Time:        2.33 s
+Ran all test suites.
+# Run frontend tests, lint, and the production build.
+npm --prefix app/client test
+
+> client@0.0.0 test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/Users/joelakoun/Desktop/alberta-electricity-price-predictor/app/client[39m
+
+ [32m✓[39m src/components/StatusBadge.test.jsx [2m([22m[2m4 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+ [32m✓[39m src/components/today/FreshnessLine.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[32m 84[2mms[22m[39m
+ [32m✓[39m src/components/now/RecommendationCard.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[32m 156[2mms[22m[39m
+ [32m✓[39m src/components/today/TimelineOverview.test.jsx [2m([22m[2m5 tests[22m[2m)[22m[33m 384[2mms[22m[39m
+ [32m✓[39m src/layout/AppLayout.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 383[2mms[22m[39m
+     [33m[2m✓[22m[39m renders the three primary navigation destinations [33m 379[2mms[22m[39m
+ [32m✓[39m src/pages/NowPage.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 342[2mms[22m[39m
+ [32m✓[39m src/pages/ProjectPage.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 378[2mms[22m[39m
+     [33m[2m✓[22m[39m presents the product, engineering work, and developer [33m 375[2mms[22m[39m
+ [32m✓[39m src/pages/LearnPage.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 778[2mms[22m[39m
+     [33m[2m✓[22m[39m supports an understandable interactive learning flow [33m 776[2mms[22m[39m
+ [32m✓[39m src/pages/TodayPage.test.jsx [2m([22m[2m6 tests[22m[2m)[22m[33m 1078[2mms[22m[39m
+     [33m[2m✓[22m[39m renders a genuine lower-price opportunity and reveals all forecast details [33m 568[2mms[22m[39m
+ [32m✓[39m src/api/today.test.js [2m([22m[2m12 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m src/components/today/timeline-geometry.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/api/now.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/i18n/parity.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/i18n/language.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m14 passed[39m[22m[90m (14)[39m
+[2m      Tests [22m [1m[32m47 passed[39m[22m[90m (47)[39m
+[2m   Start at [22m 21:57:12
+[2m   Duration [22m 4.82s[2m (transform 2.60s, setup 2.73s, import 6.01s, tests 3.70s, environment 23.73s)[22m
+
+npm --prefix app/client run lint
+
+> client@0.0.0 lint
+> oxlint
+
+Found 0 warnings and 0 errors.
+Finished in 30ms on 69 files with 91 rules using 10 threads.
+npm --prefix app/client run build
+
+> client@0.0.0 build
+> vite build
+
+[36mvite v8.1.5 [32mbuilding client environment for production...[36m[39m
+[2Ktransforming...✓ 1952 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.54 kB │ gzip:   0.33 kB
+dist/assets/index-M04wElFj.css   55.39 kB │ gzip:   9.59 kB
+dist/assets/index-e7Su8fl4.js   431.83 kB │ gzip: 129.51 kB
+
+[32m✓ built in 332ms[39m
+
+===== DATABASE REFERENCE SNAPSHOT =====
+2026-07-24 03:00:00+00,1,2026-07-24 04:00:00+00,42.16,0.316097,f,Acceptable
+2026-07-24 03:00:00+00,3,2026-07-24 06:00:00+00,30.34,0.084447,f,Acceptable
+2026-07-24 03:00:00+00,6,2026-07-24 09:00:00+00,23.48,0.074278,f,Acceptable
+2026-07-24 03:00:00+00,12,2026-07-24 15:00:00+00,47.58,0.273203,f,Acceptable
+2026-07-24 03:00:00+00,24,2026-07-25 03:00:00+00,71.38,0.437299,f,Avoid
+
+===== START TEMPORARY APPLICATION =====
+api_ready=True
+frontend_ready=True
+
+===== PUBLIC ENDPOINTS =====
+
+--- phase7_manual_pipeline_checks/.93-runtime/health.json ---
+{
+    "status": "ok",
+    "latestForecastSourceAt": "2026-07-24T03:00:00.000Z",
+    "dbOk": true
+}
+
+--- phase7_manual_pipeline_checks/.93-runtime/now.json ---
+{
+    "generatedAt": "2026-07-24T02:00:00.000Z",
+    "confidence": "high",
+    "stale": false,
+    "price": {
+        "value": 4.72,
+        "unit": "\u00a2/kWh",
+        "observedAtUtc": "2026-07-24T02:00:00.000Z"
+    },
+    "recommendation": {
+        "level": "acceptable",
+        "explanationKey": "about_average",
+        "actionKey": "use_if_needed"
+    },
+    "contextKey": "higher_than_usual"
+}
+
+--- phase7_manual_pipeline_checks/.93-runtime/today.json ---
+{
+    "generatedAt": "2026-07-24T03:00:00.000Z",
+    "confidence": "high",
+    "stale": false,
+    "futureForecastStatus": "available",
+    "comparison": "forecast_lower",
+    "priceDifferenceCents": 2.37,
+    "currentPriceCents": 4.72,
+    "currentObservedAtUtc": "2026-07-24T02:00:00.000Z",
+    "forecasts": [
+        {
+            "horizonHours": 1,
+            "targetTimeUtc": "2026-07-24T04:00:00.000Z",
+            "targetTimeLocal": "10:00 p.m.",
+            "temporalWordingKey": "very_soon",
+            "priceCents": 4.22,
+            "recommendation": "acceptable",
+            "explanationKey": "acceptable_market_risk",
+            "forecastKind": "model_forecast"
+        },
+        {
+            "horizonHours": 3,
+            "targetTimeUtc": "2026-07-24T06:00:00.000Z",
+            "targetTimeLocal": "12:00 a.m.",
+            "temporalWordingKey": "in_a_few_hours",
+            "priceCents": 3.03,
+            "recommendation": "acceptable",
+            "explanationKey": "acceptable_market_risk",
+            "forecastKind": "model_forecast"
+        },
+        {
+            "horizonHours": 6,
+            "targetTimeUtc": "2026-07-24T09:00:00.000Z",
+            "targetTimeLocal": "3:00 a.m.",
+            "temporalWordingKey": "overnight",
+            "priceCents": 2.35,
+            "recommendation": "acceptable",
+            "explanationKey": "acceptable_market_risk",
+            "forecastKind": "model_forecast"
+        },
+        {
+            "horizonHours": 12,
+            "targetTimeUtc": "2026-07-24T15:00:00.000Z",
+            "targetTimeLocal": "9:00 a.m.",
+            "temporalWordingKey": "later_today",
+            "priceCents": 4.76,
+            "recommendation": "acceptable",
+            "explanationKey": "acceptable_market_risk",
+            "forecastKind": "model_forecast"
+        },
+        {
+            "horizonHours": 24,
+            "targetTimeUtc": "2026-07-25T03:00:00.000Z",
+            "targetTimeLocal": "9:00 p.m.",
+            "temporalWordingKey": "tomorrow_around_this_time",
+            "priceCents": 7.14,
+            "recommendation": "avoid",
+            "explanationKey": "higher_than_usual",
+            "forecastKind": "model_forecast"
+        }
+    ],
+    "bestTime": {
+        "horizonHours": 6,
+        "targetTimeUtc": "2026-07-24T09:00:00.000Z",
+        "targetTimeLocal": "3:00 a.m.",
+        "priceCents": 2.35,
+        "recommendation": "acceptable"
+    }
+}
+
+===== API AND DATABASE CONTRACT AUDIT =====
+health_payload_keys=['dbOk', 'latestForecastSourceAt', 'status']
+now_payload_keys=['confidence', 'contextKey', 'generatedAt', 'price', 'recommendation', 'stale']
+today_payload_keys=['bestTime', 'comparison', 'confidence', 'currentObservedAtUtc', 'currentPriceCents', 'forecasts', 'futureForecastStatus', 'generatedAt', 'priceDifferenceCents', 'stale']
+database_prediction_rows=5
+api_forecast_rows=5
+database_to_api_prices_match=PASS
+database_to_api_target_times_match=PASS
+database_to_api_recommendations_match=PASS
+latest_prediction_run_matches_api=PASS
+frontend_proxy_matches_backend=PASS
+frontend_react_root_present=PASS
+application_end_to_end_contract=PASS
+
+===== RUNTIME LOGS =====
+
+--- server.log ---
+
+> wattwise-server@1.0.0 dev
+> nodemon --signal SIGTERM --watch src --ext js,json --exec node src/server.js
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): src/**/*[39m
+[33m[nodemon] watching extensions: js,json[39m
+[32m[nodemon] starting `node src/server.js`[39m
+WattWise API listening on http://127.0.0.1:8000
+{"level":30,"time":1784865440347,"pid":23945,"hostname":"Joels-MacBook-Pro.local","req":{"id":1,"method":"GET","url":"/api/v1/health","query":{},"params":{},"headers":{"host":"127.0.0.1:8000","user-agent":"curl/8.7.1","accept":"*/*"},"remoteAddress":"127.0.0.1","remotePort":63211},"res":{"statusCode":200,"headers":{"content-security-policy":"default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests","cross-origin-opener-policy":"same-origin","cross-origin-resource-policy":"same-origin","origin-agent-cluster":"?1","referrer-policy":"no-referrer","strict-transport-security":"max-age=31536000; includeSubDomains","x-content-type-options":"nosniff","x-dns-prefetch-control":"off","x-download-options":"noopen","x-frame-options":"SAMEORIGIN","x-permitted-cross-domain-policies":"none","x-xss-protection":"0","access-control-allow-origin":"http://localhost:5173","vary":"Origin","content-type":"application/json; charset=utf-8","content-length":"79","etag":"W/\"4f-Mx8QVjS1kG/pQhzrv1TeJQsFFo8\""}},"responseTime":30,"msg":"request completed"}
+{"level":30,"time":1784865440439,"pid":23945,"hostname":"Joels-MacBook-Pro.local","req":{"id":2,"method":"GET","url":"/api/v1/health","query":{},"params":{},"headers":{"host":"127.0.0.1:8000","user-agent":"curl/8.7.1","accept":"*/*"},"remoteAddress":"127.0.0.1","remotePort":63214},"res":{"statusCode":200,"headers":{"content-security-policy":"default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests","cross-origin-opener-policy":"same-origin","cross-origin-resource-policy":"same-origin","origin-agent-cluster":"?1","referrer-policy":"no-referrer","strict-transport-security":"max-age=31536000; includeSubDomains","x-content-type-options":"nosniff","x-dns-prefetch-control":"off","x-download-options":"noopen","x-frame-options":"SAMEORIGIN","x-permitted-cross-domain-policies":"none","x-xss-protection":"0","access-control-allow-origin":"http://localhost:5173","vary":"Origin","content-type":"application/json; charset=utf-8","content-length":"79","etag":"W/\"4f-Mx8QVjS1kG/pQhzrv1TeJQsFFo8\""}},"responseTime":6,"msg":"request completed"}
+{"level":30,"time":1784865440474,"pid":23945,"hostname":"Joels-MacBook-Pro.local","req":{"id":3,"method":"GET","url":"/api/v1/now","query":{},"params":{},"headers":{"host":"127.0.0.1:8000","user-agent":"curl/8.7.1","accept":"*/*"},"remoteAddress":"127.0.0.1","remotePort":63215},"res":{"statusCode":200,"headers":{"content-security-policy":"default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests","cross-origin-opener-policy":"same-origin","cross-origin-resource-policy":"same-origin","origin-agent-cluster":"?1","referrer-policy":"no-referrer","strict-transport-security":"max-age=31536000; includeSubDomains","x-content-type-options":"nosniff","x-dns-prefetch-control":"off","x-download-options":"noopen","x-frame-options":"SAMEORIGIN","x-permitted-cross-domain-policies":"none","x-xss-protection":"0","access-control-allow-origin":"http://localhost:5173","vary":"Origin","content-type":"application/json; charset=utf-8","content-length":"292","etag":"W/\"124-gRLA8OpEXdcjpmYYp/GEuVnYVuY\""}},"responseTime":17,"msg":"request completed"}
+{"level":30,"time":1784865440515,"pid":23945,"hostname":"Joels-MacBook-Pro.local","req":{"id":4,"method":"GET","url":"/api/v1/today","query":{},"params":{},"headers":{"host":"127.0.0.1:8000","user-agent":"curl/8.7.1","accept":"*/*"},"remoteAddress":"127.0.0.1","remotePort":63217},"res":{"statusCode":200,"headers":{"content-security-policy":"default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests","cross-origin-opener-policy":"same-origin","cross-origin-resource-policy":"same-origin","origin-agent-cluster":"?1","referrer-policy":"no-referrer","strict-transport-security":"max-age=31536000; includeSubDomains","x-content-type-options":"nosniff","x-dns-prefetch-control":"off","x-download-options":"noopen","x-frame-options":"SAMEORIGIN","x-permitted-cross-domain-policies":"none","x-xss-protection":"0","access-control-allow-origin":"http://localhost:5173","vary":"Origin","content-type":"application/json; charset=utf-8","content-length":"1661","etag":"W/\"67d-UDd5huHT7s8d4xQ3vIXu43EdlgI\""}},"responseTime":26,"msg":"request completed"}
+{"level":30,"time":1784865440545,"pid":23945,"hostname":"Joels-MacBook-Pro.local","req":{"id":5,"method":"GET","url":"/api/v1/today","query":{},"params":{},"headers":{"host":"127.0.0.1:8000","user-agent":"curl/8.7.1","accept":"*/*","connection":"close"},"remoteAddress":"127.0.0.1","remotePort":63219},"res":{"statusCode":200,"headers":{"content-security-policy":"default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data:;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests","cross-origin-opener-policy":"same-origin","cross-origin-resource-policy":"same-origin","origin-agent-cluster":"?1","referrer-policy":"no-referrer","strict-transport-security":"max-age=31536000; includeSubDomains","x-content-type-options":"nosniff","x-dns-prefetch-control":"off","x-download-options":"noopen","x-frame-options":"SAMEORIGIN","x-permitted-cross-domain-policies":"none","x-xss-protection":"0","access-control-allow-origin":"http://localhost:5173","vary":"Origin","content-type":"application/json; charset=utf-8","content-length":"1661","etag":"W/\"67d-UDd5huHT7s8d4xQ3vIXu43EdlgI\""}},"responseTime":3,"msg":"request completed"}
+
+--- client.log ---
+
+> client@0.0.0 dev
+> vite --host 127.0.0.1
+
+
+  VITE v8.1.5  ready in 228 ms
+
+  ➜  Local:   http://127.0.0.1:5173/
+
+===== STOP APPLICATION =====
+
+===== STOP TEMPORARY APPLICATION =====
+# Stop Nodemon and Vite processes started for local development.
+# Retains the existing broad process match and does not modify PostgreSQL.
+pkill -f "nodemon" || true
+pkill -f "vite" || true
+
+===== GIT DIFF CHECK =====
+
+server_tests_exit_code=0
+client_tests_exit_code=0
+database_snapshot_exit_code=0
+api_ready_exit_code=0
+frontend_ready_exit_code=0
+health_endpoint_exit_code=0
+now_endpoint_exit_code=0
+today_endpoint_exit_code=0
+frontend_proxy_exit_code=0
+frontend_html_exit_code=0
+application_contract_exit_code=0
+git_diff_check_exit_code=0

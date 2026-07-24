@@ -1,0 +1,39 @@
+.DEFAULT_GOAL := help
+
+.PHONY: \
+	help \
+	verify \
+	dev \
+	stop \
+	hourly-refresh \
+	retrain-if-due \
+	local-bootstrap \
+	local-reset \
+	release-build
+
+help:
+	@$(MAKE) -f Makefile help
+
+verify:
+	@$(MAKE) -f Makefile verify
+
+dev:
+	@$(MAKE) -f Makefile dev
+
+stop:
+	@$(MAKE) -f Makefile stop
+
+hourly-refresh:
+	@$(MAKE) -f Makefile hourly-refresh
+
+retrain-if-due:
+	@$(MAKE) -f Makefile retrain-if-due
+
+local-bootstrap:
+	@$(MAKE) -f Makefile local-bootstrap
+
+local-reset:
+	@$(MAKE) -f Makefile local-reset CONFIRM=$(CONFIRM)
+
+release-build:
+	@$(MAKE) -f Makefile release-build

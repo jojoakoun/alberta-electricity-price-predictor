@@ -45,16 +45,14 @@ def calculate_train_thresholds(train_prices: pd.Series) -> dict[str, float]:
 def build_spike_analysis_rows(
   train_data: pd.DataFrame,
   validation_data: pd.DataFrame,
-  test_data: pd.DataFrame,
   horizons_hours: list[int],
 ) -> list[dict]:
-  """Compare one train-derived spike threshold across all horizons."""
+  """Compare train-derived spike thresholds on train and validation."""
   rows = []
 
   split_data = {
     "train": train_data,
     "validation": validation_data,
-    "test": test_data,
   }
 
   # Learn one global spike definition from historical train prices only.
@@ -115,7 +113,7 @@ def run_spike_definition_analysis(
 
   data = load_training_dataset(training_dataset_path)
 
-  train_data, validation_data, test_data = split_time_series_data_from_config(
+  train_data, validation_data, _ = split_time_series_data_from_config(
     data=data,
     modeling_config=modeling_config,
 )
@@ -123,7 +121,6 @@ def run_spike_definition_analysis(
   rows = build_spike_analysis_rows(
     train_data=train_data,
     validation_data=validation_data,
-    test_data=test_data,
     horizons_hours=modeling_config["horizons_hours"],
   )
 
@@ -143,7 +140,7 @@ def print_spike_analysis_summary(report_path: Path) -> None:
     values="spike_rate",
   ).reset_index()
 
-  for split_name in ["train", "validation", "test"]:
+  for split_name in ["train", "validation"]:
     if split_name in summary.columns:
       summary[split_name] = summary[split_name] * 100
 

@@ -1,0 +1,72 @@
+===== PURPOSE =====
+Hide expired forecast targets from the Today graph and forecast details.
+Keep the complete five-horizon API payload unchanged.
+Correct the FreshnessLine copy expectation.
+Use a truthful AESO current-price label.
+No backend, database, worker, model, protected test, commit, or push is modified.
+
+===== TARGETED FRONTEND TESTS =====
+
+> client@0.0.0 test
+> vitest run src/domain/today.test.js src/components/today/FreshnessLine.test.jsx src/components/today/TimelineOverview.test.jsx src/pages/TodayPage.test.jsx src/api/today.test.js src/i18n/parity.test.js
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/Users/joelakoun/Desktop/alberta-electricity-price-predictor/app/client[39m
+
+ [32m✓[39m src/domain/today.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/i18n/parity.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/api/today.test.js [2m([22m[2m12 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m src/components/today/FreshnessLine.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[32m 55[2mms[22m[39m
+ [32m✓[39m src/components/today/TimelineOverview.test.jsx [2m([22m[2m5 tests[22m[2m)[22m[32m 120[2mms[22m[39m
+ [32m✓[39m src/pages/TodayPage.test.jsx [2m([22m[2m7 tests[22m[2m)[22m[33m 550[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[32m29 passed[39m[22m[90m (29)[39m
+[2m   Start at [22m 23:10:17
+[2m   Duration [22m 2.24s[2m (transform 586ms, setup 728ms, import 962ms, tests 749ms, environment 6.17s)[22m
+
+
+===== FRONTEND LINT =====
+
+> client@0.0.0 lint
+> oxlint
+
+Found 0 warnings and 0 errors.
+Finished in 32ms on 70 files with 91 rules using 10 threads.
+
+===== FRONTEND BUILD =====
+
+> client@0.0.0 build
+> vite build
+
+vite v8.1.5 building client environment for production...
+[2Ktransforming...✓ 1952 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.54 kB │ gzip:   0.34 kB
+dist/assets/index-Bjy94-Io.css   55.34 kB │ gzip:   9.62 kB
+dist/assets/index-QjNbV2KU.js   434.27 kB │ gzip: 130.22 kB
+
+✓ built in 283ms
+
+===== IMPLEMENTATION CONTRACT =====
+app/client/src/domain/today.js:16:export function getActionableForecasts(
+app/client/src/pages/TodayPage.jsx:25:  getActionableForecasts,
+app/client/src/pages/TodayPage.jsx:129:    getActionableForecasts(
+218:          forecasts={actionableForecasts}
+271:            forecasts={actionableForecasts}
+475:      "Current AESO market price",
+
+===== DIFF FORMAT CHECK =====
+
+expired_graph_points_hidden=PASS
+expired_forecast_details_hidden=PASS
+complete_api_forecast_set_preserved=PASS
+current_aeso_price_label=PASS
+freshness_test_copy_fixed=PASS
+database_modified=False
+worker_run=False
+models_modified=False
+commit_performed=False
+push_performed=False
+protected_test_invoked=False

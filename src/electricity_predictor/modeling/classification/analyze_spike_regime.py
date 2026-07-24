@@ -126,12 +126,10 @@ def build_yearly_regime_rows(
 def build_spike_regime_rows(
   train_data: pd.DataFrame,
   validation_data: pd.DataFrame,
-  test_data: pd.DataFrame,
 ) -> list[dict]:
-  """Build yearly spike summaries using one train-derived threshold."""
+  """Build train and validation summaries using one train threshold."""
   validate_regime_data(train_data)
   validate_regime_data(validation_data)
-  validate_regime_data(test_data)
 
   threshold = calculate_iqr_spike_threshold(
     train_data[ACTUAL_PRICE_COLUMN]
@@ -140,7 +138,6 @@ def build_spike_regime_rows(
   split_data = {
     "train": train_data,
     "validation": validation_data,
-    "test": test_data,
   }
 
   rows = []
@@ -184,7 +181,7 @@ def run_spike_regime_analysis(
 
   data = load_training_dataset(training_dataset_path)
 
-  train_data, validation_data, test_data = split_time_series_data_from_config(
+  train_data, validation_data, _ = split_time_series_data_from_config(
     data=data,
     modeling_config=modeling_config,
 )
@@ -192,7 +189,6 @@ def run_spike_regime_analysis(
   rows = build_spike_regime_rows(
     train_data=train_data,
     validation_data=validation_data,
-    test_data=test_data,
   )
 
   return write_spike_regime_analysis(

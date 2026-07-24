@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "tasks": {
+    "classification": {
+      "metadata_path": "models/live_final/classification_metadata.csv",
+      "model_version": "live-final-20260724T150357Z",
+      "promoted_at_utc": "2026-07-24T15:03:57.889076+00:00",
+      "source": "live_final"
+    },
+    "regression": {
+      "metadata_path": "models/live_final/regression_metadata.csv",
+      "model_version": "live-final-20260724T150357Z",
+      "promoted_at_utc": "2026-07-24T15:03:57.889076+00:00",
+      "source": "live_final"
+    }
+  },
+  "updated_at_utc": "2026-07-24T15:03:57.889076+00:00"
+}

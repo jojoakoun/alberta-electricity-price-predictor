@@ -11,6 +11,7 @@ async function getLatestPredictions() {
         detail
       FROM prediction_runs
       WHERE status = 'success'
+        AND generated_at <= DATE_TRUNC('hour', CURRENT_TIMESTAMP)
       ORDER BY generated_at DESC, id DESC
       LIMIT 1
     )

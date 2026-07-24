@@ -18,6 +18,12 @@ from electricity_predictor.modeling.classification.gradient_boosting.gradient_bo
   evaluate_gradient_boosting_classifier,
   train_gradient_boosting_classifier,
 )
+from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_classifier import (
+  train_hist_gradient_boosting_classifier,
+)
+from electricity_predictor.modeling.classification.extra_trees.extra_trees_classifier import (
+  train_extra_trees_classifier,
+)
 from electricity_predictor.modeling.classification.logistic.logistic_regression import (
   evaluate_logistic_regression_model,
   train_logistic_regression_model,
@@ -57,6 +63,13 @@ FINAL_CONFIDENCE_INTERVALS_PATH = Path(
 )
 
 
+RULE_BASELINE_PREDICTION_COLUMNS = {
+  "naive_spike_baseline": "actual_price_lag_1h",
+  "aeso_forecast_spike_baseline": "forecast_price",
+  "previous_day_spike_baseline": "actual_price_lag_24h",
+}
+
+
 TUNED_REQUIRED_PARAMETERS = {
   "logistic_regression_tuned": ["best_C"],
   "random_forest_classifier_tuned": [
@@ -68,6 +81,19 @@ TUNED_REQUIRED_PARAMETERS = {
     "n_estimators",
     "learning_rate",
     "max_depth",
+  ],
+  "hist_gradient_boosting_classifier_tuned": [
+    "learning_rate",
+    "max_iter",
+    "max_leaf_nodes",
+    "min_samples_leaf",
+    "l2_regularization",
+  ],
+  "extra_trees_classifier_tuned": [
+    "n_estimators",
+    "max_depth",
+    "min_samples_leaf",
+    "max_features",
   ],
 }
 
@@ -87,6 +113,30 @@ def parse_model_parameters(parameter_text: str) -> dict[str, str]:
     parameters[key.strip()] = value.strip()
 
   return parameters
+
+
+def get_frozen_decision_threshold(
+  selected_model: dict,
+) -> float:
+  """Read the decision threshold frozen during validation."""
+  parameters = parse_model_parameters(
+    selected_model.get("model_parameters", "")
+  )
+
+  if "decision_threshold" not in parameters:
+    raise ValueError(
+      "Selected learned model is missing its frozen "
+      "validation decision threshold."
+    )
+
+  threshold = float(parameters["decision_threshold"])
+
+  if not 0.0 <= threshold <= 1.0:
+    raise ValueError(
+      "Frozen decision threshold must be between 0 and 1."
+    )
+
+  return threshold
 
 
 def validate_tuned_model_parameters(
@@ -152,6 +202,19 @@ def get_optional_int_parameter(
       return None
 
     return int(parameters[name])
+
+  return default
+
+
+def get_string_parameter(
+  parameters: dict[str, str],
+  names: list[str],
+  default: str,
+) -> str:
+  """Read the first available string parameter."""
+  for name in names:
+    if name in parameters:
+      return parameters[name]
 
   return default
 
@@ -268,48 +331,67 @@ def train_selected_classification_model(
       ),
     )
 
-  raise ValueError(
-    f"Unsupported selected classification model: {model_name}"
-  )
-
-
-def evaluate_trained_classification_model(
-  selected_model: dict,
-  model,
-  evaluation_data: pd.DataFrame,
-  target_column: str,
-) -> dict[str, float]:
-  """Evaluate one trained selected classification model."""
-  model_name = selected_model["model_name"]
-
   if model_name in [
-    "logistic_regression",
-    "logistic_regression_tuned",
+    "hist_gradient_boosting_classifier",
+    "hist_gradient_boosting_classifier_tuned",
   ]:
-    return evaluate_logistic_regression_model(
-      model=model,
-      evaluation_data=evaluation_data,
+    return train_hist_gradient_boosting_classifier(
+      train_data=train_data,
       target_column=target_column,
+      learning_rate=get_float_parameter(
+        parameters,
+        ["learning_rate"],
+        0.1,
+      ),
+      max_iter=get_int_parameter(
+        parameters,
+        ["max_iter"],
+        100,
+      ),
+      max_leaf_nodes=get_int_parameter(
+        parameters,
+        ["max_leaf_nodes"],
+        31,
+      ),
+      min_samples_leaf=get_int_parameter(
+        parameters,
+        ["min_samples_leaf"],
+        20,
+      ),
+      l2_regularization=get_float_parameter(
+        parameters,
+        ["l2_regularization"],
+        0.0,
+      ),
     )
 
   if model_name in [
-    "random_forest_classifier",
-    "random_forest_classifier_tuned",
+    "extra_trees_classifier",
+    "extra_trees_classifier_tuned",
   ]:
-    return evaluate_random_forest_classifier(
-      model=model,
-      evaluation_data=evaluation_data,
+    return train_extra_trees_classifier(
+      train_data=train_data,
       target_column=target_column,
-    )
-
-  if model_name in [
-    "gradient_boosting_classifier",
-    "gradient_boosting_classifier_tuned",
-  ]:
-    return evaluate_gradient_boosting_classifier(
-      model=model,
-      evaluation_data=evaluation_data,
-      target_column=target_column,
+      n_estimators=get_int_parameter(
+        parameters,
+        ["n_estimators"],
+        200,
+      ),
+      max_depth=get_optional_int_parameter(
+        parameters,
+        ["max_depth"],
+        None,
+      ),
+      min_samples_leaf=get_int_parameter(
+        parameters,
+        ["min_samples_leaf"],
+        1,
+      ),
+      max_features=get_string_parameter(
+        parameters,
+        ["max_features"],
+        "sqrt",
+      ),
     )
 
   raise ValueError(
@@ -349,12 +431,22 @@ def evaluate_selected_classification_model(
   target_column: str,
   threshold: float,
 ) -> tuple[dict[str, float | None], pd.Series, float | None]:
-  """Select a validation cutoff and evaluate once on protected test data."""
+  """Evaluate once using choices frozen during validation."""
   target = evaluation_data[target_column]
+  model_name = selected_model["model_name"]
 
-  if selected_model["model_name"] == "naive_spike_baseline":
+  if model_name in RULE_BASELINE_PREDICTION_COLUMNS:
+    prediction_column = RULE_BASELINE_PREDICTION_COLUMNS[
+      model_name
+    ]
+
+    if prediction_column not in evaluation_data.columns:
+      raise ValueError(
+        f"Missing rule-baseline column: {prediction_column}"
+      )
+
     prediction = (
-      evaluation_data["actual_price_lag_1h"] > threshold
+      evaluation_data[prediction_column] > threshold
     ).astype(int)
 
     scores = calculate_classification_metrics(
@@ -364,13 +456,11 @@ def evaluate_selected_classification_model(
 
     return scores, prediction, None
 
-  threshold_result = select_model_decision_threshold(
-    selected_model=selected_model,
-    train_data=train_data,
-    validation_data=validation_data,
-    target_column=target_column,
+  # Validation data remains in the interface because it becomes part of
+  # final training, but it must not make any new model-selection decision.
+  decision_threshold = get_frozen_decision_threshold(
+    selected_model
   )
-  decision_threshold = threshold_result["decision_threshold"]
 
   final_training_data = pd.concat(
     [train_data, validation_data],
@@ -587,11 +677,8 @@ def run_final_classification_test_evaluation() -> Path:
       )
     )
 
-    if decision_threshold is not None:
-      selected_model["model_parameters"] = (
-        f"{selected_model.get('model_parameters', '')}; "
-        f"decision_threshold={decision_threshold:.4f}"
-      ).strip("; ")
+    # The decision threshold was frozen in validation and is already
+    # present in the selected model parameters.
 
     confusion_matrix_rows.append(
       build_confusion_matrix_row(

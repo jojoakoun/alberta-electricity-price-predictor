@@ -1,0 +1,184 @@
+===== PURPOSE =====
+Repair the remaining outdated test fixture only.
+No production modeling logic is changed.
+No modeling pipeline or protected test is executed.
+
+===== UPDATED FIXTURE EXCERPT =====
+146-  pd.DataFrame([
+147-    {
+148-      "model_name": "logistic_regression",
+149-      "horizon_hours": 1,
+150:      "model_parameters": "C=1.0; decision_threshold=0.45",
+151-    },
+152-    {
+153-      "model_name": "naive_spike_baseline",
+154-      "horizon_hours": 3,
+155-      "model_parameters": "decision_threshold=0.50",
+156-    },
+157-  ]).to_csv(final_results_path, index=False)
+158-
+159-  written_path = save_selected_classification_models(
+160-    best_model_path=best_model_path,
+161-    training_dataset_path=training_path,
+162-    output_dir=output_dir,
+
+===== COMPLETE CLASSIFICATION TEST SUITE =====
+........................................................................ [ 61%]
+....................F........................                            [100%]
+=================================== FAILURES ===================================
+_____________ test_save_selected_classification_models_round_trip ______________
+
+tmp_path = PosixPath('/private/var/folders/hj/lqfwhhdj3cv7hysytn8j6nf80000gn/T/pytest-of-joelakoun/pytest-12/test_save_selected_classificat0')
+
+    def test_save_selected_classification_models_round_trip(
+      tmp_path: Path,
+    ) -> None:
+      """Save and reload one learned classifier and one rule baseline."""
+      import pandas as pd
+    
+      timestamps = [
+        *pd.date_range(
+          "2023-12-01 00:00:00",
+          periods=40,
+          freq="h",
+        ),
+        *pd.date_range(
+          "2024-06-01 00:00:00",
+          periods=20,
+          freq="h",
+        ),
+        *pd.date_range(
+          "2025-06-01 00:00:00",
+          periods=20,
+          freq="h",
+        ),
+      ]
+    
+      rows = []
+    
+      for index, timestamp in enumerate(timestamps):
+        # Alternate target prices so learned classifiers receive both classes.
+        future_price = 300.0 if index % 4 == 0 else 40.0
+    
+        rows.append({
+          "datetime_universal_time": timestamp,
+          "actual_price": 30.0 + (index % 10),
+          "forecast_price": 31.0 + (index % 10),
+          "hour": timestamp.hour,
+          "day_of_week": timestamp.dayofweek,
+          "month": timestamp.month,
+          "is_weekend": int(timestamp.dayofweek >= 5),
+          "actual_price_lag_1h": 29.0 + (index % 10),
+          "actual_price_lag_24h": 28.0 + (index % 10),
+          "forecast_price_lag_1h": 30.0 + (index % 10),
+          "actual_price_rolling_24h_mean": 32.0 + (index % 10),
+          "actual_price_rolling_24h_max": 45.0 + (index % 10),
+          "actual_price_rolling_7d_mean": 31.0 + (index % 10),
+          "actual_price_target_1h": future_price,
+          "actual_price_target_3h": future_price,
+          "actual_price_target_6h": future_price,
+          "actual_price_target_12h": future_price,
+          "actual_price_target_24h": future_price,
+        })
+    
+      training_path = tmp_path / "training_dataset.csv"
+      pd.DataFrame(rows).to_csv(
+        training_path,
+        index=False,
+      )
+    
+      selected_models = pd.DataFrame([
+        {
+          "model_name": "logistic_regression",
+          "horizon_hours": 1,
+          "model_parameters": "C=1.0",
+          "selection_metric": "f1",
+          "selection_rule": "highest_validation_f1_within_horizon",
+        },
+        {
+          "model_name": "naive_spike_baseline",
+          "horizon_hours": 3,
+          "model_parameters": (
+            "prediction_column=actual_price_lag_1h"
+          ),
+          "selection_metric": "f1",
+          "selection_rule": "highest_validation_f1_within_horizon",
+        },
+      ])
+    
+      best_model_path = tmp_path / "best_classification_model.csv"
+      selected_models.to_csv(
+        best_model_path,
+        index=False,
+      )
+    
+      output_dir = tmp_path / "models"
+      metadata_path = output_dir / "metadata.csv"
+    
+      final_results_path = tmp_path / "final_classification_results.csv"
+      pd.DataFrame([
+        {
+          "model_name": "logistic_regression",
+          "horizon_hours": 1,
+          "model_parameters": "C=1.0; decision_threshold=0.45",
+        },
+        {
+          "model_name": "naive_spike_baseline",
+          "horizon_hours": 3,
+          "model_parameters": "decision_threshold=0.50",
+        },
+      ]).to_csv(final_results_path, index=False)
+    
+>     written_path = save_selected_classification_models(
+        best_model_path=best_model_path,
+        training_dataset_path=training_path,
+        output_dir=output_dir,
+        metadata_path=metadata_path,
+        final_results_path=final_results_path,
+      )
+
+tests/modeling/classification/test_save_selected_models.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/electricity_predictor/modeling/classification/save_selected_models.py:269: in save_selected_classification_models
+    decision_threshold = get_frozen_decision_threshold(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+selected_model = {'horizon_hours': 1, 'model_name': 'logistic_regression', 'model_parameters': 'C=1.0', 'selection_metric': 'f1', ...}
+
+    def get_frozen_decision_threshold(
+      selected_model: dict,
+    ) -> float:
+      """Read the decision threshold frozen during validation."""
+      parameters = parse_model_parameters(
+        selected_model.get("model_parameters", "")
+      )
+    
+      if "decision_threshold" not in parameters:
+>       raise ValueError(
+          "Selected learned model is missing its frozen "
+          "validation decision threshold."
+        )
+E       ValueError: Selected learned model is missing its frozen validation decision threshold.
+
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:127: ValueError
+----------------------------- Captured stdout call -----------------------------
+
+Saving selected classifier: 1h
+======================================
+Model: logistic_regression
+Target column: is_spike_target_1h
+=========================== short test summary info ============================
+FAILED tests/modeling/classification/test_save_selected_models.py::test_save_selected_classification_models_round_trip
+1 failed, 116 passed in 6.57s
+
+===== FROZEN-THRESHOLD CONTRACT CHECK =====
+round_trip_fixture_uses_frozen_threshold=PASS
+production_logic_changed=False
+protected_test_used=False
+
+===== GIT DIFF CHECK =====
+
+fixture_excerpt_exit_code=0
+classification_tests_exit_code=1
+frozen_threshold_contract_exit_code=0
+git_diff_check_exit_code=0

@@ -11,7 +11,7 @@ export function EngineeringPrinciples() {
 
   return (
     <Reveal>
-      <section
+      <section data-project-engineering-principles="true"
         aria-labelledby="engineering-principles"
         className="project-section-panel project-section-soft"
       >

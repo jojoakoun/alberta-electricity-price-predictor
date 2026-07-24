@@ -8,7 +8,11 @@ from sklearn.preprocessing import StandardScaler
 from electricity_predictor.config import load_configuration
 from electricity_predictor.modeling.classification.target_builder import (
   build_spike_target_column_name,
-  prepare_classification_splits,
+  prepare_classification_training_splits,
+)
+from electricity_predictor.modeling.classification.validation_evaluation import (
+  add_decision_threshold_to_parameters,
+  evaluate_classifier_on_validation,
 )
 from electricity_predictor.modeling.metrics import calculate_classification_metrics
 from electricity_predictor.modeling.model_results import (
@@ -88,6 +92,7 @@ def build_logistic_regression_result(
   horizon_hours: int,
   split: str = "validation",
   c_value: float = 1.0,
+  decision_threshold: float = 0.5,
 ) -> dict:
   """Build one shared result row for Logistic Regression."""
   return build_model_result_row(
@@ -97,9 +102,12 @@ def build_logistic_regression_result(
     split=split,
     evaluation_rows=row_count,
     metrics=scores,
-    model_parameters=(
-      f"C={c_value}; class_weight=balanced; "
-      "scaler=StandardScaler; max_iter=1000; random_state=42"
+    model_parameters=add_decision_threshold_to_parameters(
+      parameter_text=(
+        f"C={c_value}; class_weight=balanced; "
+        "scaler=StandardScaler; max_iter=1000; random_state=42"
+      ),
+      decision_threshold=decision_threshold,
     ),
     notes=(
       "Scaled Logistic Regression trained on the chronological train split "
@@ -119,15 +127,14 @@ def run_logistic_regression(
 
   training_data = load_training_dataset(training_dataset_path)
 
-  train_data, validation_data, test_data = split_time_series_data_from_config(
+  train_data, validation_data, _ = split_time_series_data_from_config(
     data=training_data,
     modeling_config=modeling_config,
 )
 
-  prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
+  prepared_train, prepared_validation, threshold = prepare_classification_training_splits(
     train_data=train_data,
     validation_data=validation_data,
-    test_data=test_data,
     horizons_hours=horizons_hours,
   )
 
@@ -139,9 +146,9 @@ def run_logistic_regression(
       target_column=target_column,
     )
 
-    scores = evaluate_logistic_regression_model(
+    scores, decision_threshold = evaluate_classifier_on_validation(
       model=model,
-      evaluation_data=prepared_validation,
+      validation_data=prepared_validation,
       target_column=target_column,
     )
 
@@ -149,6 +156,7 @@ def run_logistic_regression(
       scores=scores,
       row_count=len(prepared_validation),
       horizon_hours=horizon_hours,
+      decision_threshold=decision_threshold,
     )
 
     append_model_result(
@@ -164,6 +172,7 @@ def run_logistic_regression(
     print(f"Precision: {scores['precision']:.4f}")
     print(f"Recall: {scores['recall']:.4f}")
     print(f"F1: {scores['f1']:.4f}")
+    print(f"Decision threshold: {decision_threshold:.4f}")
 
   return results_path
 

@@ -1,0 +1,652 @@
+# Run the complete regression-model comparison.
+.venv/bin/python \
+		src/electricity_predictor/modeling/regression/run_regression_models.py
+
+Regression horizon: 1h
+================================
+Target column: actual_price_target_1h
+Evaluating regression baseline naive_baseline prediction_column=actual_price_lag_1h on validation split
+Evaluating regression baseline previous_day_baseline prediction_column=actual_price_lag_24h on validation split
+Evaluating regression baseline aeso_forecast_baseline prediction_column=forecast_price on validation split
+Evaluating regression baseline previous_aeso_forecast_baseline prediction_column=forecast_price_lag_1h on validation split
+Evaluating regression baseline rolling_24h_mean_baseline prediction_column=actual_price_rolling_24h_mean on validation split
+Evaluating regression baseline rolling_7d_mean_baseline prediction_column=actual_price_rolling_7d_mean on validation split
+Training Linear Regression fit_intercept=True on train split
+Training Ridge Regression alpha=1.0 on train split
+Tuning Ridge Regression with TimeSeriesSplit on train split
+Testing Ridge alpha=0.1 with TimeSeriesSplit
+  Fold 1: alpha=0.1
+  Fold 2: alpha=0.1
+  Fold 3: alpha=0.1
+Testing Ridge alpha=1.0 with TimeSeriesSplit
+  Fold 1: alpha=1.0
+  Fold 2: alpha=1.0
+  Fold 3: alpha=1.0
+Testing Ridge alpha=10.0 with TimeSeriesSplit
+  Fold 1: alpha=10.0
+  Fold 2: alpha=10.0
+  Fold 3: alpha=10.0
+Testing Ridge alpha=100.0 with TimeSeriesSplit
+  Fold 1: alpha=100.0
+  Fold 2: alpha=100.0
+  Fold 3: alpha=100.0
+Training Lasso Regression alpha=1.0 on train split
+Tuning Lasso Regression with TimeSeriesSplit on train split
+Testing Lasso alpha=0.001 with TimeSeriesSplit
+  Fold 1: alpha=0.001
+  Fold 2: alpha=0.001
+  Fold 3: alpha=0.001
+Testing Lasso alpha=0.01 with TimeSeriesSplit
+  Fold 1: alpha=0.01
+  Fold 2: alpha=0.01
+  Fold 3: alpha=0.01
+Testing Lasso alpha=0.1 with TimeSeriesSplit
+  Fold 1: alpha=0.1
+  Fold 2: alpha=0.1
+  Fold 3: alpha=0.1
+Testing Lasso alpha=1.0 with TimeSeriesSplit
+  Fold 1: alpha=1.0
+  Fold 2: alpha=1.0
+  Fold 3: alpha=1.0
+Testing Lasso alpha=10.0 with TimeSeriesSplit
+  Fold 1: alpha=10.0
+  Fold 2: alpha=10.0
+  Fold 3: alpha=10.0
+Training Elastic Net Regression alpha=1.0 l1_ratio=0.5 on train split
+Tuning Elastic Net Regression with TimeSeriesSplit on train split
+Testing Elastic Net alpha=0.001; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.001; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.001; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=1.0; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=1.0; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=1.0; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=1.0; l1_ratio=0.5; max_iter=10000
+Training tuned Elastic Net alpha=1.0; l1_ratio=0.5; max_iter=10000 on train split
+Training Random Forest base configuration on train split
+Tuning Random Forest with TimeSeriesSplit on train split
+Testing Random Forest n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+Training tuned Random Forest n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1 on train split
+
+Regression horizon: 3h
+================================
+Target column: actual_price_target_3h
+Evaluating regression baseline naive_baseline prediction_column=actual_price_lag_1h on validation split
+Evaluating regression baseline previous_day_baseline prediction_column=actual_price_lag_24h on validation split
+Evaluating regression baseline aeso_forecast_baseline prediction_column=forecast_price on validation split
+Evaluating regression baseline previous_aeso_forecast_baseline prediction_column=forecast_price_lag_1h on validation split
+Evaluating regression baseline rolling_24h_mean_baseline prediction_column=actual_price_rolling_24h_mean on validation split
+Evaluating regression baseline rolling_7d_mean_baseline prediction_column=actual_price_rolling_7d_mean on validation split
+Training Linear Regression fit_intercept=True on train split
+Training Ridge Regression alpha=1.0 on train split
+Tuning Ridge Regression with TimeSeriesSplit on train split
+Testing Ridge alpha=0.1 with TimeSeriesSplit
+  Fold 1: alpha=0.1
+  Fold 2: alpha=0.1
+  Fold 3: alpha=0.1
+Testing Ridge alpha=1.0 with TimeSeriesSplit
+  Fold 1: alpha=1.0
+  Fold 2: alpha=1.0
+  Fold 3: alpha=1.0
+Testing Ridge alpha=10.0 with TimeSeriesSplit
+  Fold 1: alpha=10.0
+  Fold 2: alpha=10.0
+  Fold 3: alpha=10.0
+Testing Ridge alpha=100.0 with TimeSeriesSplit
+  Fold 1: alpha=100.0
+  Fold 2: alpha=100.0
+  Fold 3: alpha=100.0
+Training Lasso Regression alpha=1.0 on train split
+Tuning Lasso Regression with TimeSeriesSplit on train split
+Testing Lasso alpha=0.001 with TimeSeriesSplit
+  Fold 1: alpha=0.001
+  Fold 2: alpha=0.001
+  Fold 3: alpha=0.001
+Testing Lasso alpha=0.01 with TimeSeriesSplit
+  Fold 1: alpha=0.01
+  Fold 2: alpha=0.01
+  Fold 3: alpha=0.01
+Testing Lasso alpha=0.1 with TimeSeriesSplit
+  Fold 1: alpha=0.1
+  Fold 2: alpha=0.1
+  Fold 3: alpha=0.1
+Testing Lasso alpha=1.0 with TimeSeriesSplit
+  Fold 1: alpha=1.0
+  Fold 2: alpha=1.0
+  Fold 3: alpha=1.0
+Testing Lasso alpha=10.0 with TimeSeriesSplit
+  Fold 1: alpha=10.0
+  Fold 2: alpha=10.0
+  Fold 3: alpha=10.0
+Training Elastic Net Regression alpha=1.0 l1_ratio=0.5 on train split
+Tuning Elastic Net Regression with TimeSeriesSplit on train split
+Testing Elastic Net alpha=0.001; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.001; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.001; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=1.0; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=1.0; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=1.0; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=1.0; l1_ratio=0.5; max_iter=10000
+Training tuned Elastic Net alpha=1.0; l1_ratio=0.5; max_iter=10000 on train split
+Training Random Forest base configuration on train split
+Tuning Random Forest with TimeSeriesSplit on train split
+Testing Random Forest n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+Training tuned Random Forest n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1 on train split
+
+Regression horizon: 6h
+================================
+Target column: actual_price_target_6h
+Evaluating regression baseline naive_baseline prediction_column=actual_price_lag_1h on validation split
+Evaluating regression baseline previous_day_baseline prediction_column=actual_price_lag_24h on validation split
+Evaluating regression baseline aeso_forecast_baseline prediction_column=forecast_price on validation split
+Evaluating regression baseline previous_aeso_forecast_baseline prediction_column=forecast_price_lag_1h on validation split
+Evaluating regression baseline rolling_24h_mean_baseline prediction_column=actual_price_rolling_24h_mean on validation split
+Evaluating regression baseline rolling_7d_mean_baseline prediction_column=actual_price_rolling_7d_mean on validation split
+Training Linear Regression fit_intercept=True on train split
+Training Ridge Regression alpha=1.0 on train split
+Tuning Ridge Regression with TimeSeriesSplit on train split
+Testing Ridge alpha=0.1 with TimeSeriesSplit
+  Fold 1: alpha=0.1
+  Fold 2: alpha=0.1
+  Fold 3: alpha=0.1
+Testing Ridge alpha=1.0 with TimeSeriesSplit
+  Fold 1: alpha=1.0
+  Fold 2: alpha=1.0
+  Fold 3: alpha=1.0
+Testing Ridge alpha=10.0 with TimeSeriesSplit
+  Fold 1: alpha=10.0
+  Fold 2: alpha=10.0
+  Fold 3: alpha=10.0
+Testing Ridge alpha=100.0 with TimeSeriesSplit
+  Fold 1: alpha=100.0
+  Fold 2: alpha=100.0
+  Fold 3: alpha=100.0
+Training Lasso Regression alpha=1.0 on train split
+Tuning Lasso Regression with TimeSeriesSplit on train split
+Testing Lasso alpha=0.001 with TimeSeriesSplit
+  Fold 1: alpha=0.001
+  Fold 2: alpha=0.001
+  Fold 3: alpha=0.001
+Testing Lasso alpha=0.01 with TimeSeriesSplit
+  Fold 1: alpha=0.01
+  Fold 2: alpha=0.01
+  Fold 3: alpha=0.01
+Testing Lasso alpha=0.1 with TimeSeriesSplit
+  Fold 1: alpha=0.1
+  Fold 2: alpha=0.1
+  Fold 3: alpha=0.1
+Testing Lasso alpha=1.0 with TimeSeriesSplit
+  Fold 1: alpha=1.0
+  Fold 2: alpha=1.0
+  Fold 3: alpha=1.0
+Testing Lasso alpha=10.0 with TimeSeriesSplit
+  Fold 1: alpha=10.0
+  Fold 2: alpha=10.0
+  Fold 3: alpha=10.0
+Training Elastic Net Regression alpha=1.0 l1_ratio=0.5 on train split
+Tuning Elastic Net Regression with TimeSeriesSplit on train split
+Testing Elastic Net alpha=0.001; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.001; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.001; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=1.0; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=1.0; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=1.0; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=1.0; l1_ratio=0.5; max_iter=10000
+Training tuned Elastic Net alpha=1.0; l1_ratio=0.5; max_iter=10000 on train split
+Training Random Forest base configuration on train split
+Tuning Random Forest with TimeSeriesSplit on train split
+Testing Random Forest n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+Training tuned Random Forest n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1 on train split
+
+Regression horizon: 12h
+================================
+Target column: actual_price_target_12h
+Evaluating regression baseline naive_baseline prediction_column=actual_price_lag_1h on validation split
+Evaluating regression baseline previous_day_baseline prediction_column=actual_price_lag_24h on validation split
+Evaluating regression baseline aeso_forecast_baseline prediction_column=forecast_price on validation split
+Evaluating regression baseline previous_aeso_forecast_baseline prediction_column=forecast_price_lag_1h on validation split
+Evaluating regression baseline rolling_24h_mean_baseline prediction_column=actual_price_rolling_24h_mean on validation split
+Evaluating regression baseline rolling_7d_mean_baseline prediction_column=actual_price_rolling_7d_mean on validation split
+Training Linear Regression fit_intercept=True on train split
+Training Ridge Regression alpha=1.0 on train split
+Tuning Ridge Regression with TimeSeriesSplit on train split
+Testing Ridge alpha=0.1 with TimeSeriesSplit
+  Fold 1: alpha=0.1
+  Fold 2: alpha=0.1
+  Fold 3: alpha=0.1
+Testing Ridge alpha=1.0 with TimeSeriesSplit
+  Fold 1: alpha=1.0
+  Fold 2: alpha=1.0
+  Fold 3: alpha=1.0
+Testing Ridge alpha=10.0 with TimeSeriesSplit
+  Fold 1: alpha=10.0
+  Fold 2: alpha=10.0
+  Fold 3: alpha=10.0
+Testing Ridge alpha=100.0 with TimeSeriesSplit
+  Fold 1: alpha=100.0
+  Fold 2: alpha=100.0
+  Fold 3: alpha=100.0
+Training Lasso Regression alpha=1.0 on train split
+Tuning Lasso Regression with TimeSeriesSplit on train split
+Testing Lasso alpha=0.001 with TimeSeriesSplit
+  Fold 1: alpha=0.001
+  Fold 2: alpha=0.001
+  Fold 3: alpha=0.001
+Testing Lasso alpha=0.01 with TimeSeriesSplit
+  Fold 1: alpha=0.01
+  Fold 2: alpha=0.01
+  Fold 3: alpha=0.01
+Testing Lasso alpha=0.1 with TimeSeriesSplit
+  Fold 1: alpha=0.1
+  Fold 2: alpha=0.1
+  Fold 3: alpha=0.1
+Testing Lasso alpha=1.0 with TimeSeriesSplit
+  Fold 1: alpha=1.0
+  Fold 2: alpha=1.0
+  Fold 3: alpha=1.0
+Testing Lasso alpha=10.0 with TimeSeriesSplit
+  Fold 1: alpha=10.0
+  Fold 2: alpha=10.0
+  Fold 3: alpha=10.0
+Training Elastic Net Regression alpha=1.0 l1_ratio=0.5 on train split
+Tuning Elastic Net Regression with TimeSeriesSplit on train split
+Testing Elastic Net alpha=0.001; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.001; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.001; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=1.0; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=1.0; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=1.0; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=1.0; l1_ratio=0.5; max_iter=10000
+Training tuned Elastic Net alpha=1.0; l1_ratio=0.5; max_iter=10000 on train split
+Training Random Forest base configuration on train split
+Tuning Random Forest with TimeSeriesSplit on train split
+Testing Random Forest n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+Training tuned Random Forest n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 on train split
+
+Regression horizon: 24h
+================================
+Target column: actual_price_target_24h
+Evaluating regression baseline naive_baseline prediction_column=actual_price_lag_1h on validation split
+Evaluating regression baseline previous_day_baseline prediction_column=actual_price_lag_24h on validation split
+Evaluating regression baseline aeso_forecast_baseline prediction_column=forecast_price on validation split
+Evaluating regression baseline previous_aeso_forecast_baseline prediction_column=forecast_price_lag_1h on validation split
+Evaluating regression baseline rolling_24h_mean_baseline prediction_column=actual_price_rolling_24h_mean on validation split
+Evaluating regression baseline rolling_7d_mean_baseline prediction_column=actual_price_rolling_7d_mean on validation split
+Training Linear Regression fit_intercept=True on train split
+Training Ridge Regression alpha=1.0 on train split
+Tuning Ridge Regression with TimeSeriesSplit on train split
+Testing Ridge alpha=0.1 with TimeSeriesSplit
+  Fold 1: alpha=0.1
+  Fold 2: alpha=0.1
+  Fold 3: alpha=0.1
+Testing Ridge alpha=1.0 with TimeSeriesSplit
+  Fold 1: alpha=1.0
+  Fold 2: alpha=1.0
+  Fold 3: alpha=1.0
+Testing Ridge alpha=10.0 with TimeSeriesSplit
+  Fold 1: alpha=10.0
+  Fold 2: alpha=10.0
+  Fold 3: alpha=10.0
+Testing Ridge alpha=100.0 with TimeSeriesSplit
+  Fold 1: alpha=100.0
+  Fold 2: alpha=100.0
+  Fold 3: alpha=100.0
+Training Lasso Regression alpha=1.0 on train split
+Tuning Lasso Regression with TimeSeriesSplit on train split
+Testing Lasso alpha=0.001 with TimeSeriesSplit
+  Fold 1: alpha=0.001
+  Fold 2: alpha=0.001
+  Fold 3: alpha=0.001
+Testing Lasso alpha=0.01 with TimeSeriesSplit
+  Fold 1: alpha=0.01
+  Fold 2: alpha=0.01
+  Fold 3: alpha=0.01
+Testing Lasso alpha=0.1 with TimeSeriesSplit
+  Fold 1: alpha=0.1
+  Fold 2: alpha=0.1
+  Fold 3: alpha=0.1
+Testing Lasso alpha=1.0 with TimeSeriesSplit
+  Fold 1: alpha=1.0
+  Fold 2: alpha=1.0
+  Fold 3: alpha=1.0
+Testing Lasso alpha=10.0 with TimeSeriesSplit
+  Fold 1: alpha=10.0
+  Fold 2: alpha=10.0
+  Fold 3: alpha=10.0
+Training Elastic Net Regression alpha=1.0 l1_ratio=0.5 on train split
+Tuning Elastic Net Regression with TimeSeriesSplit on train split
+Testing Elastic Net alpha=0.001; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.001; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.001; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.001; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.001; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.001; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.01; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.01; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.01; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.01; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.2; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.2; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.2; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.2; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.5; max_iter=10000
+Testing Elastic Net alpha=0.1; l1_ratio=0.8; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=0.1; l1_ratio=0.8; max_iter=10000
+  Fold 2: alpha=0.1; l1_ratio=0.8; max_iter=10000
+  Fold 3: alpha=0.1; l1_ratio=0.8; max_iter=10000
+Testing Elastic Net alpha=1.0; l1_ratio=0.5; max_iter=10000 with TimeSeriesSplit
+  Fold 1: alpha=1.0; l1_ratio=0.5; max_iter=10000
+  Fold 2: alpha=1.0; l1_ratio=0.5; max_iter=10000
+  Fold 3: alpha=1.0; l1_ratio=0.5; max_iter=10000
+Training tuned Elastic Net alpha=0.1; l1_ratio=0.2; max_iter=10000 on train split
+Training Random Forest base configuration on train split
+Tuning Random Forest with TimeSeriesSplit on train split
+Testing Random Forest n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=None; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=20; min_samples_leaf=1; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=100; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+Testing Random Forest n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1 with TimeSeriesSplit
+  Fold 1: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 2: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+  Fold 3: n_estimators=200; max_depth=20; min_samples_leaf=5; random_state=42; n_jobs=-1
+Training tuned Random Forest n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1 on train split
+
+Regression models completed
+===========================
+Results written to: reports/regression_validation_results.csv
+# Select the strongest validation regression model per horizon.
+.venv/bin/python \
+		src/electricity_predictor/modeling/regression/best_model_selection.py
+Best regression models by horizon
+=================================
+
+Horizon: 1h
+Model: lasso_regression_tuned
+Selection metric: mae
+Selection rule: lowest_validation_mae_within_horizon
+Split used for selection: validation
+MAE: 33.3837
+RMSE: 80.2968
+Parameters: best_alpha=10.0; max_iter=10000; cv_splits=3; cv_mae=57.846479; cv_rmse=113.489226
+Reason: Selected because it has the lowest validation MAE among regression models for the 1h horizon.
+
+Horizon: 3h
+Model: random_forest_regressor_tuned
+Selection metric: mae
+Selection rule: lowest_validation_mae_within_horizon
+Split used for selection: validation
+MAE: 46.7901
+RMSE: 98.5419
+Parameters: n_estimators=100; max_depth=10; min_samples_leaf=1; random_state=42; n_jobs=-1; cv_splits=3; cv_mae=88.042035; cv_rmse=148.719815
+Reason: Selected because it has the lowest validation MAE among regression models for the 3h horizon.
+
+Horizon: 6h
+Model: rolling_24h_mean_baseline
+Selection metric: mae
+Selection rule: lowest_validation_mae_within_horizon
+Split used for selection: validation
+MAE: 50.8396
+RMSE: 113.4296
+Parameters: prediction_column=actual_price_rolling_24h_mean
+Reason: Selected because it has the lowest validation MAE among regression models for the 6h horizon.
+
+Horizon: 12h
+Model: rolling_24h_mean_baseline
+Selection metric: mae
+Selection rule: lowest_validation_mae_within_horizon
+Split used for selection: validation
+MAE: 52.7597
+RMSE: 117.1029
+Parameters: prediction_column=actual_price_rolling_24h_mean
+Reason: Selected because it has the lowest validation MAE among regression models for the 12h horizon.
+
+Horizon: 24h
+Model: naive_baseline
+Selection metric: mae
+Selection rule: lowest_validation_mae_within_horizon
+Split used for selection: validation
+MAE: 55.7267
+RMSE: 136.6736
+Parameters: prediction_column=actual_price_lag_1h
+Reason: Selected because it has the lowest validation MAE among regression models for the 24h horizon.
+
+Selection file written to: reports/best_regression_model.csv
+
+regression_models_exit_code=0
+selection_exit_code=0

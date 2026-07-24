@@ -1,0 +1,48 @@
+===== SIMPLE REGRESSION BASELINE AUDIT =====
+split=validation
+validation_rows=8760
+candidate_count=6
+missing_columns=[]
+
+===== ALL SIMPLE BASELINES =====
+ horizon_hours             baseline_name             prediction_column  evaluation_rows       mae       rmse  mae_rank
+             1  current_forecast_feature                forecast_price             8760 33.917187  94.956298         1
+             1       previous_hour_price           actual_price_lag_1h             8760 35.785354  96.455582         2
+             1 previous_forecast_feature         forecast_price_lag_1h             8760 44.530317 118.002246         3
+             1          rolling_24h_mean actual_price_rolling_24h_mean             8760 47.489587 106.859555         4
+             1           rolling_7d_mean  actual_price_rolling_7d_mean             8760 54.753529 119.579852         5
+             1        previous_day_price          actual_price_lag_24h             8760 55.718759 136.673133         6
+             3          rolling_24h_mean actual_price_rolling_24h_mean             8760 49.207262 110.425362         1
+             3       previous_hour_price           actual_price_lag_1h             8760 49.965311 127.991525         2
+             3  current_forecast_feature                forecast_price             8760 50.652546 131.051308         3
+             3 previous_forecast_feature         forecast_price_lag_1h             8760 55.152231 139.974209         4
+             3           rolling_7d_mean  actual_price_rolling_7d_mean             8760 55.163261 120.360649         5
+             3        previous_day_price          actual_price_lag_24h             8760 60.344513 146.395843         6
+             6          rolling_24h_mean actual_price_rolling_24h_mean             8760 50.839585 113.429610         1
+             6           rolling_7d_mean  actual_price_rolling_7d_mean             8760 55.620669 121.154919         2
+             6       previous_hour_price           actual_price_lag_1h             8760 58.536001 145.238566         3
+             6  current_forecast_feature                forecast_price             8760 61.364131 152.371781         4
+             6 previous_forecast_feature         forecast_price_lag_1h             8760 62.664869 154.923917         5
+             6        previous_day_price          actual_price_lag_24h             8760 65.657562 156.787470         6
+            12          rolling_24h_mean actual_price_rolling_24h_mean             8760 52.759725 117.102904         1
+            12           rolling_7d_mean  actual_price_rolling_7d_mean             8760 56.253563 122.391733         2
+            12       previous_hour_price           actual_price_lag_1h             8760 61.427365 149.241669         3
+            12  current_forecast_feature                forecast_price             8760 64.928347 157.800715         4
+            12 previous_forecast_feature         forecast_price_lag_1h             8760 65.562142 158.825052         5
+            12        previous_day_price          actual_price_lag_24h             8760 66.536515 157.077095         6
+            24       previous_hour_price           actual_price_lag_1h             8760 55.726686 136.673643         1
+            24          rolling_24h_mean actual_price_rolling_24h_mean             8760 56.275179 123.258978         2
+            24           rolling_7d_mean  actual_price_rolling_7d_mean             8760 57.493793 124.671074         3
+            24  current_forecast_feature                forecast_price             8760 58.385001 143.778555         4
+            24 previous_forecast_feature         forecast_price_lag_1h             8760 60.815659 148.492900         5
+            24        previous_day_price          actual_price_lag_24h             8760 61.116311 146.837148         6
+
+===== SELECTED MODELS VS BEST SIMPLE BASELINE =====
+ horizon_hours                selected_model  selected_mae  selected_rmse     best_simple_baseline            best_simple_column  best_simple_mae  best_simple_rmse  selected_mae_gain_vs_simple  selected_rmse_gain_vs_simple  selected_beats_simple_mae
+             1        lasso_regression_tuned     33.383658      80.296787 current_forecast_feature                forecast_price        33.917187         94.956298                     0.533530                     14.659510                       True
+             3 random_forest_regressor_tuned     46.790146      98.541851         rolling_24h_mean actual_price_rolling_24h_mean        49.207262        110.425362                     2.417116                     11.883511                       True
+             6        lasso_regression_tuned     55.636392     110.035469         rolling_24h_mean actual_price_rolling_24h_mean        50.839585        113.429610                    -4.796808                      3.394141                      False
+            12        lasso_regression_tuned     59.861473     114.326223         rolling_24h_mean actual_price_rolling_24h_mean        52.759725        117.102904                    -7.101748                      2.776681                      False
+            24                naive_baseline     55.726686     136.673643      previous_hour_price           actual_price_lag_1h        55.726686        136.673643                     0.000000                     -0.000000                      False
+
+status=PASS

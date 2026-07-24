@@ -1,0 +1,64 @@
+===== USEFUL MAKEFILE =====
+SHELL := /bin/bash
+.DEFAULT_GOAL := help
+
+PYTHON ?= .venv/bin/python
+PYTEST ?= .venv/bin/pytest
+MAIN_MAKEFILE ?= Makefile
+
+.PHONY: \
+	help \
+	verify
+
+help:
+	@echo ""
+	@echo "WattWise — validated daily commands"
+	@echo ""
+	@echo "  make -f Makefile.useful verify"
+	@echo "      Validate configuration, Python, API, frontend, lint, and build."
+	@echo ""
+
+verify:
+	$(MAKE) -f $(MAIN_MAKEFILE) verify \
+		PYTHON=$(PYTHON) \
+		PYTEST=$(PYTEST)
+
+===== HELP =====
+
+WattWise — validated daily commands
+
+  make -f Makefile.useful verify
+      Validate configuration, Python, API, frontend, lint, and build.
+
+
+===== VERIFY DRY RUN =====
+/Library/Developer/CommandLineTools/usr/bin/make -f Makefile verify \
+		PYTHON=.venv/bin/python \
+		PYTEST=.venv/bin/pytest
+# Verify the project without rebuilding or retraining models.
+/Library/Developer/CommandLineTools/usr/bin/make config-check
+# Verify that the project configuration loads correctly.
+.venv/bin/python -c \
+		"from electricity_predictor.config import load_configuration; print(load_configuration()['project']['name'])"
+/Library/Developer/CommandLineTools/usr/bin/make compile-check
+# Compile Python source files to detect syntax and import problems.
+.venv/bin/python -m compileall -q src
+/Library/Developer/CommandLineTools/usr/bin/make inference-check
+# Run focused model-serving and inference tests.
+.venv/bin/pytest -q tests/serving
+/Library/Developer/CommandLineTools/usr/bin/make test-python
+# Run the complete Python test suite.
+.venv/bin/pytest
+/Library/Developer/CommandLineTools/usr/bin/make test-server
+# Run the Express API test suite.
+NODE_ENV=test npm --prefix app/server test
+/Library/Developer/CommandLineTools/usr/bin/make test-client
+# Run frontend tests, lint, and the production build.
+npm --prefix app/client test
+npm --prefix app/client run lint
+npm --prefix app/client run build
+git diff --check
+
+===== DIFF INTEGRITY =====
+===== Exit code =====
+0

@@ -1,0 +1,12 @@
+===== PURPOSE =====
+Replace the generic Project reflection with a concrete bilingual lesson from building WattWise.
+Improve the reflection typography without changing the rest of the page.
+
+===== PRECONDITIONS =====
+required_inputs=PASS
+
+===== UPDATE BILINGUAL REFLECTION COPY =====
+Traceback (most recent call last):
+  File "<stdin>", line 47, in <module>
+  File "<stdin>", line 16, in replace_required
+RuntimeError: Expected reflection text was not found in app/client/src/i18n/fr.js: « WattWise m’a montré qu’un produit d’apprentissage automatique utile dépend de beaucoup plus que la performance du modèle. »

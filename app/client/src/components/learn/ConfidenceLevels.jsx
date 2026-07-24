@@ -10,40 +10,36 @@ import { Card } from "../Card";
 import { copy } from "../../copy";
 
 export function ConfidenceLevels() {
-  const confidenceHorizons = [
+  const horizonGuidance = [
     {
       Icon: Gauge,
-      score: 100,
       ...copy.learnPage.confidence.horizons.one,
     },
     {
       Icon: Clock3,
-      score: 84,
       ...copy.learnPage.confidence.horizons.three,
     },
     {
       Icon: Activity,
-      score: 70,
       ...copy.learnPage.confidence.horizons.six,
     },
     {
       Icon: TriangleAlert,
-      score: 52,
       ...copy.learnPage.confidence.horizons.twelve,
     },
     {
       Icon: CircleAlert,
-      score: 34,
       ...copy.learnPage.confidence.horizons.twentyFour,
     },
   ];
+
   return (
     <section
-      aria-labelledby="forecast-confidence"
+      aria-labelledby="forecast-horizon-guide"
       className="product-section-panel"
     >
       <div className="max-w-2xl space-y-[var(--space-2)]">
-        <h2 id="forecast-confidence">
+        <h2 id="forecast-horizon-guide">
           {copy.learnPage.confidence.title}
         </h2>
 
@@ -52,51 +48,34 @@ export function ConfidenceLevels() {
         </p>
       </div>
 
-      <Card className="confidence-card">
-        {confidenceHorizons.map(
-          ({
-            Icon,
-            label,
-            detail,
-            score,
-          }, index) => (
-            <div
-              key={label}
-              className="confidence-row"
-            >
-              <div className="confidence-label">
-                <div>
+      <Card className="horizon-guide-card">
+        <ul className="horizon-guide-list">
+          {horizonGuidance.map(
+            ({
+              Icon,
+              label,
+              detail,
+            }) => (
+              <li
+                key={label}
+                className="horizon-guide-row"
+              >
+                <span className="horizon-guide-icon">
                   <Icon
                     aria-hidden="true"
                     size={19}
                   />
+                </span>
 
-                  <span>{label}</span>
+                <div className="horizon-guide-copy">
+                  <h3>{label}</h3>
+
+                  <p>{detail}</p>
                 </div>
-
-                <small>{detail}</small>
-              </div>
-
-              <div
-                role="progressbar"
-                aria-label={`${label} relative confidence`}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={score}
-                className="confidence-track"
-              >
-                <div
-                  className="confidence-fill"
-                  style={{
-                    "--confidence-width": `${score}%`,
-                    "--confidence-delay":
-                      `${120 + index * 80}ms`,
-                  }}
-                />
-              </div>
-            </div>
-          ),
-        )}
+              </li>
+            ),
+          )}
+        </ul>
       </Card>
     </section>
   );

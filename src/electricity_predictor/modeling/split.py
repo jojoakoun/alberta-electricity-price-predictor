@@ -182,30 +182,3 @@ def get_time_series_cv_gap_hours(modeling_config: dict) -> int:
     )
 
   return gap_hours
-
-
-def print_split_summary(
-  train_data: pd.DataFrame,
-  validation_data: pd.DataFrame,
-  test_data: pd.DataFrame,
-) -> None:
-  """Print a readable summary of the fixed chronological split."""
-  print("Fixed time-based modeling split")
-  print("===============================")
-  print(f"Train rows: {len(train_data):,}")
-  print(f"Validation rows: {len(validation_data):,}")
-  print(f"Test rows: {len(test_data):,}")
-
-  print("\nTime ranges")
-  print("-----------")
-
-  for split_name, split_data in [
-    ("Train", train_data),
-    ("Validation", validation_data),
-    ("Test", test_data),
-  ]:
-    print(
-      f"{split_name}: "
-      f"{split_data[DATETIME_COLUMN].min()} "
-      f"to {split_data[DATETIME_COLUMN].max()}"
-    )

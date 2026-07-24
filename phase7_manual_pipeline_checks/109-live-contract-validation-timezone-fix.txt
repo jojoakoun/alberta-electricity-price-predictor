@@ -1,0 +1,92 @@
+===== PURPOSE =====
+Normalize split boundaries to timezone-aware UTC timestamps.
+Retry the validation-only comparison of the two live feature contracts.
+Temporary models are fitted in memory only and are not saved or promoted.
+The protected test split is not materialized or evaluated.
+
+===== COMPARISON MODULE TESTS =====
+.................                                                        [100%]
+17 passed in 2.07s
+
+===== LIVE CONTRACT VALIDATION COMPARISON =====
+
+REGRESSION VALIDATION
+=====================
+           contract  horizon_hours  train_rows  validation_rows       mae       rmse
+conservative_hybrid              1       34842             8760 28.360573  79.786549
+      forecast_only              1       34842             8760 28.383159  79.696889
+conservative_hybrid              3       34842             8760 36.795251 100.183378
+      forecast_only              3       34842             8760 36.800615 100.008355
+conservative_hybrid              6       34842             8760 41.174445 109.392068
+      forecast_only              6       34842             8760 41.476945 110.401993
+conservative_hybrid             12       34842             8760 43.547316 115.155818
+      forecast_only             12       34842             8760 44.058079 115.411039
+conservative_hybrid             24       34842             8760 44.283689 117.617048
+      forecast_only             24       34842             8760 44.027676 117.359130
+
+REGRESSION WINNERS BY MAE
+=========================
+ horizon_hours            contract       mae       rmse
+             1 conservative_hybrid 28.360573  79.786549
+             3 conservative_hybrid 36.795251 100.183378
+             6 conservative_hybrid 41.174445 109.392068
+            12 conservative_hybrid 43.547316 115.155818
+            24       forecast_only 44.027676 117.359130
+
+CLASSIFICATION VALIDATION
+=========================
+           contract  horizon_hours  train_rows  validation_rows       f1   pr_auc  decision_threshold
+conservative_hybrid              1       34842             8760 0.607394 0.638950            0.700000
+      forecast_only              1       34842             8760 0.601479 0.646010            0.650000
+conservative_hybrid              3       34842             8760 0.492212 0.476131            0.600000
+      forecast_only              3       34842             8760 0.511670 0.499274            0.700000
+conservative_hybrid              6       34842             8760 0.433155 0.399062            0.650000
+      forecast_only              6       34842             8760 0.443532 0.400898            0.550000
+conservative_hybrid             12       34842             8760 0.339915 0.291829            0.550000
+      forecast_only             12       34842             8760 0.357341 0.285373            0.550000
+conservative_hybrid             24       34842             8760 0.362332 0.296832            0.650000
+      forecast_only             24       34842             8760 0.356364 0.299204            0.650000
+
+CLASSIFICATION WINNERS BY F1
+============================
+ horizon_hours            contract       f1   pr_auc  decision_threshold
+             1 conservative_hybrid 0.607394 0.638950            0.700000
+             3       forecast_only 0.511670 0.499274            0.700000
+             6       forecast_only 0.443532 0.400898            0.550000
+            12       forecast_only 0.357341 0.285373            0.550000
+            24 conservative_hybrid 0.362332 0.296832            0.650000
+
+WIN COUNTS
+==========
+conservative_hybrid: regression_mae_wins=4 classification_f1_wins=2
+forecast_only: regression_mae_wins=1 classification_f1_wins=3
+
+protected_test_used=False
+test_split_materialized=False
+models_saved=False
+active_registry_modified=False
+
+comparison_results_path=phase7_manual_pipeline_checks/109-live-contract-validation-results.csv
+
+===== RESULT CONTRACT =====
+comparison_rows=20
+same_train_rows_per_horizon=PASS
+same_validation_rows_per_horizon=PASS
+timezone_normalization=PASS
+protected_test_used=False
+models_saved=False
+
+===== ACTIVE ARTIFACT STATUS =====
+
+===== DIFF FORMAT CHECK =====
+
+timezone_boundary_fix=PASS
+live_contract_comparison=PASS
+temporary_validation_training=True
+models_saved=False
+active_registry_modified=False
+worker_modified=False
+database_modified=False
+protected_test_invoked=False
+commit_performed=False
+push_performed=False

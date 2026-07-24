@@ -98,6 +98,7 @@ def test_build_tuned_random_forest_result_uses_shared_schema():
       "cv_precision": 0.75,
       "cv_recall": 0.70,
       "cv_f1": 0.72,
+      "cv_pr_auc": 0.74,
     },
   )
 
@@ -108,3 +109,61 @@ def test_build_tuned_random_forest_result_uses_shared_schema():
   assert result["mae"] is None
   assert "n_estimators=200" in result["model_parameters"]
   assert "max_depth=10" in result["model_parameters"]
+
+
+def test_tune_random_forest_prioritizes_pr_auc_then_f1(monkeypatch):
+  data = make_time_series_classification_data()
+
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification.random_forest."
+    "random_forest_tuning.RANDOM_FOREST_N_ESTIMATORS",
+    [100, 200, 300],
+  )
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification.random_forest."
+    "random_forest_tuning.RANDOM_FOREST_MAX_DEPTHS",
+    [10],
+  )
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification.random_forest."
+    "random_forest_tuning.RANDOM_FOREST_MIN_SAMPLES_LEAF",
+    [5],
+  )
+
+  scores_by_estimators = {
+    100: {
+      "cv_accuracy": 0.80,
+      "cv_precision": 0.70,
+      "cv_recall": 0.80,
+      "cv_f1": 0.90,
+      "cv_pr_auc": 0.60,
+    },
+    200: {
+      "cv_accuracy": 0.82,
+      "cv_precision": 0.72,
+      "cv_recall": 0.75,
+      "cv_f1": 0.70,
+      "cv_pr_auc": 0.75,
+    },
+    300: {
+      "cv_accuracy": 0.83,
+      "cv_precision": 0.73,
+      "cv_recall": 0.78,
+      "cv_f1": 0.74,
+      "cv_pr_auc": 0.75,
+    },
+  }
+
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification.random_forest."
+    "random_forest_tuning."
+    "evaluate_random_forest_parameters_with_time_series_cv",
+    lambda **kwargs: scores_by_estimators[kwargs["n_estimators"]],
+  )
+
+  best_result = tune_random_forest(
+    train_data=data,
+    target_column="is_spike_target_1h",
+  )
+
+  assert best_result["n_estimators"] == 300

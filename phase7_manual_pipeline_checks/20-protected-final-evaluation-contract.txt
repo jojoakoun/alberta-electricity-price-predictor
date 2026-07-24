@@ -1,0 +1,17 @@
+===== FINAL EVALUATION UNIT TESTS =====
+..............                                                           [100%]
+14 passed in 1.72s
+
+===== FINAL DATA BOUNDARY =====
+src/electricity_predictor/modeling/regression/final_test_evaluation.py:84:    split="test",
+src/electricity_predictor/modeling/regression/final_test_evaluation.py:109:  final_training_data = pd.concat([train_data, validation_data], ignore_index=True)
+src/electricity_predictor/modeling/regression/final_test_evaluation.py:125:      train_data=final_training_data,
+src/electricity_predictor/modeling/regression/final_test_evaluation.py:126:      evaluation_data=test_data,
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:276:def select_model_decision_threshold(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:323:  threshold_result = select_model_decision_threshold(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:331:  final_training_data = pd.concat(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:338:    train_data=final_training_data,
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:479:    split="test",
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:540:        evaluation_data=prepared_test,
+
+===== DIFF CHECK =====

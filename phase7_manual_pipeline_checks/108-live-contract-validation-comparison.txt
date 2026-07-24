@@ -1,0 +1,81 @@
+===== PURPOSE =====
+Compare forecast-only and conservative-hybrid feature contracts.
+Use identical chronological train and validation rows for each horizon.
+Reuse selected model classes and hyperparameters without changing active artifacts.
+Never materialize or evaluate the protected test split.
+
+===== COMPARISON MODULE TESTS =====
+............                                                             [100%]
+12 passed in 2.30s
+
+===== LIVE CONTRACT VALIDATION COMPARISON =====
+Traceback (most recent call last):
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/arrays/datetimelike.py", line 555, in _validate_comparison_value
+    self._check_compatible_with(other)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/arrays/datetimes.py", line 557, in _check_compatible_with
+    self._assert_tzawareness_compat(other)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/arrays/datetimes.py", line 800, in _assert_tzawareness_compat
+    raise TypeError(
+        "Cannot compare tz-naive and tz-aware datetime-like objects"
+    )
+TypeError: Cannot compare tz-naive and tz-aware datetime-like objects
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/arrays/datetimelike.py", line 991, in _cmp_method
+    other = self._validate_comparison_value(other)
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/arrays/datetimelike.py", line 558, in _validate_comparison_value
+    raise InvalidComparison(other) from err
+pandas.errors.InvalidComparison: 2020-01-08 07:00:00
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/src/electricity_predictor/modeling/live_contract/validation_comparison.py", line 912, in <module>
+    main()
+    ~~~~^^
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/src/electricity_predictor/modeling/live_contract/validation_comparison.py", line 888, in main
+    results = compare_live_contracts()
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/src/electricity_predictor/modeling/live_contract/validation_comparison.py", line 633, in compare_live_contracts
+    build_horizon_comparison_data(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+      feature_data=feature_data,
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+      horizon=horizon,
+      ^^^^^^^^^^^^^^^^
+      modeling_config=modeling_config,
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/src/electricity_predictor/modeling/live_contract/validation_comparison.py", line 302, in build_horizon_comparison_data
+    return build_validation_only_splits(
+      data=comparison_data,
+      modeling_config=modeling_config,
+    )
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/src/electricity_predictor/modeling/live_contract/validation_comparison.py", line 234, in build_validation_only_splits
+    (timestamps >= train_start)
+     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/ops/common.py", line 85, in new_method
+    return method(self, other)
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/arraylike.py", line 62, in __ge__
+    return self._cmp_method(other, operator.ge)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/series.py", line 6735, in _cmp_method
+    res_values = ops.comparison_op(lvalues, rvalues, op)
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/ops/array_ops.py", line 341, in comparison_op
+    res_values = op(lvalues, rvalues)
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/ops/common.py", line 85, in new_method
+    return method(self, other)
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/arraylike.py", line 62, in __ge__
+    return self._cmp_method(other, operator.ge)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/arrays/datetimelike.py", line 995, in _cmp_method
+    return invalid_comparison(self, other, op)
+  File "/Users/joelakoun/Desktop/alberta-electricity-price-predictor/.venv/lib/python3.14/site-packages/pandas/core/ops/invalid.py", line 55, in invalid_comparison
+    raise TypeError(f"Invalid comparison between dtype={left.dtype} and {typ}")
+TypeError: Invalid comparison between dtype=datetime64[us, UTC] and Timestamp

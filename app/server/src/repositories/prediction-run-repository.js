@@ -6,6 +6,7 @@ async function getLatestSuccessfulForecastSource() {
       SELECT generated_at AS forecast_source_at
       FROM prediction_runs
       WHERE status = 'success'
+        AND generated_at <= DATE_TRUNC('hour', CURRENT_TIMESTAMP)
       ORDER BY generated_at DESC
       LIMIT 1
     `);

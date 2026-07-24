@@ -1,0 +1,89 @@
+===== PURPOSE =====
+Execute the frozen classification models on the protected test split once.
+This is the authorized final protected classification evaluation.
+No model, hyperparameter, threshold, or winner may change afterward.
+
+===== ONCE-ONLY GUARD =====
+protected_test_marker_exists_before_run=False
+protected_test_outputs_exist_before_run=False
+once_only_guard_status=PASS
+
+===== FINAL PREFLIGHT =====
+frozen_model_count=5
+frozen_models_match_authorization=PASS
+frozen_thresholds_match_authorization=PASS
+final_evaluation_makes_new_selection=False
+final_preflight_status=PASS
+
+===== PROTECTED TEST MARKER =====
+protected_test_marker=reports/classification_protected_test_used.txt
+protected_test_authorized=True
+protected_test_status=STARTED
+
+===== UNIQUE PROTECTED FINAL TEST =====
+
+Final classification test: 1h
+====================================
+Selected model: hist_gradient_boosting_classifier
+Target column: is_spike_target_1h
+Frozen spike threshold: 170.7700
+
+Final classification test: 3h
+====================================
+Selected model: hist_gradient_boosting_classifier_tuned
+Target column: is_spike_target_3h
+Frozen spike threshold: 170.7700
+
+Final classification test: 6h
+====================================
+Selected model: hist_gradient_boosting_classifier_tuned
+Target column: is_spike_target_6h
+Frozen spike threshold: 170.7700
+
+Final classification test: 12h
+====================================
+Selected model: hist_gradient_boosting_classifier_tuned
+Target column: is_spike_target_12h
+Frozen spike threshold: 170.7700
+
+Final classification test: 24h
+====================================
+Selected model: gradient_boosting_classifier_tuned
+Target column: is_spike_target_24h
+Frozen spike threshold: 170.7700
+
+Final protected classification test results
+===========================================
+1h | hist_gradient_boosting_classifier | F1: 0.4395 | Precision: 0.4688 | Recall: 0.4136 | Accuracy: 0.9692
+3h | hist_gradient_boosting_classifier_tuned | F1: 0.2550 | Precision: 0.3086 | Recall: 0.2173 | Accuracy: 0.9630
+6h | hist_gradient_boosting_classifier_tuned | F1: 0.1848 | Precision: 0.1953 | Recall: 0.1754 | Accuracy: 0.9549
+12h | hist_gradient_boosting_classifier_tuned | F1: 0.1705 | Precision: 0.1658 | Recall: 0.1754 | Accuracy: 0.9502
+24h | gradient_boosting_classifier_tuned | F1: 0.1536 | Precision: 0.1809 | Recall: 0.1335 | Accuracy: 0.9571
+
+Final test results written to: reports/final_classification_test_results.csv
+
+===== PROTECTED OUTPUT AUDIT =====
+final_protected_classification_results:
+ horizon_hours                              model_name  accuracy  precision   recall       f1   pr_auc
+             1       hist_gradient_boosting_classifier  0.969246   0.468843 0.413613 0.439499 0.447330
+             3 hist_gradient_boosting_classifier_tuned  0.962988   0.308550 0.217277 0.254992 0.216499
+             6 hist_gradient_boosting_classifier_tuned  0.954899   0.195335 0.175393 0.184828 0.141872
+            12 hist_gradient_boosting_classifier_tuned  0.950244   0.165842 0.175393 0.170483 0.105517
+            24      gradient_boosting_classifier_tuned  0.957112   0.180851 0.133508 0.153614 0.097436
+
+final_result_rows=5
+confusion_matrix_rows=5
+confidence_interval_rows=5
+frozen_models_preserved=PASS
+frozen_thresholds_preserved=PASS
+protected_test_status=COMPLETED
+protected_test_must_never_be_rerun=True
+
+===== GIT DIFF CHECK =====
+
+final_preflight_exit_code=0
+protected_final_test_exit_code=0
+protected_output_audit_exit_code=0
+git_diff_check_exit_code=0
+protected_test_used=True
+protected_test_must_never_be_rerun=True

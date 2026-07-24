@@ -1,0 +1,113 @@
+===== PURPOSE =====
+Determine which models the operational worker currently uses.
+Compare the active production registry with the newly saved final models.
+Inspect the exact worker-to-database-to-API data flow.
+No promotion, release build, prediction, cleanup, commit, or push is performed.
+
+===== ACTIVE MODEL REGISTRY =====
+active_registry_present=False
+
+===== FINAL RESEARCH MODEL METADATA =====
+
+--- models/regression/selected_regression_model_metadata.csv ---
+ horizon_hours                             model_name                                                                                 artifact_path  training_rows
+             1 hist_gradient_boosting_regressor_tuned  models/regression/selected_regression_model_1h_hist_gradient_boosting_regressor_tuned.joblib          43625
+             3 hist_gradient_boosting_regressor_tuned  models/regression/selected_regression_model_3h_hist_gradient_boosting_regressor_tuned.joblib          43625
+             6 hist_gradient_boosting_regressor_tuned  models/regression/selected_regression_model_6h_hist_gradient_boosting_regressor_tuned.joblib          43625
+            12 hist_gradient_boosting_regressor_tuned models/regression/selected_regression_model_12h_hist_gradient_boosting_regressor_tuned.joblib          43625
+            24 hist_gradient_boosting_regressor_tuned models/regression/selected_regression_model_24h_hist_gradient_boosting_regressor_tuned.joblib          43625
+
+--- models/classification/selected_classification_model_metadata.csv ---
+ horizon_hours                              model_name                                                                                          artifact_path  decision_threshold  spike_threshold  training_rows
+             1       hist_gradient_boosting_classifier        models/classification/selected_classification_model_1h_hist_gradient_boosting_classifier.joblib                0.70           170.77          43625
+             3 hist_gradient_boosting_classifier_tuned  models/classification/selected_classification_model_3h_hist_gradient_boosting_classifier_tuned.joblib                0.65           170.77          43625
+             6 hist_gradient_boosting_classifier_tuned  models/classification/selected_classification_model_6h_hist_gradient_boosting_classifier_tuned.joblib                0.60           170.77          43625
+            12 hist_gradient_boosting_classifier_tuned models/classification/selected_classification_model_12h_hist_gradient_boosting_classifier_tuned.joblib                0.60           170.77          43625
+            24      gradient_boosting_classifier_tuned      models/classification/selected_classification_model_24h_gradient_boosting_classifier_tuned.joblib                0.60           170.77          43625
+
+===== ACTIVE REGISTRY ARTIFACT AUDIT =====
+active_registry_audit=BLOCKED
+reason=No active production registry exists.
+
+===== OPERATIONAL PIPELINE FLOW =====
+src/electricity_predictor/worker/persistence.py:30:        "SELECT MAX(datetime_utc) FROM hourly_prices;"
+src/electricity_predictor/worker/persistence.py:40:def upsert_hourly_prices(data: pd.DataFrame, source: str = "pipeline") -> int:
+src/electricity_predictor/worker/persistence.py:82:    INSERT INTO hourly_prices (
+src/electricity_predictor/worker/persistence.py:94:        hourly_prices.actual_price,
+src/electricity_predictor/worker/persistence.py:100:        WHEN hourly_prices.source = 'aeso_api'
+src/electricity_predictor/worker/persistence.py:103:          hourly_prices.forecast_price,
+src/electricity_predictor/worker/persistence.py:108:          hourly_prices.forecast_price
+src/electricity_predictor/worker/persistence.py:113:        hourly_prices.alberta_internal_load
+src/electricity_predictor/worker/persistence.py:117:        WHEN hourly_prices.source = 'aeso_api'
+src/electricity_predictor/worker/persistence.py:119:        THEN hourly_prices.source
+src/electricity_predictor/worker/persistence.py:133:def load_inference_hourly_prices(
+src/electricity_predictor/worker/persistence.py:154:      FROM hourly_prices
+src/electricity_predictor/worker/persistence.py:171:      hourly_prices.datetime_utc,
+src/electricity_predictor/worker/persistence.py:172:      hourly_prices.actual_price,
+src/electricity_predictor/worker/persistence.py:173:      hourly_prices.forecast_price,
+src/electricity_predictor/worker/persistence.py:174:      hourly_prices.alberta_internal_load,
+src/electricity_predictor/worker/persistence.py:175:      hourly_prices.source,
+src/electricity_predictor/worker/persistence.py:177:    FROM hourly_prices
+src/electricity_predictor/worker/persistence.py:180:      AND hourly_prices.datetime_utc BETWEEN
+src/electricity_predictor/worker/persistence.py:184:    ORDER BY hourly_prices.datetime_utc;
+src/electricity_predictor/worker/persistence.py:230:      FROM hourly_prices
+src/electricity_predictor/worker/operational_refresh.py:14:  upsert_hourly_prices,
+src/electricity_predictor/worker/operational_refresh.py:134:  return upsert_hourly_prices(
+src/electricity_predictor/worker/feature_preparation.py:15:  load_inference_hourly_prices,
+src/electricity_predictor/worker/feature_preparation.py:174:  data = load_inference_hourly_prices(
+src/electricity_predictor/worker/research_history_sync.py:8:from electricity_predictor.worker.persistence import upsert_hourly_prices
+src/electricity_predictor/worker/research_history_sync.py:61:  return upsert_hourly_prices(
+src/electricity_predictor/worker/prediction.py:5:from electricity_predictor.serving.inference import predict_horizon
+src/electricity_predictor/worker/prediction.py:19:    predict_horizon(
+src/electricity_predictor/worker/result_persistence.py:112:        INSERT INTO prediction_runs (
+src/electricity_predictor/worker/result_persistence.py:221:        FROM hourly_prices AS hourly
+src/electricity_predictor/worker/result_persistence.py:248:        INSERT INTO prediction_runs (
+src/electricity_predictor/worker/production.py:7:from electricity_predictor.worker.operational_pipeline import (
+src/electricity_predictor/serving/release_installer.py:98:      "Downloaded model release is empty."
+src/electricity_predictor/serving/release_installer.py:155:    "models/production/active_models.json"
+src/electricity_predictor/serving/release_installer.py:161:      "active_models.json."
+src/electricity_predictor/serving/release_installer.py:430:    / "active_models.json"
+src/electricity_predictor/serving/release_installer.py:515:    / "active_models.json"
+src/electricity_predictor/serving/release_installer.py:660:          / "active_models.json"
+src/electricity_predictor/serving/release_installer.py:713:        / "active_models.json"
+src/electricity_predictor/serving/release_installer.py:752:  """Download, verify and install one model release."""
+src/electricity_predictor/serving/inference.py:22:def load_model_metadata(
+src/electricity_predictor/serving/inference.py:211:def predict_horizon(
+src/electricity_predictor/serving/inference.py:243:  regression_metadata = load_model_metadata(
+src/electricity_predictor/serving/inference.py:252:  classification_metadata = load_model_metadata(
+src/electricity_predictor/serving/model_registry.py:11:  "models/production/active_models.json"
+
+===== DATABASE WRITE FLOW =====
+src/electricity_predictor/worker/persistence.py:90:    ON CONFLICT (datetime_utc)
+src/electricity_predictor/worker/result_persistence.py:112:        INSERT INTO prediction_runs (
+src/electricity_predictor/worker/result_persistence.py:122:        ON CONFLICT (generated_at)
+src/electricity_predictor/worker/result_persistence.py:178:        INSERT INTO predictions (
+src/electricity_predictor/worker/result_persistence.py:248:        INSERT INTO prediction_runs (
+
+===== API READ FLOW =====
+app/server/src/repositories/prediction-run-repository.js:7:      FROM prediction_runs
+app/server/src/repositories/prediction-repository.js:12:      FROM prediction_runs
+app/server/src/repositories/hourly-price-repository.js:11:    FROM hourly_prices
+app/server/src/repositories/hourly-price-repository.js:32:        FROM hourly_prices
+app/server/src/domain/forecast-provenance.js:54:      "The latest prediction run contains inconsistent forecast metadata.",
+app/server/src/domain/forecast-provenance.js:83:      "The latest prediction run has invalid forecast metadata.",
+app/server/src/domain/forecast-provenance.js:95:      "The latest prediction run has unsupported forecast metadata.",
+app/server/src/domain/forecast-provenance.js:113:      "The latest prediction run has incomplete forecast metadata.",
+app/server/src/domain/forecast-provenance.js:127:          `The latest prediction run has an unsupported forecast kind for ${horizon}h.`,
+app/server/src/services/today-service.js:57:      "The latest prediction run does not contain the five expected horizons.",
+
+===== APPLICATION READINESS SUMMARY =====
+active_registry_present=False
+final_classification_models_present=True
+final_regression_models_present=True
+
+promotion_performed=False
+release_build_performed=False
+prediction_run_created=False
+database_modified=False
+cleanup_performed=False
+commit_performed=False
+push_performed=False
+
+===== DIFF FORMAT CHECK =====
+git_diff_check=PASS

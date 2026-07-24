@@ -453,3 +453,113 @@
   position: relative;
   z-index: 2;
 }
+
+.project-developer-avatar-fallback {
+  display: grid;
+  width: 10rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 9999px;
+  background:
+    linear-gradient(
+      145deg,
+      var(--color-brand),
+      #14b8a6
+    );
+  color: white;
+  font-size: 2rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+
+@media (min-width: 640px) {
+  .project-developer-avatar-fallback {
+    width: 12rem;
+  }
+}
+
+/* Keep the Project hero action readable in longer French copy. */
+.project-hero-action-panel {
+  min-width: 0;
+  align-self: start;
+}
+
+.project-hero-action-panel h2 {
+  max-width: 16ch;
+  line-height: 1.15;
+}
+
+.project-hero-action-panel p {
+  max-width: 32ch;
+  line-height: 1.5;
+}
+
+.project-hero-action-button {
+  width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
+@media (min-width: 64rem) {
+  .project-hero-action-panel {
+    min-width: 20rem;
+  }
+}
+
+/* Give the Project hero action panel enough breathing room. */
+.project-hero-action-panel {
+  padding: clamp(2rem, 3vw, 2.75rem);
+}
+
+.project-hero-action-panel h2 {
+  margin-top: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.project-hero-action-panel p {
+  margin-bottom: 1.25rem;
+}
+
+.project-hero-action-button {
+  min-height: 3rem;
+  padding: 0.8rem 1.25rem;
+}
+
+/* Separate each engineering principle title from its explanation. */
+[data-project-engineering-principles="true"] h3,
+[data-project-engineering-principles="true"] h4 {
+  line-height: 1.25;
+  margin-bottom: 0.5rem;
+}
+
+[data-project-engineering-principles="true"] h3 + p,
+[data-project-engineering-principles="true"] h4 + p {
+  line-height: 1.55;
+}
+
+/* Keep multi-line titles and descriptions visually distinct. */
+[data-project-engineering-principles="true"] article,
+[data-project-engineering-principles="true"] li {
+  align-content: start;
+}
+
+/* Final reflection: concrete lesson, restrained quote, readable detail. */
+[data-project-reflection="true"] .project-reflection-quote {
+  max-width: 40ch;
+  margin-top: 0.45rem;
+  margin-bottom: 0.9rem;
+  font-size: clamp(1.35rem, 2vw, 1.85rem);
+  line-height: 1.25;
+  letter-spacing: -0.018em;
+}
+
+[data-project-reflection="true"] .project-reflection-description {
+  max-width: 76ch;
+  line-height: 1.6;
+}
+
+@media (max-width: 40rem) {
+  [data-project-reflection="true"] .project-reflection-quote {
+    font-size: 1.3rem;
+  }
+}

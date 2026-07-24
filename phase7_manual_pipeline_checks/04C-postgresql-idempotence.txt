@@ -1,0 +1,39 @@
+===== SECOND HISTORY SYNCHRONIZATION =====
+# Upsert the canonical clean-history CSV into PostgreSQL hourly_prices.
+# Requires DATABASE_URL; does not create predictions or train models.
+.venv/bin/python -m electricity_predictor.worker.research_history_sync
+Synchronized hourly price rows: 57469
+
+===== IDEMPOTENCE AUDIT =====
+ hourly_prices |    min_datetime_utc    |    max_datetime_utc    | missing_actual_price | missing_forecast_price | missing_load 
+---------------+------------------------+------------------------+----------------------+------------------------+--------------
+         57469 | 2020-01-01 07:00:00+00 | 2026-07-22 19:00:00+00 |                    4 |                      0 |         8534
+(1 row)
+
+  source  | rows  
+----------+-------
+ pipeline | 57469
+(1 row)
+
+ duplicate_timestamp_groups 
+----------------------------
+                          0
+(1 row)
+
+ prediction_runs | predictions 
+-----------------+-------------
+               0 |           0
+(1 row)
+
+
+===== GIT STATUS =====
+ M Makefile
+ M src/electricity_predictor/modeling/classification/final_test_evaluation.py
+ M src/electricity_predictor/modeling/lifecycle/release_bundle.py
+ M src/electricity_predictor/modeling/split.py
+ M src/electricity_predictor/worker/persistence.py
+ M tests/deployment/test_railway_worker_config.py
+?? Makefile.useful
+?? phase7_manual_pipeline_checks/
+===== Exit code =====
+0

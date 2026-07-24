@@ -8,119 +8,178 @@ import {
 
 import { fetchNow } from "./now";
 
+
+function buildPayload(
+  overrides = {},
+) {
+  const basePayload = {
+    generatedAt:
+      "2026-07-24T04:00:00.000Z",
+    confidence: "high",
+    stale: false,
+
+    price: {
+      value: 3.87,
+      unit: "¢/kWh",
+      kind: "forecast",
+      sourceAtUtc:
+        "2026-07-24T04:00:00.000Z",
+    },
+
+    recommendation: {
+      level: "acceptable",
+      explanationKey:
+        "about_average",
+      actionKey:
+        "use_if_needed",
+    },
+
+    contextKey:
+      "about_average",
+  };
+
+  return {
+    ...basePayload,
+    ...overrides,
+
+    price: {
+      ...basePayload.price,
+      ...overrides.price,
+    },
+
+    recommendation: {
+      ...basePayload.recommendation,
+      ...overrides.recommendation,
+    },
+  };
+}
+
+
+function mockPayload(payload) {
+  vi.spyOn(
+    globalThis,
+    "fetch",
+  ).mockResolvedValue(
+    new Response(
+      JSON.stringify(payload),
+      {
+        status: 200,
+
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+      },
+    ),
+  );
+}
+
+
 describe("fetchNow", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  test("loads the public Now contract", async () => {
-    const payload = {
-      generatedAt: "2026-07-18T19:00:00.000Z",
-      confidence: "high",
-      stale: false,
-      price: {
-        value: 8.42,
-        unit: "¢/kWh",
-      },
-      recommendation: {
-        level: "recommended",
-        explanationKey: "lower_than_usual",
-        actionKey: "run_heavy_appliances",
-      },
-      contextKey: "lower_than_usual",
-    };
+  test(
+    "loads the current-hour public contract",
+    async () => {
+      const payload = buildPayload();
 
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify(payload), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }),
-    );
+      mockPayload(payload);
 
-    await expect(fetchNow()).resolves.toEqual(payload);
+      await expect(
+        fetchNow(),
+      ).resolves.toEqual(
+        payload,
+      );
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      "/api/v1/now",
-      expect.objectContaining({
-        headers: {
-          Accept: "application/json",
-        },
-      }),
-    );
-  });
+      expect(
+        globalThis.fetch,
+      ).toHaveBeenCalledWith(
+        "/api/v1/now",
+        expect.objectContaining({
+          headers: {
+            Accept:
+              "application/json",
+          },
+        }),
+      );
+    },
+  );
 
-  test("rejects a non-finite observed price with its field name", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({
-        generatedAt: "2026-07-18T19:00:00.000Z",
-        confidence: "high",
-        stale: false,
-        price: {
-          value: null,
-          unit: "¢/kWh",
-        },
-        recommendation: {
-          level: "recommended",
-          explanationKey: "lower_than_usual",
-          actionKey: "run_heavy_appliances",
-        },
-        contextKey: "lower_than_usual",
-      })),
-    );
+  test(
+    "rejects a non-finite current price",
+    async () => {
+      mockPayload(
+        buildPayload({
+          price: {
+            value: null,
+          },
+        }),
+      );
 
-    await expect(fetchNow()).rejects.toThrow(
-      "price.value must be a finite number",
-    );
-  });
+      await expect(
+        fetchNow(),
+      ).rejects.toThrow(
+        "price.value must be a finite number",
+      );
+    },
+  );
 
-  test("rejects a malformed optional observation timestamp", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({
-        generatedAt: "2026-07-18T19:00:00.000Z",
-        confidence: "high",
-        stale: false,
-        price: {
-          value: 8.42,
-          unit: "¢/kWh",
-          observedAtUtc: "not-a-timestamp",
-        },
-        recommendation: {
-          level: "recommended",
-          explanationKey: "lower_than_usual",
-          actionKey: "run_heavy_appliances",
-        },
-        contextKey: "lower_than_usual",
-      })),
-    );
+  test(
+    "rejects an unsupported current-price kind",
+    async () => {
+      mockPayload(
+        buildPayload({
+          price: {
+            kind: "live_guess",
+          },
+        }),
+      );
 
-    await expect(fetchNow()).rejects.toThrow(
-      "price.observedAtUtc must be a valid timestamp",
-    );
-  });
+      await expect(
+        fetchNow(),
+      ).rejects.toThrow(
+        "price.kind contains an unsupported value",
+      );
+    },
+  );
 
-  test("rejects a UTC field without an explicit timezone", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({
-        generatedAt: "2026-07-18T19:00:00",
-        confidence: "high",
-        stale: false,
-        price: {
-          value: 8.42,
-          unit: "¢/kWh",
-        },
-        recommendation: {
-          level: "recommended",
-          explanationKey: "lower_than_usual",
-          actionKey: "run_heavy_appliances",
-        },
-        contextKey: "lower_than_usual",
-      })),
-    );
+  test(
+    "rejects an invalid market-hour timestamp",
+    async () => {
+      mockPayload(
+        buildPayload({
+          price: {
+            sourceAtUtc:
+              "not-a-timestamp",
+          },
+        }),
+      );
 
-    await expect(fetchNow()).rejects.toThrow(
-      "generatedAt must be a valid timestamp with an explicit timezone",
-    );
-  });
+      await expect(
+        fetchNow(),
+      ).rejects.toThrow(
+        "price.sourceAtUtc must be a valid timestamp",
+      );
+    },
+  );
+
+  test(
+    "requires an explicit timezone on generatedAt",
+    async () => {
+      mockPayload(
+        buildPayload({
+          generatedAt:
+            "2026-07-24T04:00:00",
+        }),
+      );
+
+      await expect(
+        fetchNow(),
+      ).rejects.toThrow(
+        "generatedAt must be a valid timestamp with an explicit timezone",
+      );
+    },
+  );
 });

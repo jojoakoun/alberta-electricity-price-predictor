@@ -1,0 +1,2520 @@
+===== BRANCH AND HEAD =====
+feature/phase-7-modeling
+2f17a487733847b90d8b428c817b1a2cf00dd88e
+
+===== GIT STATUS =====
+ M Makefile
+ M src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+ M src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+ M src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+ M src/electricity_predictor/modeling/classification/final_test_evaluation.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+ M src/electricity_predictor/modeling/classification/save_selected_models.py
+ M src/electricity_predictor/modeling/classification/target_builder.py
+ M src/electricity_predictor/modeling/decision/calibrate_decision_policy.py
+ M src/electricity_predictor/modeling/lifecycle/release_bundle.py
+ M src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
+ M src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
+ M src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
+ M src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
+ M src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
+ M src/electricity_predictor/modeling/regression/linear/linear_regression.py
+ M src/electricity_predictor/modeling/regression/random_forest/random_forest.py
+ M src/electricity_predictor/modeling/regression/random_forest/random_forest_tuning.py
+ M src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
+ M src/electricity_predictor/modeling/regression/ridge/ridge_tuning.py
+ M src/electricity_predictor/modeling/regression/run_regression_models.py
+ M src/electricity_predictor/modeling/split.py
+ M src/electricity_predictor/worker/persistence.py
+ M tests/deployment/test_railway_worker_config.py
+ M tests/modeling/classification/test_analyze_spike_regime.py
+ M tests/modeling/classification/test_best_model_selection.py
+ M tests/modeling/classification/test_save_selected_models.py
+ M tests/modeling/classification/test_spike_definition.py
+ M tests/modeling/decision/test_decision_threshold_consumers.py
+?? Makefile.useful
+?? architecture_et_comprehension.md
+?? phase7_manual_pipeline_checks/
+!! .DS_Store
+!! .env
+!! .pytest_cache/
+!! .venv/
+!! app/client/dist/
+!! app/client/node_modules/
+!! app/server/node_modules/
+!! context_exports/
+!! data/.DS_Store
+!! data/interim/current_historical_prices_clean.csv
+!! data/processed/modeling_dataset.csv
+!! data/processed/training_dataset.csv
+!! data/raw/Hourly_Metered_Volumes_and_Pool_Price_and_AIL_2020-Jul2025.csv
+!! dist/
+!! docs/
+!! local/
+!! logs/live_refresh.log
+!! models/
+!! phase7_manual_pipeline_checks/.DS_Store
+!! scripts/__pycache__/
+!! scripts/project_export/__pycache__/
+!! src/alberta_electricity_price_predictor.egg-info/
+!! src/electricity_predictor/__pycache__/
+!! src/electricity_predictor/data/__pycache__/
+!! src/electricity_predictor/features/__pycache__/
+!! src/electricity_predictor/modeling/__pycache__/
+!! src/electricity_predictor/modeling/classification/__pycache__/
+!! src/electricity_predictor/modeling/classification/baseline/__pycache__/
+!! src/electricity_predictor/modeling/classification/gradient_boosting/__pycache__/
+!! src/electricity_predictor/modeling/classification/logistic/__pycache__/
+!! src/electricity_predictor/modeling/classification/random_forest/__pycache__/
+!! src/electricity_predictor/modeling/decision/__pycache__/
+!! src/electricity_predictor/modeling/lifecycle/__pycache__/
+!! src/electricity_predictor/modeling/regression/__pycache__/
+!! src/electricity_predictor/modeling/regression/baseline/__pycache__/
+!! src/electricity_predictor/modeling/regression/elastic_net/__pycache__/
+!! src/electricity_predictor/modeling/regression/lasso/__pycache__/
+!! src/electricity_predictor/modeling/regression/linear/__pycache__/
+!! src/electricity_predictor/modeling/regression/random_forest/__pycache__/
+!! src/electricity_predictor/modeling/regression/ridge/__pycache__/
+!! src/electricity_predictor/serving/__pycache__/
+!! src/electricity_predictor/storage/__pycache__/
+!! src/electricity_predictor/worker/__pycache__/
+!! tests/__pycache__/
+!! tests/data/__pycache__/
+!! tests/deployment/__pycache__/
+!! tests/features/__pycache__/
+!! tests/modeling/__pycache__/
+!! tests/modeling/classification/__pycache__/
+!! tests/modeling/decision/__pycache__/
+!! tests/modeling/lifecycle/__pycache__/
+!! tests/modeling/regression/__pycache__/
+!! tests/modeling/regression/baseline/__pycache__/
+!! tests/modeling/regression/elastic_net/__pycache__/
+!! tests/modeling/regression/lasso/__pycache__/
+!! tests/modeling/regression/linear/__pycache__/
+!! tests/modeling/regression/random_forest/__pycache__/
+!! tests/modeling/regression/ridge/__pycache__/
+!! tests/scripts/__pycache__/
+!! tests/serving/__pycache__/
+!! tests/storage/__pycache__/
+!! tests/worker/__pycache__/
+
+===== TRACKED DIFF STAT =====
+ Makefile                                           | 724 +++++++++++----------
+ .../classification/analyze_spike_definition.py     |   9 +-
+ .../classification/analyze_spike_regime.py         |   8 +-
+ .../baseline/naive_spike_baseline.py               |   7 +-
+ .../classification/final_test_evaluation.py        |  44 --
+ .../gradient_boosting_classifier.py                |   7 +-
+ .../gradient_boosting/gradient_boosting_tuning.py  |   7 +-
+ .../classification/logistic/logistic_regression.py |   7 +-
+ .../classification/logistic/logistic_tuning.py     |   7 +-
+ .../random_forest/random_forest_classifier.py      |   7 +-
+ .../random_forest/random_forest_tuning.py          |   7 +-
+ .../classification/save_selected_models.py         |   8 +-
+ .../modeling/classification/target_builder.py      |  37 +-
+ .../modeling/decision/calibrate_decision_policy.py | 147 ++---
+ .../modeling/lifecycle/release_bundle.py           |  19 -
+ .../modeling/regression/baseline/naive_baseline.py |   2 +-
+ .../elastic_net/elastic_net_regression.py          |   2 +-
+ .../regression/elastic_net/elastic_net_tuning.py   |   2 +-
+ .../modeling/regression/lasso/lasso_regression.py  |   2 +-
+ .../modeling/regression/lasso/lasso_tuning.py      |   2 +-
+ .../regression/linear/linear_regression.py         |   2 +-
+ .../regression/random_forest/random_forest.py      |   2 +-
+ .../random_forest/random_forest_tuning.py          |   2 +-
+ .../modeling/regression/ridge/ridge_regression.py  |   2 +-
+ .../modeling/regression/ridge/ridge_tuning.py      |   2 +-
+ .../modeling/regression/run_regression_models.py   |   2 +-
+ src/electricity_predictor/modeling/split.py        |  27 -
+ src/electricity_predictor/worker/persistence.py    |  47 --
+ tests/deployment/test_railway_worker_config.py     |  41 +-
+ .../classification/test_analyze_spike_regime.py    |  12 +-
+ .../classification/test_best_model_selection.py    |  23 +
+ .../classification/test_save_selected_models.py    |   1 -
+ .../classification/test_spike_definition.py        |  13 +-
+ .../decision/test_decision_threshold_consumers.py  |  28 +
+ 34 files changed, 600 insertions(+), 659 deletions(-)
+
+===== TRACKED CHANGED FILES =====
+M	Makefile
+M	src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+M	src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+M	src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+M	src/electricity_predictor/modeling/classification/final_test_evaluation.py
+M	src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+M	src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+M	src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+M	src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+M	src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+M	src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+M	src/electricity_predictor/modeling/classification/save_selected_models.py
+M	src/electricity_predictor/modeling/classification/target_builder.py
+M	src/electricity_predictor/modeling/decision/calibrate_decision_policy.py
+M	src/electricity_predictor/modeling/lifecycle/release_bundle.py
+M	src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
+M	src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
+M	src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
+M	src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
+M	src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
+M	src/electricity_predictor/modeling/regression/linear/linear_regression.py
+M	src/electricity_predictor/modeling/regression/random_forest/random_forest.py
+M	src/electricity_predictor/modeling/regression/random_forest/random_forest_tuning.py
+M	src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
+M	src/electricity_predictor/modeling/regression/ridge/ridge_tuning.py
+M	src/electricity_predictor/modeling/regression/run_regression_models.py
+M	src/electricity_predictor/modeling/split.py
+M	src/electricity_predictor/worker/persistence.py
+M	tests/deployment/test_railway_worker_config.py
+M	tests/modeling/classification/test_analyze_spike_regime.py
+M	tests/modeling/classification/test_best_model_selection.py
+M	tests/modeling/classification/test_save_selected_models.py
+M	tests/modeling/classification/test_spike_definition.py
+M	tests/modeling/decision/test_decision_threshold_consumers.py
+
+===== FULL TRACKED DIFF =====
+diff --git a/Makefile b/Makefile
+index 545175f..01f64cb 100644
+--- a/Makefile
++++ b/Makefile
+@@ -7,39 +7,27 @@ PIP ?= pip
+ PYTEST ?= pytest
+ NPM ?= npm
+ CURL ?= curl
++SERVER_DIR ?= app/server
++CLIENT_DIR ?= app/client
++DOTENV ?= $(SERVER_DIR)/node_modules/.bin/dotenv
+ 
++# All command targets are phony; keep this inventory synchronized with help.
+ .PHONY: \
+ 	help \
+ 	install \
+-	dev \
+-	stop \
+-	app-refresh \
+-	models-install \
+-	worker-run \
+-	lifecycle-status \
+-	lifecycle-run \
+-	lifecycle-promote \
+-	lifecycle-rollback \
+-	release-build \
+-	verify \
+-	compile-check \
+ 	config-check \
++	compile-check \
+ 	inference-check \
+ 	test-python \
+ 	test-server \
+ 	test-client \
+-	test \
+-	app-check \
+-	database-check \
++	verify \
+ 	refresh-data \
+-	sync-history \
+-	sync-and-predict \
+ 	data-quality \
++	sync-history \
+ 	features \
+ 	feature-quality \
+ 	training-data \
+-	research-rebuild \
+-	research-rebuild-all \
+ 	baseline \
+ 	linear-regression \
+ 	ridge-regression \
+@@ -70,11 +58,26 @@ CURL ?= curl
+ 	decision-policy-calibration \
+ 	predicted-decision-stress-test \
+ 	decision-analysis \
++	research-rebuild \
++	research-rebuild-all \
++	lifecycle-status \
++	lifecycle-run \
++	lifecycle-promote \
++	lifecycle-rollback \
++	release-build \
++	models-install \
++	sync-and-predict \
++	worker-run \
++	dev \
++	stop \
++	app-check \
++	database-check \
+ 	db-clean \
+ 	project-context \
+ 	project-zip \
+ 	project-export \
+ 	project-export-check \
++	app-refresh \
+ 	app-dev \
+ 	app-stop \
+ 	refresh-application \
+@@ -86,196 +89,139 @@ CURL ?= curl
+ 	application-pipeline \
+ 	production-pipeline \
+ 	ml-pipeline \
+-	pipelines
+-
++	pipelines \
++	test
+ 
+ # ==============================================================================
+-# Help
++# Help: complete catalogue grouped by the responsibilities used below.
+ # ==============================================================================
+ 
+ help:
+ 	@echo ""
+ 	@echo "WattWise / Alberta Electricity Predictor"
+ 	@echo ""
+-	@echo "Primary commands"
+-	@echo "  make dev                         Start the API and frontend locally"
+-	@echo "  make stop                        Stop local API and frontend processes"
+-	@echo "  make app-refresh                 Refresh AESO data and publish predictions"
+-	@echo "  make worker-run                  Run one production worker cycle"
+-	@echo "  make lifecycle-run               Run only when the 90-day interval is due"
+-	@echo "  make verify                      Verify the complete project"
++	@echo "Configuration and installation"
++	@echo "  make install                               "
++	@echo "  make config-check                          "
++	@echo ""
++	@echo "Project verification"
++	@echo "  make compile-check                         "
++	@echo "  make inference-check                       "
++	@echo "  make test-python                           "
++	@echo "  make test-server                           "
++	@echo "  make test-client                           "
++	@echo "  make verify                                "
++	@echo ""
++	@echo "Historical data"
++	@echo "  make refresh-data                          "
++	@echo "  make data-quality                          "
++	@echo "  make sync-history                          "
++	@echo ""
++	@echo "Feature engineering"
++	@echo "  make features                              "
++	@echo "  make feature-quality                       "
++	@echo "  make training-data                         "
++	@echo ""
++	@echo "Regression research"
++	@echo "  make baseline                               [trains/evaluates]"
++	@echo "  make linear-regression                      [trains/evaluates]"
++	@echo "  make ridge-regression                       [trains/evaluates]"
++	@echo "  make lasso-regression                       [trains/evaluates]"
++	@echo "  make lasso-tuning                           [trains/evaluates]"
++	@echo "  make elastic-net-regression                 [trains/evaluates]"
++	@echo "  make elastic-net-tuning                     [trains/evaluates]"
++	@echo "  make regression-models                      [trains/evaluates]"
++	@echo "  make select-best-regression-model          "
++	@echo "  make final-regression-evaluation            [trains/evaluates]"
++	@echo "  make save-selected-regression-models       "
++	@echo ""
++	@echo "Classification research"
++	@echo "  make spike-definition-analysis             "
++	@echo "  make spike-regime-analysis                 "
++	@echo "  make classification-baseline                [trains/evaluates]"
++	@echo "  make logistic-regression                    [trains/evaluates]"
++	@echo "  make logistic-tuning                        [trains/evaluates]"
++	@echo "  make random-forest                          [trains/evaluates]"
++	@echo "  make random-forest-tuning                   [trains/evaluates]"
++	@echo "  make gradient-boosting                      [trains/evaluates]"
++	@echo "  make gradient-boosting-tuning               [trains/evaluates]"
++	@echo "  make classification-models                  [trains/evaluates]"
++	@echo "  make select-best-classification-model      "
++	@echo "  make final-classification-evaluation        [trains/evaluates]"
++	@echo "  make save-selected-classification-models   "
++	@echo ""
++	@echo "Decision policy"
++	@echo "  make decision-window-analysis              "
++	@echo "  make decision-regime-analysis              "
++	@echo "  make decision-policy-backtest              "
++	@echo "  make decision-policy-calibration           "
++	@echo "  make predicted-decision-stress-test         [protected test]"
++	@echo "  make decision-analysis                      [validation only]"
++	@echo ""
++	@echo "Research orchestration"
++	@echo "  make research-rebuild                       [validation only]"
++	@echo "  make research-rebuild-all                   [protected test/publish]"
+ 	@echo ""
+ 	@echo "Model lifecycle"
+-	@echo "  make lifecycle-status            Show lifecycle configuration and active models"
+-	@echo "  make lifecycle-run               Create and evaluate a challenger when due"
+-	@echo "  make lifecycle-promote TASK=...  Promote regression or classification manually"
+-	@echo "  make lifecycle-rollback SNAPSHOT=..."
+-	@echo "                                   Restore a previous active-model registry"
+-	@echo "  make release-build               Build the active production model release"
++	@echo "  make lifecycle-status                      "
++	@echo "  make lifecycle-run                          [trains/evaluates]"
++	@echo "  make lifecycle-promote                     "
++	@echo "  make lifecycle-rollback                    "
++	@echo "  make release-build                         "
++	@echo "  make models-install                        "
+ 	@echo ""
+-	@echo "Production"
+-	@echo "  make models-install              Ensure active models are available"
+-	@echo "  make worker-run                  Install models, refresh data, and predict"
++	@echo "Operational worker"
++	@echo "  make sync-and-predict                       [active models]"
++	@echo "  make worker-run                             [active models]"
+ 	@echo ""
+-	@echo "Data and application"
+-	@echo "  make refresh-data                Refresh the historical AESO dataset"
+-	@echo "  make sync-history                Synchronize historical rows with PostgreSQL"
+-	@echo "  make sync-and-predict            Publish one five-horizon prediction run"
+-	@echo "  make app-check                   Check Health, Now, and Today endpoints"
+-	@echo "  make database-check              Verify the PostgreSQL connection"
++	@echo "Local application"
++	@echo "  make dev                                   "
++	@echo "  make stop                                  "
++	@echo "  make app-check                             "
+ 	@echo ""
+-	@echo "Research"
+-	@echo "  make research-rebuild            Rebuild historical ML research artifacts"
+-	@echo "  make research-rebuild-all        Rebuild research artifacts and app predictions"
++	@echo "Database"
++	@echo "  make database-check                        "
+ 	@echo ""
+-	@echo "Maintenance"
+-	@echo "  make project-context             Export project text context"
+-	@echo "  make project-zip                 Create the full project ZIP"
+-	@echo "  make project-export              Generate all project exports"
+-	@echo "  make db-clean CONFIRM=YES"
+-	@echo "                                   Remove local application data"
++	@echo "Destructive operations"
++	@echo "  make db-clean                               [DESTRUCTIVE]"
++	@echo ""
++	@echo "Exports and maintenance"
++	@echo "  make project-context                       "
++	@echo "  make project-zip                           "
++	@echo "  make project-export                        "
++	@echo "  make project-export-check                  "
++	@echo ""
++	@echo "Compatibility aliases"
++	@echo "  make app-refresh                            -> canonical target"
++	@echo "  make app-dev                                -> canonical target"
++	@echo "  make app-stop                               -> canonical target"
++	@echo "  make refresh-application                    -> canonical target"
++	@echo "  make install-model-release                  -> canonical target"
++	@echo "  make railway-worker                         -> canonical target"
++	@echo "  make rebuild-ml                             -> canonical target"
++	@echo "  make rebuild-all                            -> canonical target"
++	@echo "  make pipeline                               -> canonical target"
++	@echo "  make application-pipeline                   -> canonical target"
++	@echo "  make production-pipeline                    -> canonical target"
++	@echo "  make ml-pipeline                            -> canonical target"
++	@echo "  make pipelines                              -> canonical target"
++	@echo "  make test                                   -> canonical target"
+ 	@echo ""
+-
+ 
+ # ==============================================================================
+-# Primary workflows
++# Configuration and installation
++# Install dependencies and validate configuration without running a pipeline.
+ # ==============================================================================
+ 
+ install:
+-	# Install runtime, research, and test dependencies for local development.
++	# Install Python development/runtime dependencies and both Node workspaces.
++	# Writes local dependency environments only; it does not install active models.
+ 	$(PIP) install -r requirements-dev.txt
+ 	$(PIP) install -e .
+ 
+ 	# Install backend and frontend dependencies.
+-	$(NPM) --prefix app/server install
+-	$(NPM) --prefix app/client install
+-
+-
+-dev:
+-	# Start Express with Nodemon and React with Vite.
+-	./scripts/dev-app.sh
+-
+-
+-stop:
+-	# Stop local development processes started by make dev.
+-	pkill -f "nodemon" || true
+-	pkill -f "vite" || true
+-
+-
+-app-refresh:
+-	# Incrementally refresh PostgreSQL from AESO and publish predictions.
+-	$(PYTHON) -m electricity_predictor.worker.operational_pipeline
+-
+-
+-models-install:
+-	# Install a remote release or use the existing local active models.
+-	@release_url="$${MODEL_RELEASE_URL:-}"; \
+-	release_sha256="$${MODEL_RELEASE_SHA256:-}"; \
+-	if [ -n "$$release_url" ] || [ -n "$$release_sha256" ]; then \
+-		if [ -z "$$release_url" ] || [ -z "$$release_sha256" ]; then \
+-			echo "ERROR: MODEL_RELEASE_URL and MODEL_RELEASE_SHA256 must be set together."; \
+-			exit 1; \
+-		fi; \
+-		echo "Installing configured production model release."; \
+-		$(PYTHON) -m electricity_predictor.serving.release_installer; \
+-	elif [ -f models/production/active_models.json ]; then \
+-		echo "No remote model release configured."; \
+-		echo "Using local active model registry:"; \
+-		echo "  models/production/active_models.json"; \
+-	else \
+-		echo "ERROR: No active models are available."; \
+-		echo "Local development requires:"; \
+-		echo "  models/production/active_models.json"; \
+-		echo "Production requires:"; \
+-		echo "  MODEL_RELEASE_URL"; \
+-		echo "  MODEL_RELEASE_SHA256"; \
+-		exit 1; \
+-	fi
+-
+-
+-worker-run:
+-	# Canonical production worker: ensure models, refresh data, and predict.
+-	$(PYTHON) \
+-		-m electricity_predictor.worker.production
+-
+-
+-# ==============================================================================
+-# Model lifecycle
+-# ==============================================================================
+-
+-lifecycle-status:
+-	# Show the scheduler state without training models.
+-	$(PYTHON) \
+-		-m electricity_predictor.modeling.lifecycle.runner \
+-		--status
+-
+-	@echo ""
+-	@echo "===== ACTIVE MODEL REGISTRY ====="
+-	@if [ -f models/production/active_models.json ]; then \
+-		$(PYTHON) -m json.tool \
+-			models/production/active_models.json; \
+-	else \
+-		echo "No active model registry found."; \
+-	fi
+-
+-	@echo ""
+-
+-
+-lifecycle-run:
+-	# Refresh data and evaluate a challenger only when retraining is due.
+-	@force_flag=""; \
+-	if [ "$(FORCE)" = "1" ]; then \
+-		force_flag="--force"; \
+-	fi; \
+-	$(PYTHON) \
+-		-m electricity_predictor.modeling.lifecycle.runner \
+-		$$force_flag
+-
+-
+-lifecycle-promote:
+-	# Promote one task only after manual review of the comparison report.
+-	@if [ "$(TASK)" != "regression" ] && \
+-		[ "$(TASK)" != "classification" ]; then \
+-		echo "ERROR: TASK must be regression or classification."; \
+-		echo "Example:"; \
+-		echo "  make lifecycle-promote TASK=regression"; \
+-		exit 1; \
+-	fi
+-
+-	$(PYTHON) \
+-		-m electricity_predictor.modeling.lifecycle.promotion \
+-		--task "$(TASK)"
+-
+-
+-lifecycle-rollback:
+-	# Restore a previous active-model registry snapshot.
+-	@if [ -z "$(SNAPSHOT)" ]; then \
+-		echo "ERROR: SNAPSHOT is required."; \
+-		echo "Example:"; \
+-		echo "  make lifecycle-rollback \\"; \
+-		echo "    SNAPSHOT=models/production/history/<snapshot>.json"; \
+-		exit 1; \
+-	fi
+-
+-	@if [ ! -f "$(SNAPSHOT)" ]; then \
+-		echo "ERROR: Snapshot does not exist: $(SNAPSHOT)"; \
+-		exit 1; \
+-	fi
+-
+-	$(PYTHON) \
+-		-m electricity_predictor.modeling.lifecycle.promotion \
+-		--rollback "$(SNAPSHOT)"
+-
+-
+-release-build:
+-	# Package only the currently active production models.
+-	$(PYTHON) \
+-		-m electricity_predictor.modeling.lifecycle.release_bundle
+-
+-
+-# ==============================================================================
+-# Verification
+-# ==============================================================================
++	$(NPM) --prefix $(SERVER_DIR) install
++	$(NPM) --prefix $(CLIENT_DIR) install
+ 
+ config-check:
+ 	# Verify that the project configuration loads correctly.
+@@ -283,32 +229,32 @@ config-check:
+ 		"from electricity_predictor.config import load_configuration; print(load_configuration()['project']['name'])"
+ 
+ 
++# ==============================================================================
++# Project verification
++# Run static checks and automated suites without rebuilding research data.
++# ==============================================================================
++
+ compile-check:
+ 	# Compile Python source files to detect syntax and import problems.
+ 	$(PYTHON) -m compileall -q src
+ 
+-
+ inference-check:
+ 	# Run focused model-serving and inference tests.
+ 	$(PYTEST) -q tests/serving
+ 
+-
+ test-python:
+ 	# Run the complete Python test suite.
+ 	$(PYTEST)
+ 
+-
+ test-server:
+ 	# Run the Express API test suite.
+-	NODE_ENV=test $(NPM) --prefix app/server test
+-
++	NODE_ENV=test $(NPM) --prefix $(SERVER_DIR) test
+ 
+ test-client:
+ 	# Run frontend tests, lint, and the production build.
+-	$(NPM) --prefix app/client test
+-	$(NPM) --prefix app/client run lint
+-	$(NPM) --prefix app/client run build
+-
++	$(NPM) --prefix $(CLIENT_DIR) test
++	$(NPM) --prefix $(CLIENT_DIR) run lint
++	$(NPM) --prefix $(CLIENT_DIR) run build
+ 
+ verify:
+ 	# Verify the project without rebuilding or retraining models.
+@@ -322,76 +268,42 @@ verify:
+ 
+ 
+ # ==============================================================================
+-# Local application checks
+-# ==============================================================================
+-
+-app-check:
+-	# Verify public application endpoints while the API is running.
+-	@echo "===== HEALTH ====="
+-	$(CURL) -fsS \
+-		http://127.0.0.1:8000/api/v1/health
+-
+-	@echo ""
+-	@echo "===== NOW ====="
+-	$(CURL) -fsS \
+-		http://127.0.0.1:8000/api/v1/now
+-
+-	@echo ""
+-	@echo "===== TODAY ====="
+-	$(CURL) -fsS \
+-		http://127.0.0.1:8000/api/v1/today
+-
+-	@echo ""
+-
+-
+-database-check:
+-	# Load DATABASE_URL from the root .env and verify PostgreSQL.
+-	./app/server/node_modules/.bin/dotenv \
+-		-e .env \
+-		-- sh -c \
+-		'psql "$$DATABASE_URL" -c \
+-		"SELECT current_database(), current_user, NOW() AS database_time;"'
+-
+-
+-# ==============================================================================
+-# Data refresh and prediction internals
++# Historical data
++# Rebuild and inspect clean history; PostgreSQL synchronization remains explicit.
+ # ==============================================================================
+ 
+ refresh-data:
+-	# Refresh historical data from CSV and the latest AESO API data.
++	# Rebuild canonical research history from the configured CSV and normalized AESO data.
++	# Writes interim CSV artifacts; does not touch PostgreSQL or train models.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/data/pipeline.py
+ 
+-
+-
+-sync-history:
+-	# Synchronize the complete refreshed research history with PostgreSQL.
+-	$(PYTHON) -m electricity_predictor.worker.research_history_sync
+-
+-
+-sync-and-predict:
+-	# Synchronize PostgreSQL and create one five-horizon prediction run.
+-	$(PYTHON) -m electricity_predictor.worker.operational_pipeline
+-
+-
+ data-quality:
+ 	# Inspect the refreshed historical dataset.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/data/data_quality.py
+ 
++sync-history:
++	# Upsert the canonical clean-history CSV into PostgreSQL hourly_prices.
++	# Requires DATABASE_URL; does not create predictions or train models.
++	$(PYTHON) -m electricity_predictor.worker.research_history_sync
++
++
++# ==============================================================================
++# Feature engineering
++# Create, inspect, and finalize chronological model-ready datasets.
++# ==============================================================================
+ 
+ features:
+ 	# Build the feature-engineered modeling dataset.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/features/feature_engineering.py
+ 
+-
+ feature-quality:
+ 	# Inspect feature-engineering output quality.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/features/feature_quality.py
+ 
+-
+ training-data:
+ 	# Build the chronological model-ready training dataset.
+ 	$(PYTHON) \
+@@ -399,45 +311,8 @@ training-data:
+ 
+ 
+ # ==============================================================================
+-# Historical research rebuild
+-#
+-# These targets reproduce the original research workflow.
+-# They are not production schedulers and do not use champion-challenger promotion.
+-# ==============================================================================
+-
+-research-rebuild:
+-	# Rebuild historical datasets, reports, evaluations, and model artifacts.
+-	$(MAKE) config-check
+-	$(MAKE) refresh-data
+-	$(MAKE) sync-history
+-	$(MAKE) data-quality
+-	$(MAKE) features
+-	$(MAKE) feature-quality
+-	$(MAKE) training-data
+-	$(MAKE) spike-definition-analysis
+-	$(MAKE) spike-regime-analysis
+-	$(MAKE) regression-models
+-	$(MAKE) select-best-regression-model
+-	$(MAKE) final-regression-evaluation
+-	$(MAKE) save-selected-regression-models
+-	$(MAKE) classification-models
+-	$(MAKE) select-best-classification-model
+-	$(MAKE) final-classification-evaluation
+-	$(MAKE) save-selected-classification-models
+-	$(MAKE) decision-analysis
+-	$(MAKE) compile-check
+-	$(MAKE) inference-check
+-	$(MAKE) test-python
+-
+-
+-research-rebuild-all:
+-	# Rebuild research artifacts, then create fresh application predictions.
+-	$(MAKE) research-rebuild
+-	$(MAKE) sync-and-predict
+-
+-
+-# ==============================================================================
+-# Regression research commands
++# Regression research
++# Train, tune, compare, select, protected-test evaluate, and save regression artifacts.
+ # ==============================================================================
+ 
+ baseline:
+@@ -445,63 +320,56 @@ baseline:
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
+ 
+-
+ linear-regression:
+ 	# Train and evaluate Linear Regression.
+ 	$(PYTHON) -m electricity_predictor.modeling.regression.linear.linear_regression
+ 
+-
+ ridge-regression:
+ 	# Train and evaluate Ridge Regression.
+ 	$(PYTHON) -m electricity_predictor.modeling.regression.ridge.ridge_regression
+ 
+-
+ lasso-regression:
+ 	# Train and evaluate Lasso Regression.
+ 	$(PYTHON) -m electricity_predictor.modeling.regression.lasso.lasso_regression
+ 
+-
+ lasso-tuning:
+ 	# Tune Lasso with chronological TimeSeriesSplit.
+ 	$(PYTHON) -m electricity_predictor.modeling.regression.lasso.lasso_tuning
+ 
+-
+ elastic-net-regression:
+ 	# Train and evaluate Elastic Net Regression.
+ 	$(PYTHON) -m electricity_predictor.modeling.regression.elastic_net.elastic_net_regression
+ 
+-
+ elastic-net-tuning:
+ 	# Tune Elastic Net with chronological TimeSeriesSplit.
+ 	$(PYTHON) -m electricity_predictor.modeling.regression.elastic_net.elastic_net_tuning
+ 
+-
+ regression-models:
+ 	# Run the complete regression-model comparison.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/regression/run_regression_models.py
+ 
+-
+ select-best-regression-model:
+ 	# Select the strongest validation regression model per horizon.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/regression/best_model_selection.py
+ 
+-
+ final-regression-evaluation:
+-	# Evaluate selected regression models on the protected test split.
++	# Refit selected regression configurations and evaluate on the protected test split.
++	# Writes final reports and must not be used for model selection.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/regression/final_test_evaluation.py
+ 
+-
+ save-selected-regression-models:
+-	# Save selected historical regression artifacts.
++	# Refit selected regression configurations and serialize artifacts plus metadata.
++	# Saves research models but does not activate or promote them.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/regression/save_selected_models.py
+ 
+ 
+ # ==============================================================================
+-# Classification research commands
++# Classification research
++# Define spikes, train, tune, select, protected-test evaluate, and save classifiers.
+ # ==============================================================================
+ 
+ spike-definition-analysis:
+@@ -509,81 +377,72 @@ spike-definition-analysis:
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+ 
+-
+ spike-regime-analysis:
+ 	# Analyze yearly spike rates.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+ 
+-
+ classification-baseline:
+ 	# Evaluate the naive spike-classification baseline.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+ 
+-
+ logistic-regression:
+ 	# Train and evaluate Logistic Regression.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+ 
+-
+ logistic-tuning:
+ 	# Tune Logistic Regression.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+ 
+-
+ random-forest:
+ 	# Train and evaluate Random Forest classification.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+ 
+-
+ random-forest-tuning:
+ 	# Tune Random Forest classification.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+ 
+-
+ gradient-boosting:
+ 	# Train and evaluate Gradient Boosting classification.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+ 
+-
+ gradient-boosting-tuning:
+ 	# Tune Gradient Boosting classification.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+ 
+-
+ classification-models:
+ 	# Run the complete classification-model comparison.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/run_classification_models.py
+ 
+-
+ select-best-classification-model:
+ 	# Select the strongest validation classifier per horizon.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/best_model_selection.py
+ 
+-
+ final-classification-evaluation:
+-	# Evaluate selected classifiers on the protected test split.
++	# Refit selected classifiers and evaluate on the protected test split.
++	# Writes threshold/uncertainty reports and must not drive model selection.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/final_test_evaluation.py
+ 
+-
+ save-selected-classification-models:
+-	# Save selected historical classification artifacts.
++	# Refit selected classifiers and serialize artifacts plus metadata.
++	# Saves research models but does not activate or promote them.
+ 	$(PYTHON) \
+ 		src/electricity_predictor/modeling/classification/save_selected_models.py
+ 
+ 
+ # ==============================================================================
+-# Decision-policy research
++# Decision policy
++# Analyze consumer decision rules using PostgreSQL history and saved regression artifacts.
+ # ==============================================================================
+ 
+ decision-window-analysis:
+@@ -591,64 +450,268 @@ decision-window-analysis:
+ 	$(PYTHON) \
+ 		-m electricity_predictor.modeling.decision.analyze_decision_windows
+ 
+-
+ decision-regime-analysis:
+ 	# Compare decision stability across market regimes.
+ 	$(PYTHON) \
+ 		-m electricity_predictor.modeling.decision.analyze_decision_regimes
+ 
+-
+ decision-policy-backtest:
+ 	# Backtest candidate rolling-window policies.
+ 	$(PYTHON) \
+ 		-m electricity_predictor.modeling.decision.backtest_decision_windows
+ 
+-
+ decision-policy-calibration:
+ 	# Calibrate recommendation quantiles and threshold multipliers.
+ 	$(PYTHON) \
+ 		-m electricity_predictor.modeling.decision.calibrate_decision_policy
+ 
+-
+ predicted-decision-stress-test:
+ 	# Compare predictions with actual future-price labels.
+ 	$(PYTHON) \
+ 		-m electricity_predictor.modeling.decision.stress_test_predicted_decisions
+ 
+-
+ decision-analysis:
+-	# Regenerate all decision-policy reports in dependency order.
++	# Regenerate research and calibration reports without opening the protected test.
+ 	$(MAKE) decision-window-analysis
+ 	$(MAKE) decision-regime-analysis
+ 	$(MAKE) decision-policy-backtest
+ 	$(MAKE) decision-policy-calibration
++
++
++# ==============================================================================
++# Research orchestration
++# Run approved research stages sequentially and fail fast; these workflows train models.
++# ==============================================================================
++
++research-rebuild:
++	# Run repeatable research and validation sequentially without opening protected test data.
++	$(MAKE) config-check
++	$(MAKE) refresh-data
++	$(MAKE) sync-history
++	$(MAKE) data-quality
++	$(MAKE) features
++	$(MAKE) feature-quality
++	$(MAKE) training-data
++	$(MAKE) spike-definition-analysis
++	$(MAKE) spike-regime-analysis
++	$(MAKE) regression-models
++	$(MAKE) select-best-regression-model
++	$(MAKE) classification-models
++	$(MAKE) select-best-classification-model
++	$(MAKE) decision-analysis
++	$(MAKE) compile-check
++	$(MAKE) inference-check
++	$(MAKE) test-python
++
++research-rebuild-all:
++	# Run research, perform the explicitly protected final evaluations, save selected
++	# artifacts, and publish predictions. Use only after final evaluation approval.
++	$(MAKE) research-rebuild
++	$(MAKE) final-regression-evaluation
++	$(MAKE) final-classification-evaluation
++	$(MAKE) save-selected-regression-models
++	$(MAKE) save-selected-classification-models
+ 	$(MAKE) predicted-decision-stress-test
++	$(MAKE) sync-and-predict
+ 
+ 
+ # ==============================================================================
+-# Maintenance and exports
++# Model lifecycle
++# Inspect, challenge, promote, restore, package, or install production model releases.
++# ==============================================================================
++
++lifecycle-status:
++	# Show the scheduler state without training models.
++	$(PYTHON) \
++		-m electricity_predictor.modeling.lifecycle.runner \
++		--status
++
++	@echo ""
++	@echo "===== ACTIVE MODEL REGISTRY ====="
++	@if [ -f models/production/active_models.json ]; then \
++		$(PYTHON) -m json.tool \
++			models/production/active_models.json; \
++	else \
++		echo "No active model registry found."; \
++	fi
++
++	@echo ""
++
++lifecycle-run:
++	# When due (or FORCE=1), train and evaluate challengers against active champions.
++	# Creates candidate artifacts and reports but never promotes automatically.
++	@force_flag=""; \
++	if [ "$(FORCE)" = "1" ]; then \
++		force_flag="--force"; \
++	fi; \
++	$(PYTHON) \
++		-m electricity_predictor.modeling.lifecycle.runner \
++		$$force_flag
++
++lifecycle-promote:
++	# Promote one manually approved task and snapshot the prior active registry.
++	# Requires TASK=regression|classification and changes serving state.
++	@if [ "$(TASK)" != "regression" ] && \
++		[ "$(TASK)" != "classification" ]; then \
++		echo "ERROR: TASK must be regression or classification."; \
++		echo "Example:"; \
++		echo "  make lifecycle-promote TASK=regression"; \
++		exit 1; \
++	fi
++
++	$(PYTHON) \
++		-m electricity_predictor.modeling.lifecycle.promotion \
++		--task "$(TASK)"
++
++lifecycle-rollback:
++	# Restore an explicit active-registry snapshot without retraining models.
++	# Requires an existing SNAPSHOT and changes serving state.
++	@if [ -z "$(SNAPSHOT)" ]; then \
++		echo "ERROR: SNAPSHOT is required."; \
++		echo "Example:"; \
++		echo "  make lifecycle-rollback \\"; \
++		echo "    SNAPSHOT=models/production/history/<snapshot>.json"; \
++		exit 1; \
++	fi
++
++	@if [ ! -f "$(SNAPSHOT)" ]; then \
++		echo "ERROR: Snapshot does not exist: $(SNAPSHOT)"; \
++		exit 1; \
++	fi
++
++	$(PYTHON) \
++		-m electricity_predictor.modeling.lifecycle.promotion \
++		--rollback "$(SNAPSHOT)"
++
++release-build:
++	# Package only artifacts referenced by the active registry into a release bundle.
++	# Writes dist/model-releases; does not train or promote models.
++	$(PYTHON) \
++		-m electricity_predictor.modeling.lifecycle.release_bundle
++
++models-install:
++	# Install a checksum-pinned remote release or validate the local active registry.
++	# May write production model files; does not train models.
++	@release_url="$${MODEL_RELEASE_URL:-}"; \
++	release_sha256="$${MODEL_RELEASE_SHA256:-}"; \
++	if [ -n "$$release_url" ] || [ -n "$$release_sha256" ]; then \
++		if [ -z "$$release_url" ] || [ -z "$$release_sha256" ]; then \
++			echo "ERROR: MODEL_RELEASE_URL and MODEL_RELEASE_SHA256 must be set together."; \
++			exit 1; \
++		fi; \
++		echo "Installing configured production model release."; \
++		$(PYTHON) -m electricity_predictor.serving.release_installer; \
++	elif [ -f models/production/active_models.json ]; then \
++		echo "No remote model release configured."; \
++		echo "Using local active model registry:"; \
++		echo "  models/production/active_models.json"; \
++	else \
++		echo "ERROR: No active models are available."; \
++		echo "Local development requires:"; \
++		echo "  models/production/active_models.json"; \
++		echo "Production requires:"; \
++		echo "  MODEL_RELEASE_URL"; \
++		echo "  MODEL_RELEASE_SHA256"; \
++		exit 1; \
++	fi
++
++
++# ==============================================================================
++# Operational worker
++# Refresh AESO/PostgreSQL state and publish predictions with active models; never train.
++# ==============================================================================
++
++sync-and-predict:
++	# Canonical operational pipeline: refresh AESO/PostgreSQL state, build inference
++	# features, load active models, and persist one five-horizon prediction run.
++	$(PYTHON) -m electricity_predictor.worker.operational_pipeline
++
++worker-run:
++	# Production entrypoint: ensure active models, refresh AESO/PostgreSQL data,
++	# generate five horizons, and persist the run; never trains models.
++	$(PYTHON) \
++		-m electricity_predictor.worker.production
++
++
++# ==============================================================================
++# Local application
++# Start, stop, and probe the local Express and React application.
++# ==============================================================================
++
++dev:
++	# Start local Express/Nodemon and React/Vite processes. The application reads
++	# PostgreSQL but this target does not refresh data or create predictions.
++	./scripts/dev-app.sh
++
++stop:
++	# Stop Nodemon and Vite processes started for local development.
++	# Retains the existing broad process match and does not modify PostgreSQL.
++	pkill -f "nodemon" || true
++	pkill -f "vite" || true
++
++app-check:
++	# Verify public application endpoints while the API is running.
++	@echo "===== HEALTH ====="
++	$(CURL) -fsS \
++		http://127.0.0.1:8000/api/v1/health
++
++	@echo ""
++	@echo "===== NOW ====="
++	$(CURL) -fsS \
++		http://127.0.0.1:8000/api/v1/now
++
++	@echo ""
++	@echo "===== TODAY ====="
++	$(CURL) -fsS \
++		http://127.0.0.1:8000/api/v1/today
++
++	@echo ""
++
++
++# ==============================================================================
++# Database
++# Perform a read-only PostgreSQL connectivity check through the root environment.
++# ==============================================================================
++
++database-check:
++	# Load DATABASE_URL from root .env and issue a read-only PostgreSQL identity/time query.
++	# Requires the server dotenv executable and psql.
++	$(DOTENV) \
++		-e .env \
++		-- sh -c \
++		'psql "$$DATABASE_URL" -c \
++		"SELECT current_database(), current_user, NOW() AS database_time;"'
++
++
++# ==============================================================================
++# Destructive operations
++# Isolate confirmation-gated local database deletion from ordinary maintenance.
+ # ==============================================================================
+ 
+ db-clean:
+-	# Delete local application data while preserving schema and migrations.
++	# DESTRUCTIVE local-only operation. Truncates application tables while preserving
++	# schema/migrations; requires CONFIRM=YES and rejects non-local DATABASE_URL values.
+ 	@CONFIRM_DB_CLEANUP="$(CONFIRM)" \
+ 		./scripts/cleanup_local_database.sh
+ 
+ 
++# ==============================================================================
++# Exports and maintenance
++# Build and verify project context and archive outputs.
++# ==============================================================================
++
+ project-context:
+ 	# Export relevant text files and inventory binary files.
+ 	$(PYTHON) \
+ 		scripts/export_project_context.py \
+ 		--mode context
+ 
+-
+ project-zip:
+ 	# Archive relevant project files, data, and model assets.
+ 	$(PYTHON) \
+ 		scripts/export_project_context.py \
+ 		--mode zip
+ 
+-
+ project-export:
+ 	# Generate the complete context, ZIP archive, and manifests.
+ 	$(PYTHON) \
+@@ -657,7 +720,6 @@ project-export:
+ 
+ 	$(MAKE) project-export-check
+ 
+-
+ project-export-check:
+ 	@echo "===== PROJECT EXPORT ====="
+ 	$(PYTHON) \
+@@ -669,72 +731,62 @@ project-export-check:
+ 
+ 
+ # ==============================================================================
+-# Backward-compatible aliases
+-#
+-# Keep temporarily so existing documentation and commands do not break.
+-# New workflows should use the canonical names shown by make help.
++# Compatibility aliases
++# Keep legacy names separate; every target delegates to a canonical command.
+ # ==============================================================================
+ 
++app-refresh:
++	@echo "NOTICE: 'app-refresh' is a compatibility alias for 'sync-and-predict'."
++	$(MAKE) sync-and-predict
++
+ app-dev:
+ 	@echo "NOTICE: use 'make dev'."
+ 	$(MAKE) dev
+ 
+-
+ app-stop:
+ 	@echo "NOTICE: use 'make stop'."
+ 	$(MAKE) stop
+ 
+-
+ refresh-application:
+ 	@echo "NOTICE: use 'make app-refresh'."
+ 	$(MAKE) app-refresh
+ 
+-
+ install-model-release:
+ 	@echo "NOTICE: use 'make models-install'."
+ 	$(MAKE) models-install
+ 
+-
+ railway-worker:
+ 	@echo "NOTICE: use 'make worker-run'."
+ 	$(MAKE) worker-run
+ 
+-
+ rebuild-ml:
+ 	@echo "NOTICE: use 'make research-rebuild'."
+ 	$(MAKE) research-rebuild
+ 
+-
+ rebuild-all:
+ 	@echo "NOTICE: use 'make research-rebuild-all'."
+ 	$(MAKE) research-rebuild-all
+ 
+-
+ pipeline:
+ 	@echo "NOTICE: use 'make refresh-data'."
+ 	$(MAKE) refresh-data
+ 
+-
+ application-pipeline:
+ 	@echo "NOTICE: use 'make sync-and-predict'."
+ 	$(MAKE) sync-and-predict
+ 
+-
+ production-pipeline:
+ 	@echo "NOTICE: use 'make app-refresh'."
+ 	$(MAKE) app-refresh
+ 
+-
+ ml-pipeline:
+ 	@echo "NOTICE: use 'make research-rebuild'."
+ 	$(MAKE) research-rebuild
+ 
+-
+ pipelines:
+ 	@echo "NOTICE: use 'make research-rebuild-all'."
+ 	$(MAKE) research-rebuild-all
+ 
+-
+ test:
+ 	@echo "NOTICE: use 'make test-python' or 'make verify'."
+ 	$(MAKE) test-python
+diff --git a/src/electricity_predictor/modeling/classification/analyze_spike_definition.py b/src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+index 3401ec4..24413e6 100644
+--- a/src/electricity_predictor/modeling/classification/analyze_spike_definition.py
++++ b/src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+@@ -45,16 +45,14 @@ def calculate_train_thresholds(train_prices: pd.Series) -> dict[str, float]:
+ def build_spike_analysis_rows(
+   train_data: pd.DataFrame,
+   validation_data: pd.DataFrame,
+-  test_data: pd.DataFrame,
+   horizons_hours: list[int],
+ ) -> list[dict]:
+-  """Compare one train-derived spike threshold across all horizons."""
++  """Compare train-derived spike thresholds on train and validation."""
+   rows = []
+ 
+   split_data = {
+     "train": train_data,
+     "validation": validation_data,
+-    "test": test_data,
+   }
+ 
+   # Learn one global spike definition from historical train prices only.
+@@ -115,7 +113,7 @@ def run_spike_definition_analysis(
+ 
+   data = load_training_dataset(training_dataset_path)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=data,
+     modeling_config=modeling_config,
+ )
+@@ -123,7 +121,6 @@ def run_spike_definition_analysis(
+   rows = build_spike_analysis_rows(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=modeling_config["horizons_hours"],
+   )
+ 
+@@ -143,7 +140,7 @@ def print_spike_analysis_summary(report_path: Path) -> None:
+     values="spike_rate",
+   ).reset_index()
+ 
+-  for split_name in ["train", "validation", "test"]:
++  for split_name in ["train", "validation"]:
+     if split_name in summary.columns:
+       summary[split_name] = summary[split_name] * 100
+ 
+diff --git a/src/electricity_predictor/modeling/classification/analyze_spike_regime.py b/src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+index 83d772a..1765ce2 100644
+--- a/src/electricity_predictor/modeling/classification/analyze_spike_regime.py
++++ b/src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+@@ -126,12 +126,10 @@ def build_yearly_regime_rows(
+ def build_spike_regime_rows(
+   train_data: pd.DataFrame,
+   validation_data: pd.DataFrame,
+-  test_data: pd.DataFrame,
+ ) -> list[dict]:
+-  """Build yearly spike summaries using one train-derived threshold."""
++  """Build train and validation summaries using one train threshold."""
+   validate_regime_data(train_data)
+   validate_regime_data(validation_data)
+-  validate_regime_data(test_data)
+ 
+   threshold = calculate_iqr_spike_threshold(
+     train_data[ACTUAL_PRICE_COLUMN]
+@@ -140,7 +138,6 @@ def build_spike_regime_rows(
+   split_data = {
+     "train": train_data,
+     "validation": validation_data,
+-    "test": test_data,
+   }
+ 
+   rows = []
+@@ -184,7 +181,7 @@ def run_spike_regime_analysis(
+ 
+   data = load_training_dataset(training_dataset_path)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=data,
+     modeling_config=modeling_config,
+ )
+@@ -192,7 +189,6 @@ def run_spike_regime_analysis(
+   rows = build_spike_regime_rows(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+   )
+ 
+   return write_spike_regime_analysis(
+diff --git a/src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py b/src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+index b2b723d..38d6ac0 100644
+--- a/src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
++++ b/src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+@@ -5,7 +5,7 @@ import pandas as pd
+ from electricity_predictor.config import load_configuration
+ from electricity_predictor.modeling.classification.target_builder import (
+   build_spike_target_column_name,
+-  prepare_classification_splits,
++  prepare_classification_training_splits,
+ )
+ from electricity_predictor.modeling.metrics import (
+   calculate_classification_metrics,
+@@ -94,15 +94,14 @@ def run_classification_baseline(
+ 
+   training_data = load_training_dataset(training_dataset_path)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+ 
+-  _, prepared_validation, _, threshold = prepare_classification_splits(
++  _, prepared_validation, threshold = prepare_classification_training_splits(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=horizons_hours,
+   )
+ 
+diff --git a/src/electricity_predictor/modeling/classification/final_test_evaluation.py b/src/electricity_predictor/modeling/classification/final_test_evaluation.py
+index cdc9796..ccba66c 100644
+--- a/src/electricity_predictor/modeling/classification/final_test_evaluation.py
++++ b/src/electricity_predictor/modeling/classification/final_test_evaluation.py
+@@ -273,50 +273,6 @@ def train_selected_classification_model(
+   )
+ 
+ 
+-def evaluate_trained_classification_model(
+-  selected_model: dict,
+-  model,
+-  evaluation_data: pd.DataFrame,
+-  target_column: str,
+-) -> dict[str, float]:
+-  """Evaluate one trained selected classification model."""
+-  model_name = selected_model["model_name"]
+-
+-  if model_name in [
+-    "logistic_regression",
+-    "logistic_regression_tuned",
+-  ]:
+-    return evaluate_logistic_regression_model(
+-      model=model,
+-      evaluation_data=evaluation_data,
+-      target_column=target_column,
+-    )
+-
+-  if model_name in [
+-    "random_forest_classifier",
+-    "random_forest_classifier_tuned",
+-  ]:
+-    return evaluate_random_forest_classifier(
+-      model=model,
+-      evaluation_data=evaluation_data,
+-      target_column=target_column,
+-    )
+-
+-  if model_name in [
+-    "gradient_boosting_classifier",
+-    "gradient_boosting_classifier_tuned",
+-  ]:
+-    return evaluate_gradient_boosting_classifier(
+-      model=model,
+-      evaluation_data=evaluation_data,
+-      target_column=target_column,
+-    )
+-
+-  raise ValueError(
+-    f"Unsupported selected classification model: {model_name}"
+-  )
+-
+-
+ def select_model_decision_threshold(
+   selected_model: dict,
+   train_data: pd.DataFrame,
+diff --git a/src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py b/src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+index ed2131d..94fb84c 100644
+--- a/src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
++++ b/src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+@@ -7,7 +7,7 @@ from sklearn.utils.class_weight import compute_sample_weight
+ from electricity_predictor.config import load_configuration
+ from electricity_predictor.modeling.classification.target_builder import (
+   build_spike_target_column_name,
+-  prepare_classification_splits,
++  prepare_classification_training_splits,
+ )
+ from electricity_predictor.modeling.metrics import calculate_classification_metrics
+ from electricity_predictor.modeling.model_results import (
+@@ -127,15 +127,14 @@ def run_gradient_boosting_classifier(
+ 
+   training_data = load_training_dataset(training_dataset_path)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+ 
+-  prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
++  prepared_train, prepared_validation, threshold = prepare_classification_training_splits(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=horizons_hours,
+   )
+ 
+diff --git a/src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py b/src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+index 0276462..4f87839 100644
+--- a/src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
++++ b/src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+@@ -12,7 +12,7 @@ from electricity_predictor.modeling.classification.gradient_boosting.gradient_bo
+ )
+ from electricity_predictor.modeling.classification.target_builder import (
+   build_spike_target_column_name,
+-  prepare_classification_splits,
++  prepare_classification_training_splits,
+ )
+ from electricity_predictor.modeling.metrics import calculate_classification_metrics
+ from electricity_predictor.modeling.model_results import (
+@@ -196,15 +196,14 @@ def run_tuned_gradient_boosting(
+ 
+   training_data = load_training_dataset(training_dataset_path)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+ 
+-  prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
++  prepared_train, prepared_validation, threshold = prepare_classification_training_splits(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=horizons_hours,
+   )
+ 
+diff --git a/src/electricity_predictor/modeling/classification/logistic/logistic_regression.py b/src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+index a76a278..1b9805f 100644
+--- a/src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
++++ b/src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
+ from electricity_predictor.config import load_configuration
+ from electricity_predictor.modeling.classification.target_builder import (
+   build_spike_target_column_name,
+-  prepare_classification_splits,
++  prepare_classification_training_splits,
+ )
+ from electricity_predictor.modeling.metrics import calculate_classification_metrics
+ from electricity_predictor.modeling.model_results import (
+@@ -119,15 +119,14 @@ def run_logistic_regression(
+ 
+   training_data = load_training_dataset(training_dataset_path)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+ 
+-  prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
++  prepared_train, prepared_validation, threshold = prepare_classification_training_splits(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=horizons_hours,
+   )
+ 
+diff --git a/src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py b/src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+index cfeb870..d80f6d5 100644
+--- a/src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
++++ b/src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+@@ -11,7 +11,7 @@ from electricity_predictor.modeling.classification.logistic.logistic_regression
+ )
+ from electricity_predictor.modeling.classification.target_builder import (
+   build_spike_target_column_name,
+-  prepare_classification_splits,
++  prepare_classification_training_splits,
+ )
+ from electricity_predictor.modeling.metrics import calculate_classification_metrics
+ from electricity_predictor.modeling.model_results import (
+@@ -169,15 +169,14 @@ def run_tuned_logistic_regression(
+ 
+   training_data = load_training_dataset(training_dataset_path)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+ 
+-  prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
++  prepared_train, prepared_validation, threshold = prepare_classification_training_splits(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=horizons_hours,
+   )
+ 
+diff --git a/src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py b/src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+index 05c3d5b..4acf53a 100644
+--- a/src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
++++ b/src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
+ from electricity_predictor.config import load_configuration
+ from electricity_predictor.modeling.classification.target_builder import (
+   build_spike_target_column_name,
+-  prepare_classification_splits,
++  prepare_classification_training_splits,
+ )
+ from electricity_predictor.modeling.metrics import calculate_classification_metrics
+ from electricity_predictor.modeling.model_results import (
+@@ -117,15 +117,14 @@ def run_random_forest_classifier(
+ 
+   training_data = load_training_dataset(training_dataset_path)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+ 
+-  prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
++  prepared_train, prepared_validation, threshold = prepare_classification_training_splits(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=horizons_hours,
+   )
+ 
+diff --git a/src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py b/src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+index 93ec479..88b59aa 100644
+--- a/src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
++++ b/src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+@@ -12,7 +12,7 @@ from electricity_predictor.modeling.classification.random_forest.random_forest_c
+ )
+ from electricity_predictor.modeling.classification.target_builder import (
+   build_spike_target_column_name,
+-  prepare_classification_splits,
++  prepare_classification_training_splits,
+ )
+ from electricity_predictor.modeling.metrics import calculate_classification_metrics
+ from electricity_predictor.modeling.model_results import (
+@@ -196,15 +196,14 @@ def run_tuned_random_forest(
+ 
+   training_data = load_training_dataset(training_dataset_path)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+ 
+-  prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
++  prepared_train, prepared_validation, threshold = prepare_classification_training_splits(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=horizons_hours,
+   )
+ 
+diff --git a/src/electricity_predictor/modeling/classification/save_selected_models.py b/src/electricity_predictor/modeling/classification/save_selected_models.py
+index 913b89e..255f67b 100644
+--- a/src/electricity_predictor/modeling/classification/save_selected_models.py
++++ b/src/electricity_predictor/modeling/classification/save_selected_models.py
+@@ -12,7 +12,7 @@ from electricity_predictor.modeling.classification.final_test_evaluation import
+ )
+ from electricity_predictor.modeling.classification.target_builder import (
+   build_spike_target_column_name,
+-  prepare_classification_splits,
++  prepare_classification_training_splits,
+ )
+ from electricity_predictor.features.feature_columns import (
+   MODEL_FEATURE_COLUMNS,
+@@ -183,7 +183,7 @@ def save_selected_classification_models(
+     training_dataset_path
+   )
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+@@ -191,12 +191,10 @@ def save_selected_classification_models(
+   (
+     prepared_train,
+     prepared_validation,
+-    _,
+     threshold,
+-  ) = prepare_classification_splits(
++  ) = prepare_classification_training_splits(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=horizons_hours,
+   )
+ 
+diff --git a/src/electricity_predictor/modeling/classification/target_builder.py b/src/electricity_predictor/modeling/classification/target_builder.py
+index a56c171..ede3d4f 100644
+--- a/src/electricity_predictor/modeling/classification/target_builder.py
++++ b/src/electricity_predictor/modeling/classification/target_builder.py
+@@ -63,6 +63,36 @@ def prepare_classification_splits(
+   horizons_hours: list[int],
+ ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, float]:
+   """Create classification targets after fitting the spike threshold on train."""
++  (
++    prepared_train,
++    prepared_validation,
++    threshold,
++  ) = prepare_classification_training_splits(
++    train_data=train_data,
++    validation_data=validation_data,
++    horizons_hours=horizons_hours,
++  )
++
++  prepared_test = add_spike_targets(
++    data=test_data,
++    threshold=threshold,
++    horizons_hours=horizons_hours,
++  )
++
++  return (
++    prepared_train,
++    prepared_validation,
++    prepared_test,
++    threshold,
++  )
++
++
++def prepare_classification_training_splits(
++  train_data: pd.DataFrame,
++  validation_data: pd.DataFrame,
++  horizons_hours: list[int],
++) -> tuple[pd.DataFrame, pd.DataFrame, float]:
++  """Prepare train and validation targets without accessing protected test data."""
+   validate_classification_target_inputs(
+     data=train_data,
+     horizons_hours=horizons_hours,
+@@ -85,15 +115,8 @@ def prepare_classification_splits(
+     horizons_hours=horizons_hours,
+   )
+ 
+-  prepared_test = add_spike_targets(
+-    data=test_data,
+-    threshold=threshold,
+-    horizons_hours=horizons_hours,
+-  )
+-
+   return (
+     prepared_train,
+     prepared_validation,
+-    prepared_test,
+     threshold,
+   )
+diff --git a/src/electricity_predictor/modeling/decision/calibrate_decision_policy.py b/src/electricity_predictor/modeling/decision/calibrate_decision_policy.py
+index b1b61bd..13ee6f9 100644
+--- a/src/electricity_predictor/modeling/decision/calibrate_decision_policy.py
++++ b/src/electricity_predictor/modeling/decision/calibrate_decision_policy.py
+@@ -2,16 +2,12 @@
+ 
+ from pathlib import Path
+ 
+-import joblib
+ import pandas as pd
+ 
+ from electricity_predictor.config import load_configuration
+ from electricity_predictor.features.feature_engineering import (
+   build_target_column_name,
+ )
+-from electricity_predictor.features.feature_columns import (
+-  parse_model_feature_columns,
+-)
+ from electricity_predictor.modeling.decision.price_policy import classify_price
+ from electricity_predictor.modeling.decision.thresholds import (
+   DECISION_WINDOW_HOURS,
+@@ -21,6 +17,12 @@ from electricity_predictor.modeling.split import (
+   load_training_dataset,
+   split_time_series_data_from_config,
+ )
++from electricity_predictor.modeling.regression.selected_model import (
++  BEST_MODEL_PATH,
++  load_selected_regression_models,
++  predict_selected_regression_model,
++  train_selected_regression_model,
++)
+ 
+ 
+ WINDOW_HOURS = DECISION_WINDOW_HOURS
+@@ -39,39 +41,33 @@ AVOID_IQR_MULTIPLIERS = [
+   3.0,
+ ]
+ 
+-REGRESSION_METADATA_PATH = Path(
+-  "models/regression/selected_regression_model_metadata.csv"
+-)
++REGRESSION_SELECTION_PATH = BEST_MODEL_PATH
+ OUTPUT_PATH = Path(
+   "reports/decision_policy_calibration_grid.csv"
+ )
+ 
+ 
+ def generate_predictions(
++  train_data: pd.DataFrame,
+   data: pd.DataFrame,
+-  metadata_row: dict,
++  selected_model: dict,
+ ) -> pd.Series:
+-  """Generate predictions from one saved regression artifact."""
+-  artifact = joblib.load(
+-    Path(str(metadata_row["artifact_path"]))
+-  )
+-
+-  feature_columns = parse_model_feature_columns(
+-    metadata_row["feature_columns"]
+-  )
+-
+-  if isinstance(artifact, dict):
+-    prediction_column = artifact["prediction_column"]
+-
+-    return pd.to_numeric(
+-      data[prediction_column],
+-      errors="coerce",
++  """Train on train data and predict the untouched validation rows."""
++  horizon_hours = int(selected_model["horizon_hours"])
++  target_column = build_target_column_name(horizon_hours)
++  model = None
++
++  if selected_model["model_name"] != "naive_baseline":
++    model = train_selected_regression_model(
++      selected_model=selected_model,
++      train_data=train_data,
++      target_column=target_column,
+     )
+ 
+-  return pd.Series(
+-    artifact.predict(data[feature_columns]),
+-    index=data.index,
+-    dtype=float,
++  return predict_selected_regression_model(
++    selected_model=selected_model,
++    model=model,
++    data=data,
+   )
+ 
+ 
+@@ -89,26 +85,29 @@ def build_thresholds(
+   )
+ 
+ 
++def split_calibration_data(
++  data: pd.DataFrame,
++  modeling_config: dict,
++) -> tuple[pd.DataFrame, pd.DataFrame]:
++  """Return train and validation data without exposing protected test data."""
++  train_data, validation_data, _ = split_time_series_data_from_config(
++    data=data,
++    modeling_config=modeling_config,
++  )
++
++  return train_data, validation_data
++
++
+ def evaluate_candidate(
+   data: pd.DataFrame,
+   predicted_price: pd.Series,
+   actual_price: pd.Series,
+   thresholds: pd.DataFrame,
+-  period: str,
+   horizon_hours: int,
+   recommended_quantile: float,
+   avoid_iqr_multiplier: float,
+ ) -> dict:
+-  """Evaluate one policy candidate in one time period."""
+-  if period == "calibration_2025":
+-    mask = data[
+-      "datetime_universal_time"
+-    ].dt.year.eq(2025)
+-  else:
+-    mask = data[
+-      "datetime_universal_time"
+-    ].dt.year.eq(2026)
+-
++  """Evaluate one policy candidate on validation data."""
+   evaluation = pd.DataFrame(
+     {
+       "predicted_price": predicted_price,
+@@ -120,7 +119,7 @@ def evaluate_candidate(
+         "avoid_threshold"
+       ],
+     }
+-  ).loc[mask].dropna()
++  ).dropna()
+ 
+   predicted_label = pd.Series(
+     [
+@@ -157,7 +156,7 @@ def evaluate_candidate(
+   )
+ 
+   return {
+-    "period": period,
++    "period": "validation",
+     "horizon_hours": horizon_hours,
+     "recommended_quantile": recommended_quantile,
+     "avoid_iqr_multiplier": avoid_iqr_multiplier,
+@@ -182,47 +181,34 @@ def evaluate_candidate(
+ 
+ 
+ def main() -> None:
+-  """Generate calibration-grid results for 2025 and 2026."""
++  """Generate decision-policy calibration results from validation data."""
+   configuration = load_configuration()
+   full_data = load_training_dataset().reset_index(
+     drop=True
+   )
+ 
+-  _, _, test_data = split_time_series_data_from_config(
++  train_data, evaluation_data = split_calibration_data(
+     data=full_data,
+     modeling_config=configuration["modeling"],
+   )
+ 
+-  start = test_data[
+-    "datetime_universal_time"
+-  ].min()
+-  end = test_data[
+-    "datetime_universal_time"
+-  ].max()
+-
+-  evaluation_data = full_data[
+-    full_data["datetime_universal_time"].between(
+-      start,
+-      end,
+-    )
+-  ].copy()
+-
+-  metadata = pd.read_csv(
+-    REGRESSION_METADATA_PATH
+-  ).sort_values("horizon_hours")
++  selected_models = load_selected_regression_models(
++    REGRESSION_SELECTION_PATH
++  )
+ 
+   results = []
+ 
+-  for metadata_row in metadata.to_dict(
++  for selected_model in selected_models.to_dict(
+     orient="records"
+   ):
+     horizon_hours = int(
+-      metadata_row["horizon_hours"]
++      selected_model["horizon_hours"]
+     )
+ 
+     predicted_price = generate_predictions(
++      train_data=train_data,
+       data=evaluation_data,
+-      metadata_row=metadata_row,
++      selected_model=selected_model,
+     )
+ 
+     actual_price = pd.to_numeric(
+@@ -250,26 +236,21 @@ def main() -> None:
+           ),
+         )
+ 
+-        for period in [
+-          "calibration_2025",
+-          "holdout_2026",
+-        ]:
+-          results.append(
+-            evaluate_candidate(
+-              data=evaluation_data,
+-              predicted_price=predicted_price,
+-              actual_price=actual_price,
+-              thresholds=thresholds,
+-              period=period,
+-              horizon_hours=horizon_hours,
+-              recommended_quantile=(
+-                recommended_quantile
+-              ),
+-              avoid_iqr_multiplier=(
+-                avoid_multiplier
+-              ),
+-            )
++        results.append(
++          evaluate_candidate(
++            data=evaluation_data,
++            predicted_price=predicted_price,
++            actual_price=actual_price,
++            thresholds=thresholds,
++            horizon_hours=horizon_hours,
++            recommended_quantile=(
++              recommended_quantile
++            ),
++            avoid_iqr_multiplier=(
++              avoid_multiplier
++            ),
+           )
++        )
+ 
+   report = pd.DataFrame(results)
+ 
+@@ -284,9 +265,7 @@ def main() -> None:
+     float_format="%.4f",
+   )
+ 
+-  calibration = report[
+-    report["period"].eq("calibration_2025")
+-  ].sort_values(
++  calibration = report.sort_values(
+     [
+       "horizon_hours",
+       "false_recommended_rate",
+diff --git a/src/electricity_predictor/modeling/lifecycle/release_bundle.py b/src/electricity_predictor/modeling/lifecycle/release_bundle.py
+index 3936a90..3c84002 100644
+--- a/src/electricity_predictor/modeling/lifecycle/release_bundle.py
++++ b/src/electricity_predictor/modeling/lifecycle/release_bundle.py
+@@ -3,7 +3,6 @@ from datetime import UTC, datetime
+ from hashlib import sha256
+ import json
+ from pathlib import Path
+-import re
+ import shutil
+ import tarfile
+ from uuid import uuid4
+@@ -53,24 +52,6 @@ def calculate_file_sha256(
+   return digest.hexdigest()
+ 
+ 
+-def sanitize_version(
+-  value: str,
+-) -> str:
+-  """Normalize a model version for use in identifiers."""
+-  normalized = re.sub(
+-    r"[^A-Za-z0-9._-]+",
+-    "-",
+-    str(value).strip(),
+-  ).strip("-")
+-
+-  if not normalized:
+-    raise ValueError(
+-      "Model version must not be empty."
+-    )
+-
+-  return normalized
+-
+-
+ def load_release_metadata(
+   task_name: str,
+   metadata_path: Path,
+diff --git a/src/electricity_predictor/modeling/regression/baseline/naive_baseline.py b/src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
+index 59f02f9..62afc5c 100644
+--- a/src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
++++ b/src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
+@@ -80,7 +80,7 @@ if __name__ == "__main__":
+ 
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+diff --git a/src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py b/src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
+index cb4d0a6..11b39ca 100644
+--- a/src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
++++ b/src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
+@@ -101,7 +101,7 @@ def main() -> None:
+ 
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+diff --git a/src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py b/src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
+index 03585aa..4225bd0 100644
+--- a/src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
++++ b/src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
+@@ -159,7 +159,7 @@ def main() -> None:
+ 
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+diff --git a/src/electricity_predictor/modeling/regression/lasso/lasso_regression.py b/src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
+index a9b4817..fbe9ae6 100644
+--- a/src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
++++ b/src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
+@@ -98,7 +98,7 @@ def main() -> None:
+ 
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+diff --git a/src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py b/src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
+index 46708bd..a10f689 100644
+--- a/src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
++++ b/src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
+@@ -143,7 +143,7 @@ def main() -> None:
+ 
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+diff --git a/src/electricity_predictor/modeling/regression/linear/linear_regression.py b/src/electricity_predictor/modeling/regression/linear/linear_regression.py
+index 453f889..d06e432 100644
+--- a/src/electricity_predictor/modeling/regression/linear/linear_regression.py
++++ b/src/electricity_predictor/modeling/regression/linear/linear_regression.py
+@@ -105,7 +105,7 @@ def main() -> None:
+ 
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+diff --git a/src/electricity_predictor/modeling/regression/random_forest/random_forest.py b/src/electricity_predictor/modeling/regression/random_forest/random_forest.py
+index 8f72dca..f7369b5 100644
+--- a/src/electricity_predictor/modeling/regression/random_forest/random_forest.py
++++ b/src/electricity_predictor/modeling/regression/random_forest/random_forest.py
+@@ -142,7 +142,7 @@ def main() -> None:
+ 
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+diff --git a/src/electricity_predictor/modeling/regression/random_forest/random_forest_tuning.py b/src/electricity_predictor/modeling/regression/random_forest/random_forest_tuning.py
+index 56c0467..de6744a 100644
+--- a/src/electricity_predictor/modeling/regression/random_forest/random_forest_tuning.py
++++ b/src/electricity_predictor/modeling/regression/random_forest/random_forest_tuning.py
+@@ -177,7 +177,7 @@ def main() -> None:
+ 
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+diff --git a/src/electricity_predictor/modeling/regression/ridge/ridge_regression.py b/src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
+index 4d334ba..d9b71d9 100644
+--- a/src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
++++ b/src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
+@@ -110,7 +110,7 @@ def main() -> None:
+ 
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+diff --git a/src/electricity_predictor/modeling/regression/ridge/ridge_tuning.py b/src/electricity_predictor/modeling/regression/ridge/ridge_tuning.py
+index 658c31d..35c8304 100644
+--- a/src/electricity_predictor/modeling/regression/ridge/ridge_tuning.py
++++ b/src/electricity_predictor/modeling/regression/ridge/ridge_tuning.py
+@@ -142,7 +142,7 @@ def main() -> None:
+ 
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+ )
+diff --git a/src/electricity_predictor/modeling/regression/run_regression_models.py b/src/electricity_predictor/modeling/regression/run_regression_models.py
+index 1645e41..8494c88 100644
+--- a/src/electricity_predictor/modeling/regression/run_regression_models.py
++++ b/src/electricity_predictor/modeling/regression/run_regression_models.py
+@@ -367,7 +367,7 @@ def run_regression_models() -> Path:
+   horizons_hours = modeling_config["horizons_hours"]
+   training_data = load_training_dataset(TRAINING_DATASET_PATH)
+ 
+-  train_data, validation_data, test_data = split_time_series_data_from_config(
++  train_data, validation_data, _ = split_time_series_data_from_config(
+     data=training_data,
+     modeling_config=modeling_config,
+   )
+diff --git a/src/electricity_predictor/modeling/split.py b/src/electricity_predictor/modeling/split.py
+index a992d4b..888df7d 100644
+--- a/src/electricity_predictor/modeling/split.py
++++ b/src/electricity_predictor/modeling/split.py
+@@ -182,30 +182,3 @@ def get_time_series_cv_gap_hours(modeling_config: dict) -> int:
+     )
+ 
+   return gap_hours
+-
+-
+-def print_split_summary(
+-  train_data: pd.DataFrame,
+-  validation_data: pd.DataFrame,
+-  test_data: pd.DataFrame,
+-) -> None:
+-  """Print a readable summary of the fixed chronological split."""
+-  print("Fixed time-based modeling split")
+-  print("===============================")
+-  print(f"Train rows: {len(train_data):,}")
+-  print(f"Validation rows: {len(validation_data):,}")
+-  print(f"Test rows: {len(test_data):,}")
+-
+-  print("\nTime ranges")
+-  print("-----------")
+-
+-  for split_name, split_data in [
+-    ("Train", train_data),
+-    ("Validation", validation_data),
+-    ("Test", test_data),
+-  ]:
+-    print(
+-      f"{split_name}: "
+-      f"{split_data[DATETIME_COLUMN].min()} "
+-      f"to {split_data[DATETIME_COLUMN].max()}"
+-    )
+diff --git a/src/electricity_predictor/worker/persistence.py b/src/electricity_predictor/worker/persistence.py
+index 862f94e..621040b 100644
+--- a/src/electricity_predictor/worker/persistence.py
++++ b/src/electricity_predictor/worker/persistence.py
+@@ -130,53 +130,6 @@ def upsert_hourly_prices(data: pd.DataFrame, source: str = "pipeline") -> int:
+   return len(records)
+ 
+ 
+-def load_hourly_prices(limit: int = 200) -> pd.DataFrame:
+-  """Load recent hourly prices in chronological order."""
+-  query = """
+-    SELECT
+-      datetime_utc,
+-      actual_price,
+-      forecast_price,
+-      alberta_internal_load,
+-      source
+-    FROM (
+-      SELECT
+-        datetime_utc,
+-        actual_price,
+-        forecast_price,
+-        alberta_internal_load,
+-        source
+-      FROM hourly_prices
+-      ORDER BY datetime_utc DESC
+-      LIMIT %s
+-    ) recent
+-    ORDER BY datetime_utc;
+-  """
+-
+-  with get_database_connection() as connection:
+-    with connection.cursor() as cursor:
+-      cursor.execute(query, (limit,))
+-      rows = cursor.fetchall()
+-
+-  columns = [
+-    "datetime_universal_time",
+-    "actual_price",
+-    "forecast_price",
+-    "alberta_internal_load",
+-    "source",
+-  ]
+-
+-  data = pd.DataFrame(rows, columns=columns)
+-
+-  if not data.empty:
+-    data["datetime_universal_time"] = pd.to_datetime(
+-      data["datetime_universal_time"],
+-      utc=True,
+-    )
+-
+-  return data
+-
+-
+ def load_inference_hourly_prices(
+   lookback_hours: int,
+ ) -> pd.DataFrame:
+diff --git a/tests/deployment/test_railway_worker_config.py b/tests/deployment/test_railway_worker_config.py
+index a48c1e4..5664fc7 100644
+--- a/tests/deployment/test_railway_worker_config.py
++++ b/tests/deployment/test_railway_worker_config.py
+@@ -148,25 +148,30 @@ def test_make_worker_target_uses_canonical_python_entry_point() -> None:
+ def test_operational_pipeline_targets_use_relocated_worker_module() -> None:
+   makefile = load_makefile()
+ 
+-  for target_name in (
+-    "app-refresh",
+-    "sync-and-predict",
+-  ):
+-    target = extract_make_target(
+-      makefile=makefile,
+-      target_name=target_name,
+-    )
++  canonical_target = extract_make_target(
++    makefile=makefile,
++    target_name="sync-and-predict",
++  )
++  alias_target = extract_make_target(
++    makefile=makefile,
++    target_name="app-refresh",
++  )
+ 
+-    assert (
+-      "$(PYTHON) -m "
+-      "electricity_predictor.worker."
+-      "operational_pipeline"
+-      in target
+-    )
+-    assert (
+-      "electricity_predictor.application_pipeline"
+-      not in target
+-    )
++  assert (
++    "$(PYTHON) -m "
++    "electricity_predictor.worker."
++    "operational_pipeline"
++    in canonical_target
++  )
++  assert (
++    "electricity_predictor.application_pipeline"
++    not in canonical_target
++  )
++  assert "$(MAKE) sync-and-predict" in alias_target
++  assert (
++    "electricity_predictor.worker.operational_pipeline"
++    not in alias_target
++  )
+ 
+ 
+ def test_worker_entry_point_is_installed_by_python_package() -> None:
+diff --git a/tests/modeling/classification/test_analyze_spike_regime.py b/tests/modeling/classification/test_analyze_spike_regime.py
+index 41e5654..a887c99 100644
+--- a/tests/modeling/classification/test_analyze_spike_regime.py
++++ b/tests/modeling/classification/test_analyze_spike_regime.py
+@@ -89,27 +89,17 @@ def test_build_spike_regime_rows_reuses_train_threshold_for_all_splits():
+     prices=[1000.0, 1100.0],
+   )
+ 
+-  test_data = make_regime_data(
+-    timestamps=[
+-      "2022-01-01 00:00:00",
+-      "2022-01-01 01:00:00",
+-    ],
+-    prices=[2000.0, 2100.0],
+-  )
+-
+   rows = build_spike_regime_rows(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+   )
+ 
+   # Q1=2, Q3=4, and IQR=2, so the frozen train threshold is 7.
+-  assert len(rows) == 3
++  assert len(rows) == 2
+   assert all(row["threshold"] == pytest.approx(7.0) for row in rows)
+   assert {row["split"] for row in rows} == {
+     "train",
+     "validation",
+-    "test",
+   }
+ 
+ 
+diff --git a/tests/modeling/classification/test_best_model_selection.py b/tests/modeling/classification/test_best_model_selection.py
+index 8339287..c68566f 100644
+--- a/tests/modeling/classification/test_best_model_selection.py
++++ b/tests/modeling/classification/test_best_model_selection.py
+@@ -75,6 +75,29 @@ def test_select_best_classification_models_by_horizon():
+   assert selected[1]["model_name"] == "logistic_regression"
+ 
+ 
++def test_selection_ignores_protected_test_results() -> None:
++  results = make_results()
++  protected_result = results.iloc[0].copy()
++  protected_result["model_name"] = "protected_test_winner"
++  protected_result["split"] = "test"
++  protected_result["accuracy"] = 1.0
++  protected_result["precision"] = 1.0
++  protected_result["recall"] = 1.0
++  protected_result["f1"] = 1.0
++
++  results = pd.concat(
++    [results, protected_result.to_frame().T],
++    ignore_index=True,
++  )
++
++  selected = select_best_classification_models_by_horizon(
++    results=results,
++  )
++
++  assert selected[0]["model_name"] == "random_forest_classifier"
++  assert all(row["split"] == "validation" for row in selected)
++
++
+ def test_add_selection_metadata_uses_highest_f1_rule():
+   selected = add_selection_metadata(
+     selected_model=make_results().iloc[0].to_dict(),
+diff --git a/tests/modeling/classification/test_save_selected_models.py b/tests/modeling/classification/test_save_selected_models.py
+index 90c3894..e10d8cb 100644
+--- a/tests/modeling/classification/test_save_selected_models.py
++++ b/tests/modeling/classification/test_save_selected_models.py
+@@ -9,7 +9,6 @@ from electricity_predictor.modeling.classification.save_selected_models import (
+   build_naive_spike_baseline_artifact,
+   save_model_artifact,
+   save_selected_classification_models,
+-  save_selected_classification_models,
+ )
+ 
+ 
+diff --git a/tests/modeling/classification/test_spike_definition.py b/tests/modeling/classification/test_spike_definition.py
+index 420a60e..39efc2c 100644
+--- a/tests/modeling/classification/test_spike_definition.py
++++ b/tests/modeling/classification/test_spike_definition.py
+@@ -110,37 +110,33 @@ def test_calculate_train_thresholds_returns_all_candidate_methods():
+ def test_build_spike_analysis_rows_reuses_train_threshold_for_all_splits():
+   train_data = make_horizon_data([1.0, 2.0, 3.0, 4.0, 100.0])
+   validation_data = make_horizon_data([1000.0, 1100.0])
+-  test_data = make_horizon_data([2000.0, 2100.0])
+ 
+   rows = build_spike_analysis_rows(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=[1],
+   )
+ 
+   iqr_rows = [row for row in rows if row["method"] == "iqr"]
+ 
+   # Extreme future prices must not change the train-derived IQR threshold.
+-  assert len(iqr_rows) == 3
++  assert len(iqr_rows) == 2
+   assert all(row["threshold"] == pytest.approx(7.0) for row in iqr_rows)
+ 
+ 
+ def test_build_spike_analysis_rows_creates_one_row_per_method_and_split():
+   train_data = make_horizon_data([1.0, 2.0, 3.0, 4.0, 100.0])
+   validation_data = make_horizon_data([2.0, 3.0])
+-  test_data = make_horizon_data([4.0, 5.0])
+ 
+   rows = build_spike_analysis_rows(
+     train_data=train_data,
+     validation_data=validation_data,
+-    test_data=test_data,
+     horizons_hours=[1],
+   )
+ 
+-  # Three methods multiplied by three splits produce nine comparison rows.
+-  assert len(rows) == 9
+-  assert {row["split"] for row in rows} == {"train", "validation", "test"}
++  # Three methods multiplied by two research splits produce six rows.
++  assert len(rows) == 6
++  assert {row["split"] for row in rows} == {"train", "validation"}
+ 
+ 
+ def test_build_spike_analysis_rows_rejects_missing_target_column():
+@@ -150,6 +146,5 @@ def test_build_spike_analysis_rows_rejects_missing_target_column():
+     build_spike_analysis_rows(
+       train_data=data,
+       validation_data=data,
+-      test_data=data,
+       horizons_hours=[1],
+     )
+diff --git a/tests/modeling/decision/test_decision_threshold_consumers.py b/tests/modeling/decision/test_decision_threshold_consumers.py
+index 4c6cc02..958eecd 100644
+--- a/tests/modeling/decision/test_decision_threshold_consumers.py
++++ b/tests/modeling/decision/test_decision_threshold_consumers.py
+@@ -37,6 +37,34 @@ def test_calibration_threshold_wrapper_preserves_configurable_policy(
+   assert result.loc[3, "avoid_threshold"] == 45.0
+ 
+ 
++def test_calibration_uses_validation_without_exposing_protected_test(
++  monkeypatch,
++) -> None:
++  train_data = pd.DataFrame({"split": ["train"]})
++  validation_data = pd.DataFrame({"split": ["validation"]})
++  protected_test_data = pd.DataFrame({"split": ["test"]})
++
++  monkeypatch.setattr(
++    calibrate_decision_policy,
++    "split_time_series_data_from_config",
++    lambda **_: (
++      train_data,
++      validation_data,
++      protected_test_data,
++    ),
++  )
++
++  selected_train, selected_validation = (
++    calibrate_decision_policy.split_calibration_data(
++    data=pd.DataFrame(),
++    modeling_config={},
++    )
++  )
++
++  assert selected_train is train_data
++  assert selected_validation is validation_data
++
++
+ def test_stress_threshold_wrapper_preserves_q1_and_iqr_policy() -> None:
+   data = pd.DataFrame({"actual_price": [10.0, 20.0, 30.0, 40.0]})
+ 
+
+===== UNTRACKED TOP-LEVEL WORK FILES =====
+Makefile.useful
+      71 Makefile.useful
+architecture_et_comprehension.md
+     684 architecture_et_comprehension.md
+
+===== MANUAL REPORT INVENTORY =====
+phase7_manual_pipeline_checks/.DS_Store
+phase7_manual_pipeline_checks/01-useful-makefile-foundation.txt
+phase7_manual_pipeline_checks/02-historical-data-workflow.txt
+phase7_manual_pipeline_checks/03A-feature-engineering-workflow.txt
+phase7_manual_pipeline_checks/03B-training-data-workflow.txt
+phase7_manual_pipeline_checks/04A-postgresql-baseline.txt
+phase7_manual_pipeline_checks/04B-postgresql-history-sync.txt
+phase7_manual_pipeline_checks/04C-postgresql-idempotence.txt
+phase7_manual_pipeline_checks/05-workflow-documentation.txt
+phase7_manual_pipeline_checks/06-model-lifecycle-status.txt
+phase7_manual_pipeline_checks/07-local-application-without-predictions.txt
+phase7_manual_pipeline_checks/08-data-science-readiness-audit.txt
+phase7_manual_pipeline_checks/09-decision-policy-calibration-fix.txt
+phase7_manual_pipeline_checks/10-useful-makefile-and-architecture-update.txt
+phase7_manual_pipeline_checks/11-protected-test-orchestration-guard.txt
+phase7_manual_pipeline_checks/12-leakage-safe-decision-calibration.txt
+phase7_manual_pipeline_checks/13-research-orchestration-separation.txt
+phase7_manual_pipeline_checks/13A-research-orchestration-separation-fixed-check.txt
+phase7_manual_pipeline_checks/14-classification-save-test-isolation.txt
+phase7_manual_pipeline_checks/15-python-suite-after-data-science-fixes.txt
+phase7_manual_pipeline_checks/16-spike-analysis-protected-test-isolation.txt
+phase7_manual_pipeline_checks/17-classification-research-test-isolation.txt
+phase7_manual_pipeline_checks/18-regression-research-test-isolation.txt
+phase7_manual_pipeline_checks/19-validation-only-model-selection.txt
+phase7_manual_pipeline_checks/20-protected-final-evaluation-contract.txt
+phase7_manual_pipeline_checks/21-lifecycle-frozen-split-contract.txt
+phase7_manual_pipeline_checks/22-training-serving-feature-parity.txt
+phase7_manual_pipeline_checks/23-final-python-foundation.txt
+phase7_manual_pipeline_checks/24-final-complete-verify.txt
+phase7_manual_pipeline_checks/25-final-git-and-diff-audit.txt
+
+===== DIFF CHECK =====

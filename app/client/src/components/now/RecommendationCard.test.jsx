@@ -3,81 +3,173 @@ import {
   render,
   screen,
 } from "@testing-library/react";
+
 import {
   afterEach,
+  beforeEach,
   describe,
   expect,
   test,
+  vi,
 } from "vitest";
 
-import { RecommendationCard } from "./RecommendationCard";
+import {
+  RecommendationCard,
+} from "./RecommendationCard";
 
-afterEach(() => {
-  cleanup();
-});
 
 const response = {
-  generatedAt: "2026-07-20T15:00:00.000Z",
+  generatedAt:
+    "2026-07-24T04:00:00.000Z",
   confidence: "high",
   stale: false,
 
   price: {
-    value: 1.3,
+    value: 3.87,
     unit: "¢/kWh",
-    observedAtUtc: "2026-07-20T14:00:00.000Z",
+    kind: "forecast",
+    sourceAtUtc:
+      "2026-07-24T04:00:00.000Z",
   },
 
   recommendation: {
     level: "acceptable",
-    explanationKey: "acceptable_market_risk",
-    actionKey: "use_if_needed",
+    explanationKey:
+      "about_average",
+    actionKey:
+      "use_if_needed",
   },
 
-  contextKey: "about_average",
+  contextKey:
+    "about_average",
 };
 
+
 describe("RecommendationCard", () => {
-  test("labels the current observed price and shows only its observation time", () => {
-    render(
-      <RecommendationCard data={response} />,
+  beforeEach(() => {
+    vi.useFakeTimers();
+
+    vi.setSystemTime(
+      new Date(
+        "2026-07-24T04:19:00.000Z",
+      ),
     );
-
-    expect(
-      screen.getByText(/Latest observed market price/i),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText(/Price observed at/i),
-    ).toHaveTextContent("8:00");
-
-    expect(
-      screen.queryByText(/Recommendation updated/i),
-    ).not.toBeInTheDocument();
   });
 
-  test("supports responses without an observation timestamp", () => {
-    render(
-      <RecommendationCard
-        data={{
-          ...response,
-          price: {
-            value: response.price.value,
-            unit: response.price.unit,
-          },
-        }}
-      />,
-    );
-
-    expect(
-      screen.queryByText(/Price observed at/i),
-    ).not.toBeInTheDocument();
-
-    expect(
-      screen.getByText(/Latest observed market price/i),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.queryByText(/Recommendation updated/i),
-    ).not.toBeInTheDocument();
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
   });
+
+  test(
+    "shows Alberta time, market hour, and the forecast source",
+    () => {
+      render(
+        <RecommendationCard
+          data={response}
+        />,
+      );
+
+      expect(
+        screen.getByText(
+          "Price now",
+        ),
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText(
+          "Electricity use is acceptable, but this is not the best time.",
+        ),
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText(
+          /Current Alberta time/i,
+        ),
+      ).toHaveTextContent(
+        "10:19",
+      );
+
+      const marketHourRow = screen.getByTestId(
+        "market-hour-row",
+      );
+
+      expect(
+        marketHourRow,
+      ).toHaveTextContent(
+        "Market hour: 10:00 p.m. – 11:00 p.m.",
+      );
+
+      expect(
+        marketHourRow,
+      ).toHaveClass(
+        "now-market-hour-row",
+      );
+
+      expect(
+        screen.getByText(
+          "AESO estimate for the current market hour.",
+        ),
+      ).toBeInTheDocument();
+    },
+  );
+
+  test(
+    "labels a finalized current-hour price",
+    () => {
+      render(
+        <RecommendationCard
+          data={{
+            ...response,
+
+            price: {
+              ...response.price,
+              kind: "actual",
+            },
+          }}
+        />,
+      );
+
+      expect(
+        screen.getByText(
+          "Finalized AESO price for the current market hour.",
+        ),
+      ).toBeInTheDocument();
+    },
+  );
+
+  test(
+    "labels a latest-finalized fallback honestly",
+    () => {
+      render(
+        <RecommendationCard
+          data={{
+            ...response,
+
+            price: {
+              ...response.price,
+              kind:
+                "fallback_actual",
+              sourceAtUtc:
+                "2026-07-24T02:00:00.000Z",
+            },
+          }}
+        />,
+      );
+
+      expect(
+        screen.getByText(
+          /Latest finalized AESO price/i,
+        ),
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByTestId(
+          "market-hour-row",
+        ),
+      ).toHaveTextContent(
+        "Market hour: 8:00 p.m. – 9:00 p.m.",
+      );
+    },
+  );
 });

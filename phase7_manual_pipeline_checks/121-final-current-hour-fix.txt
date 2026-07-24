@@ -1,0 +1,18 @@
+===== PURPOSE =====
+Prevent the worker from anchoring inference on future AESO forecast rows.
+Use the latest database hour that is not later than the current UTC hour.
+Remove invalid future prediction runs and publish one corrected five-horizon run.
+Verify PostgreSQL, Health, Now, Today, and all future targets.
+
+===== PATCH WORKER SOURCE-HOUR QUERY =====
+worker_source_rule=latest_market_hour_not_after_current_hour
+worker_query_patch=PASS
+
+===== PATCH DEFENSIVE API QUERIES =====
+prediction_repository_future_guard=PASS
+health_repository_future_guard=PASS
+
+===== UPDATE WORKER QUERY TEST =====
+Traceback (most recent call last):
+  File "<stdin>", line 42, in <module>
+RuntimeError: Persistence test assertion anchor was not found.

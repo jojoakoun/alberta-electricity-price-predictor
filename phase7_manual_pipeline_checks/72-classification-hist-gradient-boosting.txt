@@ -1,0 +1,19 @@
+===== PURPOSE =====
+Add HistGradientBoosting base and tuned classifiers.
+Tuning uses TimeSeriesSplit with the configured 24-hour gap.
+Hyperparameters use CV PR-AUC first and CV F1 as tie-break.
+Decision thresholds use validation only.
+Protected test data is not accessed.
+
+===== HISTGRADIENTBOOSTING TESTS =====
+........................................                                 [100%]
+40 passed in 4.44s
+
+===== IMPORT CHECK =====
+hist_gradient_boosting_import_status=PASS
+
+===== GIT DIFF CHECK =====
+
+hist_gradient_boosting_tests_exit_code=0
+hist_gradient_boosting_import_exit_code=0
+git_diff_check_exit_code=0

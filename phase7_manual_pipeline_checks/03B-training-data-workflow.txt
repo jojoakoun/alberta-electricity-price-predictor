@@ -1,0 +1,66 @@
+===== BUILD TRAINING DATASET =====
+# Build the chronological model-ready training dataset.
+.venv/bin/python \
+		src/electricity_predictor/features/training_data.py
+Training dataset written to: data/processed/training_dataset.csv
+Rows: 57,273
+Columns: 19
+
+===== INDEPENDENT TRAINING DATA INSPECTION =====
+file: data/processed/training_dataset.csv
+size_bytes: 8550412
+rows: 57273
+columns: 19
+column_names: ['datetime_universal_time', 'datetime_local_time', 'actual_price', 'forecast_price', 'hour', 'day_of_week', 'month', 'is_weekend', 'actual_price_lag_1h', 'actual_price_lag_24h', 'forecast_price_lag_1h', 'actual_price_rolling_24h_mean', 'actual_price_rolling_24h_max', 'actual_price_rolling_7d_mean', 'actual_price_target_1h', 'actual_price_target_3h', 'actual_price_target_6h', 'actual_price_target_12h', 'actual_price_target_24h']
+target_columns_present: True
+timestamp_min_utc: 2020-01-08 07:00:00+00:00
+timestamp_max_utc: 2026-07-21 15:00:00+00:00
+invalid_timestamps: 0
+duplicate_timestamps: 0
+chronological_order: True
+missing_values_total: 0
+infinite_numeric_values: 0
+modeling_rows: 57465
+rows_removed_from_modeling: 192
+
+===== GIT STATUS =====
+ M Makefile
+ M src/electricity_predictor/modeling/classification/final_test_evaluation.py
+ M src/electricity_predictor/modeling/lifecycle/release_bundle.py
+ M src/electricity_predictor/modeling/split.py
+ M src/electricity_predictor/worker/persistence.py
+ M tests/deployment/test_railway_worker_config.py
+?? Makefile.useful
+?? phase7_manual_pipeline_checks/
+===== Exit code =====
+0
+
+===== USEFUL WORKFLOW REGISTRATION =====
+
+WattWise — validated daily commands
+
+  make -f Makefile.useful verify
+      Validate configuration, Python, API, frontend, lint, and build.
+
+  make -f Makefile.useful historical-data
+      Refresh clean AESO history and validate its data quality.
+
+  make -f Makefile.useful modeling-data
+      Rebuild clean history, features, and the training dataset.
+
+
+===== MODELING WORKFLOW DEFINITION =====
+modeling-data:
+	$(MAKE) -f Makefile.useful historical-data \
+		PYTHON=$(PYTHON) \
+		PYTEST=$(PYTEST)
+	$(MAKE) -f $(MAIN_MAKEFILE) features \
+		PYTHON=$(PYTHON)
+	$(MAKE) -f $(MAIN_MAKEFILE) feature-quality \
+		PYTHON=$(PYTHON)
+	$(MAKE) -f $(MAIN_MAKEFILE) training-data \
+		PYTHON=$(PYTHON)
+
+===== DIFF INTEGRITY =====
+===== Registration exit code =====
+0

@@ -1,0 +1,32 @@
+===== LIFECYCLE STATUS =====
+# Show the scheduler state without training models.
+.venv/bin/python \
+		-m electricity_predictor.modeling.lifecycle.runner \
+		--status
+Model lifecycle status
+======================
+Status: due
+Retraining interval: 90 days
+Promotion mode: manual
+Automatic promotion: no
+Last completed: None
+Next due: None
+Model version: None
+Candidate manifest: None
+
+===== ACTIVE MODEL REGISTRY =====
+No active model registry found.
+
+
+===== MODEL AVAILABILITY =====
+# Install a checksum-pinned remote release or validate the local active registry.
+# May write production model files; does not train models.
+ERROR: No active models are available.
+Local development requires:
+  models/production/active_models.json
+Production requires:
+  MODEL_RELEASE_URL
+  MODEL_RELEASE_SHA256
+make: *** [models-install] Error 1
+===== Exit code =====
+2

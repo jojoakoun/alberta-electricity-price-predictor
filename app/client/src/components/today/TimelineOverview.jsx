@@ -28,7 +28,7 @@ export function TimelineOverview({
   bestTime,
   comparison,
   currentPriceCents,
-  currentObservedAtUtc,
+  currentPriceSourceAtUtc,
   forecastSourceTimeUtc,
 }) {
   const gradientId = useId()
@@ -41,13 +41,43 @@ export function TimelineOverview({
     return null;
   }
 
+  const currentPoint = (
+    currentPriceCents != null
+    && currentPriceSourceAtUtc
+  )
+    ? {
+        forecastKind:
+          "current_market_price",
+        horizonHours: 0,
+        pointKind: "current",
+        priceCents:
+          currentPriceCents,
+        targetTimeUtc:
+          currentPriceSourceAtUtc,
+      }
+    : null;
+
+  const chartEntries = [
+    ...(currentPoint
+      ? [currentPoint]
+      : []),
+    ...forecasts.map(
+      (forecast) => ({
+        ...forecast,
+        pointKind: "forecast",
+      }),
+    ),
+  ];
+
   const {
     domainMinimum,
     domainMaximum,
-  } = buildPriceDomain(forecasts);
+  } = buildPriceDomain(
+    chartEntries,
+  );
 
   const points = buildChartPoints(
-    forecasts,
+    chartEntries,
     domainMinimum,
     domainMaximum,
   );
@@ -111,44 +141,6 @@ export function TimelineOverview({
           {copy.forecast.priceTrendDescription}
         </p>
       </div>
-
-      {currentPriceCents != null && (
-        <div
-          className={[
-            "mt-[var(--space-4)]",
-            "flex flex-wrap items-center justify-between",
-            "gap-[var(--space-3)]",
-            "rounded-[var(--radius-lg)]",
-            "border border-[var(--color-border)]",
-            "bg-[var(--color-surface-muted)]",
-            "px-[var(--space-4)] py-[var(--space-3)]",
-          ].join(" ")}
-        >
-          <div>
-            <p className="font-semibold text-[var(--color-text)]">
-              {copy.forecast.currentObservedPriceLabel}
-            </p>
-
-            <p className="text-sm text-[var(--color-text-muted)]">
-              {currentObservedAtUtc
-                ? [
-                    copy.freshness.observed,
-                    formatAlbertaTime(
-                      currentObservedAtUtc,
-                    ),
-                  ].join(" ")
-                : copy.forecast.currentPriceReference}
-            </p>
-          </div>
-
-          <p className="text-xl font-semibold text-[var(--color-brand)]">
-            {formatNumber(currentPriceCents)}
-            <span className="ml-1 text-sm">
-              ¢/kWh
-            </span>
-          </p>
-        </div>
-      )}
 
       <svg
         aria-labelledby="price-trend-title"
@@ -238,13 +230,23 @@ export function TimelineOverview({
             },
             index,
           ) => {
-            const isBest =
-              forecast.horizonHours
-              === bestHorizon;
+            const isCurrent =
+              forecast.pointKind
+              === "current";
+
+            const isBest = (
+              !isCurrent
+              && forecast.horizonHours
+                === bestHorizon
+            );
 
             return (
               <g
-                key={forecast.horizonHours}
+                key={
+                  isCurrent
+                    ? "current"
+                    : forecast.horizonHours
+                }
                 className="today-chart-point-group"
                 style={{
                   "--point-delay":
@@ -262,15 +264,27 @@ export function TimelineOverview({
                 )}
 
                 <circle
-                  data-testid={`forecast-point-${forecast.horizonHours}`}
+                  data-testid={
+                    isCurrent
+                      ? "current-price-point"
+                      : `forecast-point-${forecast.horizonHours}`
+                  }
                   cx={x}
                   cy={y}
                   fill={
-                    isBest
-                      ? "var(--color-brand)"
-                      : "var(--color-okay)"
+                    isCurrent
+                      ? "var(--color-text)"
+                      : isBest
+                        ? "var(--color-brand)"
+                        : "var(--color-okay)"
                   }
-                  r={isBest ? 9 : 7}
+                  r={
+                    isCurrent
+                      ? 8
+                      : isBest
+                        ? 9
+                        : 7
+                  }
                 />
 
                 <text
@@ -300,7 +314,9 @@ export function TimelineOverview({
                   x={x}
                   y={308}
                 >
-                  +{forecast.horizonHours} h
+                  {isCurrent
+                    ? copy.forecast.nowLabel
+                    : `+${forecast.horizonHours} h`}
                 </text>
 
                 <text
@@ -379,9 +395,17 @@ export function TimelineOverview({
       )}
 
       <ol className="sr-only">
-        {forecasts.map((forecast) => (
-          <li key={forecast.horizonHours}>
-            +{forecast.horizonHours} h
+        {chartEntries.map((forecast) => (
+          <li
+            key={
+              forecast.pointKind === "current"
+                ? "current"
+                : forecast.horizonHours
+            }
+          >
+            {forecast.pointKind === "current"
+              ? copy.forecast.nowLabel
+              : `+${forecast.horizonHours} h`}
             {", "}
             {formatAlbertaDay(
               forecast.targetTimeUtc,

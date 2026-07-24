@@ -209,7 +209,8 @@ export function BestTimeCard({
 
             {currentObservedAtUtc && (
               <small className="today-best-observed-at">
-                {copy.freshness.observed}{" "}
+                {copy.forecast.currentPriceSourceHour}
+                {": "}
                 {formatAlbertaTime(
                   currentObservedAtUtc,
                 )}

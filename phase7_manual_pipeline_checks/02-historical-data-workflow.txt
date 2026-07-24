@@ -1,0 +1,87 @@
+===== REFRESH HISTORICAL DATA =====
+# Rebuild canonical research history from the configured CSV and normalized AESO data.
+# Writes interim CSV artifacts; does not touch PostgreSQL or train models.
+.venv/bin/python \
+		src/electricity_predictor/data/pipeline.py
+Current historical dataset written to: data/interim/current_historical_prices_clean.csv
+
+===== HISTORICAL DATA QUALITY =====
+# Inspect the refreshed historical dataset.
+.venv/bin/python \
+		src/electricity_predictor/data/data_quality.py
+
+DATA QUALITY SUMMARY
+--------------------------------------------------
+File: data/interim/current_historical_prices_clean.csv
+Rows: 57468
+Columns: 5
+Min UTC time: 2020-01-01 07:00:00
+Max UTC time: 2026-07-22 18:00:00
+Duplicate UTC timestamps: 0
+
+Missing values:
+  - datetime_universal_time: 0
+  - datetime_local_time: 0
+  - actual_price: 3
+  - forecast_price: 0
+  - alberta_internal_load: 8533
+
+Zero actual price count: 1901
+Zero forecast price count: 2523
+
+Missing hourly UTC timestamps:
+  - Count: 0
+
+Rows with missing actual_price:
+      datetime_universal_time  ... alberta_internal_load
+57465     2026-07-22 16:00:00  ...                   NaN
+57466     2026-07-22 17:00:00  ...                   NaN
+57467     2026-07-22 18:00:00  ...                   NaN
+
+[3 rows x 5 columns]
+
+Recent incomplete actual_price rows:
+  - Count: 3
+
+===== OUTPUT FILE =====
+-rw-r--r--@ 1 joelakoun  staff   3.2M Jul 22 10:57 data/interim/current_historical_prices_clean.csv
+
+===== GIT STATUS =====
+ M Makefile
+ M src/electricity_predictor/modeling/classification/final_test_evaluation.py
+ M src/electricity_predictor/modeling/lifecycle/release_bundle.py
+ M src/electricity_predictor/modeling/split.py
+ M src/electricity_predictor/worker/persistence.py
+ M tests/deployment/test_railway_worker_config.py
+?? Makefile.useful
+?? phase7_manual_pipeline_checks/
+===== Exit code =====
+0
+
+===== USEFUL WORKFLOW REGISTRATION =====
+
+WattWise — validated daily commands
+
+  make -f Makefile.useful verify
+      Validate configuration, Python, API, frontend, lint, and build.
+
+  make -f Makefile.useful historical-data
+      Refresh clean AESO history and validate its data quality.
+
+
+===== HISTORICAL WORKFLOW DRY RUN =====
+/Library/Developer/CommandLineTools/usr/bin/make -f Makefile refresh-data \
+		PYTHON=.venv/bin/python
+# Rebuild canonical research history from the configured CSV and normalized AESO data.
+# Writes interim CSV artifacts; does not touch PostgreSQL or train models.
+.venv/bin/python \
+		src/electricity_predictor/data/pipeline.py
+/Library/Developer/CommandLineTools/usr/bin/make -f Makefile data-quality \
+		PYTHON=.venv/bin/python
+# Inspect the refreshed historical dataset.
+.venv/bin/python \
+		src/electricity_predictor/data/data_quality.py
+
+===== DIFF INTEGRITY =====
+===== Registration exit code =====
+0

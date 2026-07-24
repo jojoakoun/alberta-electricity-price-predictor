@@ -1,0 +1,42 @@
+===== PURPOSE =====
+Compare live classification validation metrics with naive baselines.
+PR-AUC baseline equals validation spike prevalence.
+F1 baseline predicts spike for every validation row.
+No training, protected test, model save, promotion, worker run, or database write.
+
+LIVE CLASSIFICATION BASELINE AUDIT
+==================================
+ horizon_hours  validation_rows  positive_rows  spike_prevalence  random_pr_auc_baseline  model_pr_auc  pr_auc_absolute_gain  pr_auc_lift  all_positive_f1_baseline  model_f1  f1_absolute_gain  beats_pr_auc_baseline  beats_f1_baseline
+             1             8760            598          0.068265                0.068265      0.642740              0.574475     9.415382                  0.127805  0.596774          0.468969                   True               True
+             3             8760            598          0.068265                0.068265      0.481359              0.413094     7.051348                  0.127805  0.497696          0.369891                   True               True
+             6             8760            598          0.068265                0.068265      0.370672              0.302407     5.429914                  0.127805  0.435115          0.307309                   True               True
+            12             8760            598          0.068265                0.068265      0.269630              0.201365     3.949761                  0.127805  0.324455          0.196650                   True               True
+            24             8760            598          0.068265                0.068265      0.294182              0.225917     4.309423                  0.127805  0.357970          0.230165                   True               True
+
+spike_threshold=170.848750
+all_pr_auc_baselines_beaten=True
+all_f1_baselines_beaten=True
+baseline_results_path=phase7_manual_pipeline_checks/115-live-classification-baseline-results.csv
+protected_test_used=False
+training_performed=False
+models_saved=False
+
+===== RESULT CONTRACT =====
+baseline_result_rows=5
+all_horizons_present=PASS
+prevalence_values_valid=PASS
+protected_test_used=False
+
+===== ACTIVE ARTIFACT STATUS =====
+
+===== DIFF FORMAT CHECK =====
+
+classification_baseline_audit=PASS
+training_performed=False
+protected_test_invoked=False
+models_saved=False
+active_registry_modified=False
+worker_modified=False
+database_modified=False
+commit_performed=False
+push_performed=False

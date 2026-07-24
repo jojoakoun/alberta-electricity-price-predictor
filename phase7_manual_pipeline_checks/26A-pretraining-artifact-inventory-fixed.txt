@@ -1,0 +1,78 @@
+===== MODELING REPORTS =====
+
+===== MODEL ARTIFACTS =====
+models/candidates/candidate-expanding-20260719T130000-dd356b9313f2/reports/classification/lifecycle_test_results.csv
+models/candidates/candidate-expanding-20260719T130000-dd356b9313f2/reports/comparison/classification_champion_candidate.csv
+models/candidates/candidate-expanding-20260719T130000-dd356b9313f2/reports/comparison/promotion_summary.json
+models/candidates/candidate-expanding-20260719T130000-dd356b9313f2/reports/comparison/regression_champion_candidate.csv
+models/candidates/candidate-expanding-20260719T130000-dd356b9313f2/reports/regression/lifecycle_test_results.csv
+
+===== RELEASE ARTIFACTS =====
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/active_models.json
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/classification/selected_classification_model_12h_random_forest_classifier_tuned.joblib
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/classification/selected_classification_model_1h_random_forest_classifier_tuned.joblib
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/classification/selected_classification_model_24h_random_forest_classifier_tuned.joblib
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/classification/selected_classification_model_3h_random_forest_classifier_tuned.joblib
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/classification/selected_classification_model_6h_random_forest_classifier_tuned.joblib
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/classification/selected_classification_model_metadata.csv
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/regression/selected_regression_model_12h_lasso_regression_tuned.joblib
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/regression/selected_regression_model_1h_lasso_regression_tuned.joblib
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/regression/selected_regression_model_24h_naive_baseline.joblib
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/regression/selected_regression_model_3h_random_forest_regressor_tuned.joblib
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/regression/selected_regression_model_6h_lasso_regression_tuned.joblib
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/regression/selected_regression_model_metadata.csv
+dist/model-releases/release-4fdf5d79bf4f44d1/payload/models/production/releases/release-4fdf5d79bf4f44d1/release_manifest.json
+
+===== ACTIVE MODEL REGISTRY =====
+No active model registry
+
+===== GIT CLASSIFICATION =====
+--- reports ---
+--- models ---
+!! models/
+--- dist/model-releases ---
+!! dist/
+
+===== SUMMARY COUNTS =====
+report_files=0
+model_files=5
+release_files=14
+
+===== GIT STATUS =====
+ M Makefile
+ M src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+ M src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+ M src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+ M src/electricity_predictor/modeling/classification/final_test_evaluation.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+ M src/electricity_predictor/modeling/classification/save_selected_models.py
+ M src/electricity_predictor/modeling/classification/target_builder.py
+ M src/electricity_predictor/modeling/decision/calibrate_decision_policy.py
+ M src/electricity_predictor/modeling/lifecycle/release_bundle.py
+ M src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
+ M src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
+ M src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
+ M src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
+ M src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
+ M src/electricity_predictor/modeling/regression/linear/linear_regression.py
+ M src/electricity_predictor/modeling/regression/random_forest/random_forest.py
+ M src/electricity_predictor/modeling/regression/random_forest/random_forest_tuning.py
+ M src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
+ M src/electricity_predictor/modeling/regression/ridge/ridge_tuning.py
+ M src/electricity_predictor/modeling/regression/run_regression_models.py
+ M src/electricity_predictor/modeling/split.py
+ M src/electricity_predictor/worker/persistence.py
+ M tests/deployment/test_railway_worker_config.py
+ M tests/modeling/classification/test_analyze_spike_regime.py
+ M tests/modeling/classification/test_best_model_selection.py
+ M tests/modeling/classification/test_save_selected_models.py
+ M tests/modeling/classification/test_spike_definition.py
+ M tests/modeling/decision/test_decision_threshold_consumers.py
+?? Makefile.useful
+?? architecture_et_comprehension.md
+?? phase7_manual_pipeline_checks/

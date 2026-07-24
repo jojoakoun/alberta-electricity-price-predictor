@@ -6,7 +6,13 @@ from electricity_predictor.modeling.model_results import (
   CLASSIFICATION_VALIDATION_RESULTS_PATH,
 )
 
-VALID_SELECTION_METRICS = ["f1", "recall", "precision", "accuracy"]
+VALID_SELECTION_METRICS = [
+  "f1",
+  "pr_auc",
+  "recall",
+  "precision",
+  "accuracy",
+]
 DEFAULT_SELECTION_METRIC = "f1"
 
 BEST_CLASSIFICATION_MODEL_PATH = Path("reports/best_classification_model.csv")
@@ -33,6 +39,7 @@ def validate_model_results_columns(results: pd.DataFrame) -> None:
     "precision",
     "recall",
     "f1",
+    "pr_auc",
     "model_parameters",
   }
 
@@ -66,7 +73,20 @@ def filter_validation_classification_results(
     & results["horizon_hours"].notna()
   ].copy()
 
-  filtered[metric] = pd.to_numeric(filtered[metric], errors="coerce")
+  metric_columns = [
+    "accuracy",
+    "precision",
+    "recall",
+    "f1",
+    "pr_auc",
+  ]
+
+  for metric_column in metric_columns:
+    filtered[metric_column] = pd.to_numeric(
+      filtered[metric_column],
+      errors="coerce",
+    )
+
   filtered = filtered[filtered[metric].notna()].copy()
 
   return filtered
@@ -90,10 +110,25 @@ def select_best_classification_models_by_horizon(
   selected_models = []
 
   for _, horizon_results in validation_results.groupby("horizon_hours"):
-    # F1 is primary. Recall, precision, and accuracy provide deterministic tie-breaks.
+    # F1 is primary. PR-AUC evaluates rare-event ranking before
+    # recall, precision, and accuracy provide deterministic tie-breaks.
+    tie_break_columns = [
+      column
+      for column in [
+        "pr_auc",
+        "recall",
+        "precision",
+        "accuracy",
+      ]
+      if column != metric
+    ]
+
+    sort_columns = [metric, *tie_break_columns]
+
     sorted_results = horizon_results.sort_values(
-      by=[metric, "recall", "precision", "accuracy"],
-      ascending=[False, False, False, False],
+      by=sort_columns,
+      ascending=[False] * len(sort_columns),
+      na_position="last",
     )
 
     selected_models.append(sorted_results.iloc[0].to_dict())
@@ -113,13 +148,22 @@ def add_selection_metadata(
   horizon_hours = int(result["horizon_hours"])
 
   result["selection_metric"] = metric
-  result["selection_rule"] = (
-    f"highest_validation_{metric}_within_horizon"
-  )
-  result["selection_reason"] = (
-    f"Selected because it has the highest validation {metric.upper()} "
-    f"among classification models for the {horizon_hours}h horizon."
-  )
+  if metric == "f1":
+    result["selection_rule"] = (
+      "highest_validation_f1_then_pr_auc_within_horizon"
+    )
+    result["selection_reason"] = (
+      "Selected by highest validation F1, with PR-AUC as the "
+      f"first tie-break for the {horizon_hours}h horizon."
+    )
+  else:
+    result["selection_rule"] = (
+      f"highest_validation_{metric}_within_horizon"
+    )
+    result["selection_reason"] = (
+      f"Selected because it has the highest validation {metric.upper()} "
+      f"among classification models for the {horizon_hours}h horizon."
+    )
 
   return result
 
@@ -166,6 +210,7 @@ def print_best_classification_models_summary(
     print(f"Horizon: {int(model['horizon_hours'])}h")
     print(f"Model: {model['model_name']}")
     print(f"F1: {model['f1']:.4f}")
+    print(f"PR-AUC: {model['pr_auc']:.4f}")
     print(f"Precision: {model['precision']:.4f}")
     print(f"Recall: {model['recall']:.4f}")
     print(f"Accuracy: {model['accuracy']:.4f}")

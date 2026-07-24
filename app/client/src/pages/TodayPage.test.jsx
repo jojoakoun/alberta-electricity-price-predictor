@@ -97,7 +97,11 @@ function buildTodayResponse(overrides = {}) {
     futureForecastStatus: "available",
     comparison: "forecast_lower",
     currentPriceCents: 2,
-    currentObservedAtUtc: "2026-07-20T00:00:00.000Z",
+    currentPriceKind: "forecast",
+    currentPriceSourceAtUtc:
+      "2026-07-20T01:00:00.000Z",
+    currentObservedAtUtc:
+      "2026-07-20T01:00:00.000Z",
     priceDifferenceCents: 0.85,
     forecasts,
     bestTime: {
@@ -186,6 +190,12 @@ describe("TodayPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText("Persistence reference"),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId(
+        "current-price-point",
+      ),
     ).toBeInTheDocument();
 
     expect(
@@ -323,6 +333,39 @@ describe("TodayPage", () => {
       ).toEqual(["/api/v1/today"]);
     });
   });
+
+
+  test(
+    "uses a compact note instead of a banner for moderately old forecasts",
+    async () => {
+      mockTodayResponse(
+        buildTodayResponse({
+          confidence: "moderate",
+          stale: true,
+        }),
+      );
+
+      renderPage();
+
+      expect(
+        await screen.findByTestId(
+          "moderate-forecast-notice",
+        ),
+      ).toBeInTheDocument();
+
+      expect(
+        screen.queryByText(
+          "Forecasts delayed",
+        ),
+      ).not.toBeInTheDocument();
+
+      expect(
+        screen.getByTestId(
+          "current-price-point",
+        ),
+      ).toBeInTheDocument();
+    },
+  );
 
   test("keeps stale forecast details visible with an explicit warning", async () => {
     const user = userEvent.setup();

@@ -1,0 +1,33 @@
+===== DECISION ANALYSIS DRY RUN =====
+# Regenerate research and calibration reports without opening the protected test.
+/Library/Developer/CommandLineTools/usr/bin/make decision-window-analysis
+# Compare rolling windows and write stability reports.
+.venv/bin/python \
+		-m electricity_predictor.modeling.decision.analyze_decision_windows
+/Library/Developer/CommandLineTools/usr/bin/make decision-regime-analysis
+# Compare decision stability across market regimes.
+.venv/bin/python \
+		-m electricity_predictor.modeling.decision.analyze_decision_regimes
+/Library/Developer/CommandLineTools/usr/bin/make decision-policy-backtest
+# Backtest candidate rolling-window policies.
+.venv/bin/python \
+		-m electricity_predictor.modeling.decision.backtest_decision_windows
+/Library/Developer/CommandLineTools/usr/bin/make decision-policy-calibration
+# Calibrate recommendation quantiles and threshold multipliers.
+.venv/bin/python \
+		-m electricity_predictor.modeling.decision.calibrate_decision_policy
+
+===== REQUIRED VALIDATION STEPS =====
+/Library/Developer/CommandLineTools/usr/bin/make decision-window-analysis
+/Library/Developer/CommandLineTools/usr/bin/make decision-regime-analysis
+/Library/Developer/CommandLineTools/usr/bin/make decision-policy-backtest
+/Library/Developer/CommandLineTools/usr/bin/make decision-policy-calibration
+
+===== FORBIDDEN PROTECTED STEP =====
+Protected stress test is not part of decision-analysis.
+
+===== HELP LABELS =====
+  make predicted-decision-stress-test         [protected test]
+  make decision-analysis                      [validation only]
+
+===== DIFF CHECK =====

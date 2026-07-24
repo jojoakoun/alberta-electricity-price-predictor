@@ -1,5 +1,5 @@
 import {
-  ArrowUpRight,
+  ArrowRight,
   Sparkles,
 } from "lucide-react";
 
@@ -20,7 +20,7 @@ export function ProjectHero() {
         "p-[var(--space-4)]",
         "shadow-[var(--shadow-card)]",
         "sm:p-[var(--space-6)]",
-        "lg:grid-cols-[minmax(0,1.6fr)_minmax(16rem,0.8fr)]",
+        "lg:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.95fr)]",
         "lg:items-end",
       ].join(" ")}
     >
@@ -102,6 +102,7 @@ export function ProjectHero() {
         className={[
           "project-hero-aside",
           "relative z-10",
+          "project-hero-action-panel",
           "space-y-[var(--space-4)]",
           "rounded-[var(--radius)]",
           "border border-[var(--color-brand)]/20",
@@ -112,23 +113,25 @@ export function ProjectHero() {
           "--hero-delay": "240ms",
         }}
       >
-        <p className="text-[var(--color-text-muted)]">
+        <p className="product-eyebrow">
           {hero.byline}
         </p>
 
-        <p className="text-[var(--font-size-h2)] font-semibold">
-          {hero.developer}
+        <h2 className="text-[var(--font-size-h2)]">
+          {hero.ctaTitle}
+        </h2>
+
+        <p className="text-[var(--color-text-muted)]">
+          {hero.ctaDescription}
         </p>
 
         <a
-          className="project-link-button"
-          href={hero.linkedInUrl}
-          rel="noreferrer"
-          target="_blank"
+          className="project-link-button project-hero-action-button"
+          href="/today"
         >
-          {hero.linkedInLabel}
+          {hero.ctaLabel}
 
-          <ArrowUpRight
+          <ArrowRight
             aria-hidden="true"
             size={18}
           />

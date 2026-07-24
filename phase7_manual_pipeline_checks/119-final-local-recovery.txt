@@ -1,0 +1,24 @@
+===== PURPOSE =====
+Repair the current-hour worker migration after the stopped final batch.
+Replace stale delayed-hour worker tests with the selected live contract.
+Preserve balanced classification training during the final fit.
+Repair final artifact provenance and active registry versioning.
+Run all non-protected tests, publish one real current-hour run, and verify the API.
+
+===== PRECONDITIONS =====
+required_inputs=PASS
+
+===== BACKUP =====
+source_backup=PASS
+
+===== REPLACE CURRENT-HOUR FEATURE PREPARATION =====
+feature_preparation_replaced=PASS
+
+===== SIMPLIFY CURRENT-HOUR DATABASE QUERY =====
+database_candidate=latest_available_market_hour
+persistence_patch=PASS
+
+===== REPAIR FINAL FIT TRAINING CONTRACT =====
+Traceback (most recent call last):
+  File "<stdin>", line 51, in <module>
+RuntimeError: Could not restore balanced classification fitting.

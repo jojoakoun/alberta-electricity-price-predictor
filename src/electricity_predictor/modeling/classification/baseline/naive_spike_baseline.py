@@ -5,7 +5,7 @@ import pandas as pd
 from electricity_predictor.config import load_configuration
 from electricity_predictor.modeling.classification.target_builder import (
   build_spike_target_column_name,
-  prepare_classification_splits,
+  prepare_classification_training_splits,
 )
 from electricity_predictor.modeling.metrics import (
   calculate_classification_metrics,
@@ -94,15 +94,14 @@ def run_classification_baseline(
 
   training_data = load_training_dataset(training_dataset_path)
 
-  train_data, validation_data, test_data = split_time_series_data_from_config(
+  train_data, validation_data, _ = split_time_series_data_from_config(
     data=training_data,
     modeling_config=modeling_config,
 )
 
-  _, prepared_validation, _, threshold = prepare_classification_splits(
+  _, prepared_validation, threshold = prepare_classification_training_splits(
     train_data=train_data,
     validation_data=validation_data,
-    test_data=test_data,
     horizons_hours=horizons_hours,
   )
 

@@ -21,6 +21,9 @@ import { FreshnessLine } from "../components/today/FreshnessLine";
 import { StatusBadge } from "../components/StatusBadge";
 import { TimelineOverview } from "../components/today/TimelineOverview";
 import { copy } from "../copy";
+import {
+  getActionableForecasts,
+} from "../domain/today";
 
 export function TodayPage() {
   const todayQuery = useTodayQuery();
@@ -114,6 +117,20 @@ export function TodayPage() {
 
   const data = todayQuery.data;
 
+  const currentPriceReferenceAtUtc = (
+    data.currentPriceSourceAtUtc
+    ?? data.currentObservedAtUtc
+    ?? data.generatedAt
+  );
+
+  // Passed targets are retained in the API contract but hidden from future
+  // planning views once their target hour is no longer actionable.
+  const actionableForecasts =
+    getActionableForecasts(
+      data.forecasts,
+      currentPriceReferenceAtUtc,
+    );
+
   return (
     <div
       className={[
@@ -150,7 +167,7 @@ export function TodayPage() {
         </div>
       </header>
 
-      {data.confidence !== "high" && (
+      {data.confidence === "low" && (
         <AppReveal>
           <DelayedBanner
             confidence={data.confidence}
@@ -179,7 +196,10 @@ export function TodayPage() {
             bestTime={data.bestTime}
             comparison={data.comparison}
             currentPriceCents={data.currentPriceCents}
-            currentObservedAtUtc={data.currentObservedAtUtc}
+            currentObservedAtUtc={
+              data.currentPriceSourceAtUtc
+              ?? data.currentObservedAtUtc
+            }
             priceDifferenceCents={data.priceDifferenceCents}
             forecastSourceTimeUtc={data.generatedAt}
           />
@@ -191,8 +211,11 @@ export function TodayPage() {
           bestTime={data.bestTime}
           comparison={data.comparison}
           currentPriceCents={data.currentPriceCents}
-          forecasts={data.forecasts}
-          currentObservedAtUtc={data.currentObservedAtUtc}
+          currentPriceSourceAtUtc={
+            data.currentPriceSourceAtUtc
+            ?? data.currentObservedAtUtc
+          }
+          forecasts={actionableForecasts}
           forecastSourceTimeUtc={data.generatedAt}
         />
       </AppReveal>
@@ -245,12 +268,13 @@ export function TodayPage() {
           <ForecastList
             bestTime={data.bestTime}
             comparison={data.comparison}
-            forecasts={data.forecasts}
+            forecasts={actionableForecasts}
           />
         </div>
       )}
 
       <FreshnessLine
+        confidence={data.confidence}
         sourceDataAtUtc={data.generatedAt}
       />
     </div>

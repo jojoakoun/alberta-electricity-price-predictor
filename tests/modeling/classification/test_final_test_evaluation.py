@@ -305,3 +305,203 @@ def test_train_selected_classification_model_applies_tuned_parameters(
   assert captured["max_depth"] == 10
   assert captured["min_samples_leaf"] == 5
   assert captured["target_column"] == "is_spike_target_6h"
+
+
+
+def test_train_selected_classification_model_applies_tuned_hist_gradient_boosting_parameters(
+  monkeypatch,
+):
+  import pandas as pd
+
+  captured = {}
+
+  def fake_train_hist_gradient_boosting_classifier(**kwargs):
+    captured.update(kwargs)
+    return object()
+
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification."
+    "final_test_evaluation."
+    "train_hist_gradient_boosting_classifier",
+    fake_train_hist_gradient_boosting_classifier,
+  )
+
+  train_selected_classification_model(
+    selected_model={
+      "model_name": (
+        "hist_gradient_boosting_classifier_tuned"
+      ),
+      "model_parameters": (
+        "learning_rate=0.05; "
+        "max_iter=200; "
+        "max_leaf_nodes=31; "
+        "min_samples_leaf=50; "
+        "l2_regularization=1.0"
+      ),
+    },
+    train_data=pd.DataFrame(),
+    target_column="is_spike_target_12h",
+  )
+
+  assert captured["learning_rate"] == 0.05
+  assert captured["max_iter"] == 200
+  assert captured["max_leaf_nodes"] == 31
+  assert captured["min_samples_leaf"] == 50
+  assert captured["l2_regularization"] == 1.0
+  assert captured["target_column"] == (
+    "is_spike_target_12h"
+  )
+
+
+def test_train_selected_classification_model_applies_tuned_extra_trees_parameters(
+  monkeypatch,
+):
+  import pandas as pd
+
+  captured = {}
+
+  def fake_train_extra_trees_classifier(**kwargs):
+    captured.update(kwargs)
+    return object()
+
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification."
+    "final_test_evaluation.train_extra_trees_classifier",
+    fake_train_extra_trees_classifier,
+  )
+
+  train_selected_classification_model(
+    selected_model={
+      "model_name": "extra_trees_classifier_tuned",
+      "model_parameters": (
+        "n_estimators=400; "
+        "max_depth=None; "
+        "min_samples_leaf=5; "
+        "max_features=sqrt; "
+        "decision_threshold=0.4500"
+      ),
+    },
+    train_data=pd.DataFrame(),
+    target_column="is_spike_target_24h",
+  )
+
+  assert captured["n_estimators"] == 400
+  assert captured["max_depth"] is None
+  assert captured["min_samples_leaf"] == 5
+  assert captured["max_features"] == "sqrt"
+  assert captured["target_column"] == (
+    "is_spike_target_24h"
+  )
+
+
+def test_final_evaluation_uses_frozen_validation_threshold(
+  monkeypatch,
+):
+  import numpy as np
+  import pandas as pd
+
+  from electricity_predictor.features.feature_columns import (
+    MODEL_FEATURE_COLUMNS,
+  )
+  from electricity_predictor.modeling.classification.final_test_evaluation import (
+    evaluate_selected_classification_model,
+  )
+
+  class FakeModel:
+    def predict_proba(self, features):
+      return np.array([
+        [0.40, 0.60],
+        [0.31, 0.69],
+        [0.20, 0.80],
+      ])
+
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification."
+    "final_test_evaluation.train_selected_classification_model",
+    lambda **kwargs: FakeModel(),
+  )
+
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification."
+    "final_test_evaluation.select_model_decision_threshold",
+    lambda **kwargs: (_ for _ in ()).throw(
+      AssertionError("Final test must not select a threshold.")
+    ),
+  )
+
+  evaluation_data = pd.DataFrame({
+    column: [0.0, 0.0, 0.0]
+    for column in MODEL_FEATURE_COLUMNS
+  })
+  evaluation_data["is_spike_target_1h"] = [0, 1, 1]
+
+  empty_data = evaluation_data.iloc[0:0].copy()
+
+  scores, prediction, threshold = (
+    evaluate_selected_classification_model(
+      selected_model={
+        "model_name": "logistic_regression",
+        "model_parameters": (
+          "C=1.0; decision_threshold=0.7000"
+        ),
+      },
+      train_data=empty_data,
+      validation_data=empty_data,
+      evaluation_data=evaluation_data,
+      target_column="is_spike_target_1h",
+      threshold=170.77,
+    )
+  )
+
+  assert threshold == 0.70
+  assert prediction.tolist() == [0, 0, 1]
+  assert 0.0 <= scores["f1"] <= 1.0
+
+
+def test_final_evaluation_supports_all_rule_baselines():
+  import pandas as pd
+
+  from electricity_predictor.modeling.classification.final_test_evaluation import (
+    evaluate_selected_classification_model,
+  )
+
+  cases = [
+    (
+      "naive_spike_baseline",
+      "actual_price_lag_1h",
+    ),
+    (
+      "aeso_forecast_spike_baseline",
+      "forecast_price",
+    ),
+    (
+      "previous_day_spike_baseline",
+      "actual_price_lag_24h",
+    ),
+  ]
+
+  for model_name, prediction_column in cases:
+    evaluation_data = pd.DataFrame({
+      prediction_column: [100.0, 200.0],
+      "is_spike_target_6h": [0, 1],
+    })
+
+    scores, prediction, decision_threshold = (
+      evaluate_selected_classification_model(
+        selected_model={
+          "model_name": model_name,
+          "model_parameters": (
+            f"prediction_column={prediction_column}"
+          ),
+        },
+        train_data=pd.DataFrame(),
+        validation_data=pd.DataFrame(),
+        evaluation_data=evaluation_data,
+        target_column="is_spike_target_6h",
+        threshold=170.77,
+      )
+    )
+
+    assert prediction.tolist() == [0, 1]
+    assert scores["f1"] == 1.0
+    assert decision_threshold is None

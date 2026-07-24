@@ -1,5 +1,5 @@
 const {
-  getLatestFinalizedPrice,
+  getCurrentMarketPrice,
   getRecentFinalizedPrices,
 } = require(
   "../repositories/hourly-price-repository"
@@ -22,56 +22,58 @@ const {
 } = require("../utils/action");
 
 /**
- * Build Now from the latest finalized observed price and recent market context.
+ * Build Now from the best truthful value available for the current hour.
  *
- * `generatedAt` intentionally equals the observation hour because this
- * recommendation does not depend on a prediction run or worker execution time.
+ * A forecast value remains explicitly labelled as a forecast. The latest
+ * finalized observation is used only when the current-hour row is unavailable.
  */
-async function getNow() {
+async function getNow(
+  viewedAt = new Date(),
+) {
   const [
-    latestObservedPrice,
+    currentMarketPrice,
     recentPrices,
   ] = await Promise.all([
-    getLatestFinalizedPrice(),
+    getCurrentMarketPrice(viewedAt),
     getRecentFinalizedPrices(),
   ]);
 
-  if (!latestObservedPrice) {
+  if (!currentMarketPrice) {
     return null;
   }
 
-  const observedDate = new Date(
-    latestObservedPrice.datetime_utc,
+  const sourceDate = new Date(
+    currentMarketPrice.datetime_utc,
   );
 
-  if (Number.isNaN(observedDate.getTime())) {
+  if (Number.isNaN(sourceDate.getTime())) {
     throw new Error(
-      "The latest finalized price has an invalid timestamp.",
+      "The current market price has an invalid timestamp.",
     );
   }
 
-  const observedAtUtc = (
-    observedDate.toISOString()
-  );
+  const sourceAtUtc = sourceDate.toISOString();
 
   const decision = getCurrentMarketDecision(
-    latestObservedPrice.actual_price,
+    currentMarketPrice.price,
     recentPrices,
   );
 
   return {
-    generatedAt: observedAtUtc,
+    generatedAt: sourceAtUtc,
 
     ...getObservedPriceFreshness(
-      observedAtUtc,
+      sourceAtUtc,
+      viewedAt,
     ),
 
     price: {
       value: dollarsPerMwhToCentsPerKwh(
-        latestObservedPrice.actual_price,
+        currentMarketPrice.price,
       ),
       unit: "¢/kWh",
-      observedAtUtc,
+      kind: currentMarketPrice.price_kind,
+      sourceAtUtc,
     },
 
     recommendation: {

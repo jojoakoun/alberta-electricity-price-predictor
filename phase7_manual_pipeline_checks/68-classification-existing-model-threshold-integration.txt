@@ -1,0 +1,223 @@
+===== EXISTING MODEL THRESHOLD INTEGRATION TESTS =====
+........................F......F......F..........                        [100%]
+=================================== FAILURES ===================================
+_____________ test_build_tuned_logistic_result_uses_shared_schema ______________
+
+    def test_build_tuned_logistic_result_uses_shared_schema():
+>     result = build_tuned_logistic_result(
+        scores={
+          "accuracy": 0.90,
+          "precision": 0.75,
+          "recall": 0.80,
+          "f1": 0.77,
+        },
+        row_count=100,
+        horizon_hours=6,
+        best_c=10.0,
+        cv_scores={
+          "cv_accuracy": 0.85,
+          "cv_precision": 0.70,
+          "cv_recall": 0.75,
+          "cv_f1": 0.72,
+        },
+      )
+
+tests/modeling/classification/test_logistic_tuning.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scores = {'accuracy': 0.9, 'f1': 0.77, 'precision': 0.75, 'recall': 0.8}
+row_count = 100, horizon_hours = 6, best_c = 10.0
+cv_scores = {'cv_accuracy': 0.85, 'cv_f1': 0.72, 'cv_precision': 0.7, 'cv_recall': 0.75}
+split = 'validation', decision_threshold = 0.5
+
+    def build_tuned_logistic_result(
+      scores: dict[str, float],
+      row_count: int,
+      horizon_hours: int,
+      best_c: float,
+      cv_scores: dict[str, float],
+      split: str = "validation",
+      decision_threshold: float = 0.5,
+    ) -> dict:
+      """Build one result row for tuned Logistic Regression."""
+      return build_model_result_row(
+        model_name="logistic_regression_tuned",
+        task="classification",
+        horizon_hours=horizon_hours,
+        split=split,
+        evaluation_rows=row_count,
+        metrics=scores,
+        model_parameters=add_decision_threshold_to_parameters(
+          parameter_text=(
+            f"best_C={best_c}; "
+            f"cv_splits={LOGISTIC_TUNING_SPLITS}; "
+            f"cv_accuracy={cv_scores['cv_accuracy']:.6f}; "
+            f"cv_precision={cv_scores['cv_precision']:.6f}; "
+            f"cv_recall={cv_scores['cv_recall']:.6f}; "
+            f"cv_f1={cv_scores['cv_f1']:.6f}; "
+>           f"cv_pr_auc={cv_scores['cv_pr_auc']:.6f}; "
+                         ^^^^^^^^^^^^^^^^^^^^^^
+            "class_weight=balanced; scaler=StandardScaler"
+          ),
+          decision_threshold=decision_threshold,
+        ),
+        notes=(
+          "Logistic Regression C selected by highest TimeSeriesSplit F1 "
+          "on the chronological train split."
+        ),
+      )
+E     KeyError: 'cv_pr_auc'
+
+src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py:157: KeyError
+___________ test_build_tuned_random_forest_result_uses_shared_schema ___________
+
+    def test_build_tuned_random_forest_result_uses_shared_schema():
+>     result = build_tuned_random_forest_result(
+        scores={
+          "accuracy": 0.90,
+          "precision": 0.80,
+          "recall": 0.70,
+          "f1": 0.75,
+        },
+        row_count=100,
+        horizon_hours=6,
+        best_parameters={
+          "n_estimators": 200,
+          "max_depth": 10,
+          "min_samples_leaf": 5,
+          "cv_accuracy": 0.85,
+          "cv_precision": 0.75,
+          "cv_recall": 0.70,
+          "cv_f1": 0.72,
+        },
+      )
+
+tests/modeling/classification/test_random_forest_tuning.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scores = {'accuracy': 0.9, 'f1': 0.75, 'precision': 0.8, 'recall': 0.7}
+row_count = 100, horizon_hours = 6
+best_parameters = {'cv_accuracy': 0.85, 'cv_f1': 0.72, 'cv_precision': 0.75, 'cv_recall': 0.7, ...}
+split = 'validation', decision_threshold = 0.5
+
+    def build_tuned_random_forest_result(
+      scores: dict[str, float],
+      row_count: int,
+      horizon_hours: int,
+      best_parameters: dict,
+      split: str = "validation",
+      decision_threshold: float = 0.5,
+    ) -> dict:
+      """Build one result row for tuned Random Forest classification."""
+      return build_model_result_row(
+        model_name="random_forest_classifier_tuned",
+        task="classification",
+        horizon_hours=horizon_hours,
+        split=split,
+        evaluation_rows=row_count,
+        metrics=scores,
+        model_parameters=add_decision_threshold_to_parameters(
+          parameter_text=(
+            f"n_estimators={best_parameters['n_estimators']}; "
+            f"max_depth={best_parameters['max_depth']}; "
+            f"min_samples_leaf={best_parameters['min_samples_leaf']}; "
+            f"cv_splits={RANDOM_FOREST_TUNING_SPLITS}; "
+            f"cv_accuracy={best_parameters['cv_accuracy']:.6f}; "
+            f"cv_precision={best_parameters['cv_precision']:.6f}; "
+            f"cv_recall={best_parameters['cv_recall']:.6f}; "
+            f"cv_f1={best_parameters['cv_f1']:.6f}; "
+>           f"cv_pr_auc={best_parameters['cv_pr_auc']:.6f}; "
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            "class_weight=balanced; random_state=42; n_jobs=-1"
+          ),
+          decision_threshold=decision_threshold,
+        ),
+        notes=(
+          "Random Forest parameters selected by highest TimeSeriesSplit F1 "
+          "on the chronological train split."
+        ),
+      )
+E     KeyError: 'cv_pr_auc'
+
+src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py:184: KeyError
+_________ test_build_tuned_gradient_boosting_result_uses_shared_schema _________
+
+    def test_build_tuned_gradient_boosting_result_uses_shared_schema():
+>     result = build_tuned_gradient_boosting_result(
+        scores={
+          "accuracy": 0.90,
+          "precision": 0.80,
+          "recall": 0.70,
+          "f1": 0.75,
+        },
+        row_count=100,
+        horizon_hours=6,
+        best_parameters={
+          "n_estimators": 200,
+          "learning_rate": 0.05,
+          "max_depth": 2,
+          "cv_accuracy": 0.85,
+          "cv_precision": 0.75,
+          "cv_recall": 0.70,
+          "cv_f1": 0.72,
+        },
+      )
+
+tests/modeling/classification/test_gradient_boosting_tuning.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+scores = {'accuracy': 0.9, 'f1': 0.75, 'precision': 0.8, 'recall': 0.7}
+row_count = 100, horizon_hours = 6
+best_parameters = {'cv_accuracy': 0.85, 'cv_f1': 0.72, 'cv_precision': 0.75, 'cv_recall': 0.7, ...}
+split = 'validation', decision_threshold = 0.5
+
+    def build_tuned_gradient_boosting_result(
+      scores: dict[str, float],
+      row_count: int,
+      horizon_hours: int,
+      best_parameters: dict,
+      split: str = "validation",
+      decision_threshold: float = 0.5,
+    ) -> dict:
+      """Build one result row for tuned Gradient Boosting classification."""
+      return build_model_result_row(
+        model_name="gradient_boosting_classifier_tuned",
+        task="classification",
+        horizon_hours=horizon_hours,
+        split=split,
+        evaluation_rows=row_count,
+        metrics=scores,
+        model_parameters=add_decision_threshold_to_parameters(
+          parameter_text=(
+            f"n_estimators={best_parameters['n_estimators']}; "
+            f"learning_rate={best_parameters['learning_rate']}; "
+            f"max_depth={best_parameters['max_depth']}; "
+            f"cv_splits={GRADIENT_BOOSTING_TUNING_SPLITS}; "
+            f"cv_accuracy={best_parameters['cv_accuracy']:.6f}; "
+            f"cv_precision={best_parameters['cv_precision']:.6f}; "
+            f"cv_recall={best_parameters['cv_recall']:.6f}; "
+            f"cv_f1={best_parameters['cv_f1']:.6f}; "
+>           f"cv_pr_auc={best_parameters['cv_pr_auc']:.6f}; "
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            "sample_weight=balanced; random_state=42"
+          ),
+          decision_threshold=decision_threshold,
+        ),
+        notes=(
+          "Gradient Boosting parameters selected by highest TimeSeriesSplit F1 "
+          "on the chronological train split."
+        ),
+      )
+E     KeyError: 'cv_pr_auc'
+
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py:184: KeyError
+=========================== short test summary info ============================
+FAILED tests/modeling/classification/test_logistic_tuning.py::test_build_tuned_logistic_result_uses_shared_schema
+FAILED tests/modeling/classification/test_random_forest_tuning.py::test_build_tuned_random_forest_result_uses_shared_schema
+FAILED tests/modeling/classification/test_gradient_boosting_tuning.py::test_build_tuned_gradient_boosting_result_uses_shared_schema
+3 failed, 46 passed in 3.54s
+
+===== GIT DIFF CHECK =====
+
+classification_threshold_integration_tests_exit_code=1
+git_diff_check_exit_code=0

@@ -3,7 +3,7 @@ const {
 } = require("../repositories/prediction-repository");
 
 const {
-  getLatestFinalizedPrice,
+  getCurrentMarketPrice,
 } = require("../repositories/hourly-price-repository");
 
 const {
@@ -86,31 +86,62 @@ function buildPublicForecast(
   };
 }
 
-function buildObservedPrice(latestPrice) {
-  if (!latestPrice) {
+const CURRENT_PRICE_KINDS = new Set([
+  "actual",
+  "forecast",
+  "fallback_actual",
+]);
+
+function buildCurrentPriceReference(
+  currentPrice,
+) {
+  if (!currentPrice) {
     return {
       currentPriceCents: null,
+      currentPriceKind: null,
+      currentPriceSourceAtUtc: null,
+
+      // Temporary compatibility field until the Today frontend migrates.
       currentObservedAtUtc: null,
     };
   }
 
-  const observedDate = new Date(
-    latestPrice.datetime_utc,
+  const sourceDate = new Date(
+    currentPrice.datetime_utc,
   );
 
-  if (Number.isNaN(observedDate.getTime())) {
+  if (Number.isNaN(sourceDate.getTime())) {
     throw new Error(
-      "The latest finalized price has an invalid timestamp.",
+      "The current market price has an invalid timestamp.",
     );
   }
+
+  if (
+    !CURRENT_PRICE_KINDS.has(
+      currentPrice.price_kind,
+    )
+  ) {
+    throw new Error(
+      "The current market price has an unsupported provenance.",
+    );
+  }
+
+  const sourceAtUtc =
+    sourceDate.toISOString();
 
   return {
     currentPriceCents:
       dollarsPerMwhToCentsPerKwh(
-        latestPrice.actual_price,
+        currentPrice.price,
       ),
+    currentPriceKind:
+      currentPrice.price_kind,
+    currentPriceSourceAtUtc:
+      sourceAtUtc,
+
+    // Removed after the frontend switches to currentPriceSourceAtUtc.
     currentObservedAtUtc:
-      observedDate.toISOString(),
+      sourceAtUtc,
   };
 }
 
@@ -123,11 +154,15 @@ function buildObservedPrice(latestPrice) {
 async function getToday(
   viewedAt = new Date(),
 ) {
-  const [predictions, latestPrice] =
-    await Promise.all([
-      getLatestPredictions(),
-      getLatestFinalizedPrice(),
-    ]);
+  const [
+    predictions,
+    currentMarketPrice,
+  ] = await Promise.all([
+    getLatestPredictions(),
+    getCurrentMarketPrice(
+      viewedAt,
+    ),
+  ]);
 
   if (predictions.length === 0) {
     return null;
@@ -175,12 +210,14 @@ async function getToday(
       bestForecast,
     );
 
-  const observedPrice =
-    buildObservedPrice(latestPrice);
+  const currentPriceReference =
+    buildCurrentPriceReference(
+      currentMarketPrice,
+    );
 
   const comparison = compareForecastWithObservedPrice(
     bestForecast,
-    observedPrice.currentPriceCents,
+    currentPriceReference.currentPriceCents,
   );
 
   return {
@@ -188,7 +225,7 @@ async function getToday(
     ...freshness,
     futureForecastStatus,
     ...comparison,
-    ...observedPrice,
+    ...currentPriceReference,
     forecasts,
     bestTime: bestForecast
       ? {

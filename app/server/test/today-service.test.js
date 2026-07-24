@@ -70,9 +70,10 @@ describe("Today service", () => {
     predictionRepository.getLatestPredictions.mockResolvedValue(
       buildPredictions(),
     );
-    hourlyPriceRepository.getLatestFinalizedPrice.mockResolvedValue({
-      datetime_utc: "2026-07-18T19:00:00.000Z",
-      actual_price: "70.00",
+    hourlyPriceRepository.getCurrentMarketPrice.mockResolvedValue({
+      datetime_utc: "2026-07-18T20:00:00.000Z",
+      price: "70.00",
+      price_kind: "forecast",
     });
 
     forecastTime.buildForecastTime.mockImplementation(
@@ -107,7 +108,11 @@ describe("Today service", () => {
       futureForecastStatus: "available",
       comparison: "forecast_lower",
       currentPriceCents: 7,
-      currentObservedAtUtc: "2026-07-18T19:00:00.000Z",
+      currentPriceKind: "forecast",
+      currentPriceSourceAtUtc:
+        "2026-07-18T20:00:00.000Z",
+      currentObservedAtUtc:
+        "2026-07-18T20:00:00.000Z",
       priceDifferenceCents: 0.86,
     });
     expect(today.forecasts).toHaveLength(5);
@@ -145,9 +150,10 @@ describe("Today service", () => {
         prices: [84.2, 61.444, 72, 90, 105],
       }),
     );
-    hourlyPriceRepository.getLatestFinalizedPrice.mockResolvedValue({
-      datetime_utc: "2026-07-18T19:00:00.000Z",
-      actual_price: "61.449",
+    hourlyPriceRepository.getCurrentMarketPrice.mockResolvedValue({
+      datetime_utc: "2026-07-18T20:00:00.000Z",
+      price: "61.449",
+      price_kind: "forecast",
     });
 
     const today = await getToday(viewedAt);
@@ -159,9 +165,10 @@ describe("Today service", () => {
   });
 
   test("reports that the current observed price is lower when every eligible forecast is higher", async () => {
-    hourlyPriceRepository.getLatestFinalizedPrice.mockResolvedValue({
-      datetime_utc: "2026-07-18T19:00:00.000Z",
-      actual_price: "50.00",
+    hourlyPriceRepository.getCurrentMarketPrice.mockResolvedValue({
+      datetime_utc: "2026-07-18T20:00:00.000Z",
+      price: "50.00",
+      price_kind: "actual",
     });
 
     const today = await getToday(viewedAt);
@@ -239,7 +246,7 @@ describe("Today service", () => {
   });
 
   test("keeps an eligible best time but marks comparison unavailable without an observed price", async () => {
-    hourlyPriceRepository.getLatestFinalizedPrice.mockResolvedValue(null);
+    hourlyPriceRepository.getCurrentMarketPrice.mockResolvedValue(null);
 
     const today = await getToday(viewedAt);
 
@@ -247,6 +254,8 @@ describe("Today service", () => {
     expect(today.futureForecastStatus).toBe("available");
     expect(today.comparison).toBe("unavailable");
     expect(today.currentPriceCents).toBeNull();
+    expect(today.currentPriceKind).toBeNull();
+    expect(today.currentPriceSourceAtUtc).toBeNull();
     expect(today.currentObservedAtUtc).toBeNull();
     expect(today.priceDifferenceCents).toBeNull();
   });

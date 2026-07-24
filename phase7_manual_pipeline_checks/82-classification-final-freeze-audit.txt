@@ -1,0 +1,74 @@
+===== PURPOSE =====
+Audit the final frozen classification selection before protected testing.
+No official model training is performed.
+The protected classification test is not invoked.
+
+===== FROZEN SELECTION CONTRACT =====
+selection_file=reports/best_classification_model.csv
+validation_file=reports/classification_validation_results.csv
+
+frozen_models:
+ horizon_hours                              model_name       f1   pr_auc  precision   recall  accuracy                                                                                                                                                                                                                                                                                                           model_parameters
+             1       hist_gradient_boosting_classifier 0.627750 0.667541   0.635274 0.620401  0.949772                                                                                                                    learning_rate=0.1; max_iter=100; max_leaf_nodes=31; min_samples_leaf=20; l2_regularization=0.0; loss=log_loss; sample_weight=balanced; early_stopping=False; random_state=42; decision_threshold=0.7000
+             3 hist_gradient_boosting_classifier_tuned 0.516291 0.506434   0.515860 0.516722  0.933904 learning_rate=0.05; max_iter=200; max_leaf_nodes=15; min_samples_leaf=20; l2_regularization=0.0; cv_splits=3; cv_accuracy=0.711259; cv_precision=0.347288; cv_recall=0.744345; cv_f1=0.470948; cv_pr_auc=0.515215; loss=log_loss; sample_weight=balanced; early_stopping=False; random_state=42; decision_threshold=0.6500
+             6 hist_gradient_boosting_classifier_tuned 0.452308 0.415817   0.418803 0.491639  0.918721 learning_rate=0.05; max_iter=200; max_leaf_nodes=15; min_samples_leaf=20; l2_regularization=0.0; cv_splits=3; cv_accuracy=0.683341; cv_precision=0.318585; cv_recall=0.709057; cv_f1=0.436775; cv_pr_auc=0.433794; loss=log_loss; sample_weight=balanced; early_stopping=False; random_state=42; decision_threshold=0.6000
+            12 hist_gradient_boosting_classifier_tuned 0.384858 0.319045   0.364179 0.408027  0.910959 learning_rate=0.05; max_iter=200; max_leaf_nodes=15; min_samples_leaf=20; l2_regularization=0.0; cv_splits=3; cv_accuracy=0.715428; cv_precision=0.317422; cv_recall=0.550040; cv_f1=0.398753; cv_pr_auc=0.386254; loss=log_loss; sample_weight=balanced; early_stopping=False; random_state=42; decision_threshold=0.6000
+            24      gradient_boosting_classifier_tuned 0.369231 0.299032   0.341880 0.401338  0.906393                                                                                    n_estimators=100; learning_rate=0.05; max_depth=2; cv_splits=3; cv_accuracy=0.478430; cv_precision=0.247554; cv_recall=0.826339; cv_f1=0.365372; cv_pr_auc=0.393470; sample_weight=balanced; random_state=42; decision_threshold=0.6000
+
+selected_model_count=5
+frozen_selection_matches_validation_ranking=PASS
+frozen_hyperparameters_complete=PASS
+frozen_decision_thresholds_complete=PASS
+final_evaluation_makes_no_new_selection=PASS
+model_saving_uses_validation_frozen_thresholds=PASS
+validation_runner_invokes_protected_test=False
+this_audit_invokes_protected_test=False
+
+===== COMPLETE CLASSIFICATION TEST SUITE =====
+........................................................................ [ 61%]
+.............................................                            [100%]
+117 passed in 5.97s
+
+===== RELEVANT WORKING TREE STATE =====
+ M src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+ M src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+ M src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+ M src/electricity_predictor/modeling/classification/best_model_selection.py
+ M src/electricity_predictor/modeling/classification/decision_threshold.py
+ M src/electricity_predictor/modeling/classification/final_test_evaluation.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+ M src/electricity_predictor/modeling/classification/run_classification_models.py
+ M src/electricity_predictor/modeling/classification/save_selected_models.py
+ M src/electricity_predictor/modeling/classification/target_builder.py
+ M tests/modeling/classification/test_analyze_spike_regime.py
+ M tests/modeling/classification/test_best_model_selection.py
+ M tests/modeling/classification/test_decision_threshold.py
+ M tests/modeling/classification/test_final_test_evaluation.py
+ M tests/modeling/classification/test_gradient_boosting_tuning.py
+ M tests/modeling/classification/test_logistic_tuning.py
+ M tests/modeling/classification/test_random_forest_tuning.py
+ M tests/modeling/classification/test_run_classification_models.py
+ M tests/modeling/classification/test_save_selected_models.py
+ M tests/modeling/classification/test_spike_definition.py
+?? src/electricity_predictor/modeling/classification/baseline/rule_spike_baseline.py
+?? src/electricity_predictor/modeling/classification/extra_trees/
+?? src/electricity_predictor/modeling/classification/hist_gradient_boosting/
+?? src/electricity_predictor/modeling/classification/validation_evaluation.py
+?? tests/modeling/classification/test_extra_trees_classifier.py
+?? tests/modeling/classification/test_extra_trees_tuning.py
+?? tests/modeling/classification/test_hist_gradient_boosting_classifier.py
+?? tests/modeling/classification/test_hist_gradient_boosting_tuning.py
+?? tests/modeling/classification/test_rule_spike_baseline.py
+?? tests/modeling/classification/test_validation_evaluation.py
+
+===== GIT DIFF CHECK =====
+
+final_freeze_audit_exit_code=0
+classification_tests_exit_code=0
+git_status_command_exit_code=0
+git_diff_check_exit_code=0

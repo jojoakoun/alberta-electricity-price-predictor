@@ -7,12 +7,14 @@ import sklearn
 from electricity_predictor.config import load_configuration
 from electricity_predictor.modeling.classification.final_test_evaluation import (
   BEST_MODEL_PATH,
+  RULE_BASELINE_PREDICTION_COLUMNS,
+  get_frozen_decision_threshold,
   load_selected_classification_models,
   train_selected_classification_model,
 )
 from electricity_predictor.modeling.classification.target_builder import (
   build_spike_target_column_name,
-  prepare_classification_splits,
+  prepare_classification_training_splits,
 )
 from electricity_predictor.features.feature_columns import (
   MODEL_FEATURE_COLUMNS,
@@ -69,24 +71,46 @@ def save_model_artifact(model, output_path: Path) -> Path:
   return output_path
 
 
-def build_naive_spike_baseline_artifact(
+def build_rule_spike_baseline_artifact(
   selected_model: dict,
   target_column: str,
   threshold: float,
 ) -> dict:
-  """Build a serializable naive spike baseline rule."""
+  """Build a serializable deterministic spike-baseline rule."""
+  model_name = selected_model["model_name"]
+
+  if model_name not in RULE_BASELINE_PREDICTION_COLUMNS:
+    raise ValueError(
+      f"Unsupported rule baseline: {model_name}"
+    )
+
   return {
-    "model_name": "naive_spike_baseline",
+    "model_name": model_name,
     "model_type": "rule_baseline",
     "horizon_hours": int(selected_model["horizon_hours"]),
     "target_column": target_column,
-    "prediction_column": "actual_price_lag_1h",
+    "prediction_column": (
+      RULE_BASELINE_PREDICTION_COLUMNS[model_name]
+    ),
     "spike_threshold": threshold,
     "model_parameters": selected_model.get(
       "model_parameters",
       "",
     ),
   }
+
+
+def build_naive_spike_baseline_artifact(
+  selected_model: dict,
+  target_column: str,
+  threshold: float,
+) -> dict:
+  """Preserve the original helper for compatibility."""
+  return build_rule_spike_baseline_artifact(
+    selected_model=selected_model,
+    target_column=target_column,
+    threshold=threshold,
+  )
 
 
 def build_model_metadata_row(
@@ -176,14 +200,15 @@ def save_selected_classification_models(
   selected_models = load_selected_classification_models(
     best_model_path
   )
-  decision_thresholds = load_final_decision_thresholds(
-    final_results_path
-  )
+  # Kept in the public signature for compatibility with existing calls.
+  # Frozen thresholds now come from validation-selected model parameters.
+  _ = final_results_path
+
   training_data = load_training_dataset(
     training_dataset_path
   )
 
-  train_data, validation_data, test_data = split_time_series_data_from_config(
+  train_data, validation_data, _ = split_time_series_data_from_config(
     data=training_data,
     modeling_config=modeling_config,
 )
@@ -191,12 +216,10 @@ def save_selected_classification_models(
   (
     prepared_train,
     prepared_validation,
-    _,
     threshold,
-  ) = prepare_classification_splits(
+  ) = prepare_classification_training_splits(
     train_data=train_data,
     validation_data=validation_data,
-    test_data=test_data,
     horizons_hours=horizons_hours,
   )
 
@@ -228,17 +251,23 @@ def save_selected_classification_models(
     print(f"Model: {selected_model['model_name']}")
     print(f"Target column: {target_column}")
 
-    if selected_model["model_name"] == "naive_spike_baseline":
-      artifact = build_naive_spike_baseline_artifact(
+    model_name = selected_model["model_name"]
+
+    if model_name in RULE_BASELINE_PREDICTION_COLUMNS:
+      artifact = build_rule_spike_baseline_artifact(
         selected_model=selected_model,
         target_column=target_column,
         threshold=threshold,
       )
+      decision_threshold = None
     else:
       artifact = train_selected_classification_model(
         selected_model=selected_model,
         train_data=final_training_data,
         target_column=target_column,
+      )
+      decision_threshold = get_frozen_decision_threshold(
+        selected_model
       )
 
     artifact_path = output_dir / build_model_artifact_filename(
@@ -256,7 +285,7 @@ def save_selected_classification_models(
         selected_model=selected_model,
         target_column=target_column,
         threshold=threshold,
-        decision_threshold=decision_thresholds.get(horizon_hours),
+        decision_threshold=decision_threshold,
         artifact_path=saved_path,
         training_rows=len(final_training_data),
         training_start_utc=training_start_utc,

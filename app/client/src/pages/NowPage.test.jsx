@@ -52,6 +52,9 @@ describe("NowPage", () => {
           price: {
             value: 8.42,
             unit: "¢/kWh",
+            kind: "forecast",
+            sourceAtUtc:
+              "2026-07-18T19:00:00.000Z",
           },
           recommendation: {
             level: "recommended",
@@ -100,7 +103,9 @@ describe("NowPage", () => {
           price: {
             value: 8.42,
             unit: "¢/kWh",
-            observedAtUtc: "2026-07-18T15:00:00.000Z",
+            kind: "fallback_actual",
+            sourceAtUtc:
+              "2026-07-18T15:00:00.000Z",
           },
           recommendation: {
             level: "recommended",
@@ -128,8 +133,12 @@ describe("NowPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("8.42")).toBeInTheDocument();
     expect(
-      screen.getByText(/Price observed at/i),
-    ).toHaveTextContent("9:00");
+      screen.getByTestId(
+        "market-hour-row",
+      ),
+    ).toHaveTextContent(
+      /Market hour: 9:00 a\.m\. – 10:00 a\.m\./,
+    );
     expect(
       screen.queryByText("Recommendation unavailable"),
     ).not.toBeInTheDocument();

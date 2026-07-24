@@ -3,240 +3,363 @@ import {
   render,
   screen,
 } from "@testing-library/react";
+
 import {
   afterEach,
+  beforeEach,
   describe,
   expect,
   test,
 } from "vitest";
 
-import { TimelineOverview } from "./TimelineOverview";
+import {
+  setLanguage,
+} from "../../i18n/language";
 
-afterEach(() => {
-  cleanup();
-});
+import {
+  TimelineOverview,
+} from "./TimelineOverview";
+
 
 const forecasts = [
   {
     horizonHours: 1,
-    targetTimeUtc: "2026-07-20T16:00:00.000Z",
-    targetTimeLocal: "2026-07-20T10:00:00",
-    temporalWordingKey: "very_soon",
+    targetTimeUtc:
+      "2026-07-20T16:00:00.000Z",
+    targetTimeLocal:
+      "2026-07-20T10:00:00",
+    temporalWordingKey:
+      "very_soon",
     priceCents: 2.05,
-    recommendation: "acceptable",
-    explanationKey: "acceptable_market_risk",
-    forecastKind: "model_forecast",
+    recommendation:
+      "acceptable",
+    explanationKey:
+      "acceptable_market_risk",
+    forecastKind:
+      "model_forecast",
   },
   {
     horizonHours: 3,
-    targetTimeUtc: "2026-07-20T18:00:00.000Z",
-    targetTimeLocal: "2026-07-20T12:00:00",
-    temporalWordingKey: "in_a_few_hours",
+    targetTimeUtc:
+      "2026-07-20T18:00:00.000Z",
+    targetTimeLocal:
+      "2026-07-20T12:00:00",
+    temporalWordingKey:
+      "in_a_few_hours",
     priceCents: 2.32,
-    recommendation: "acceptable",
-    explanationKey: "acceptable_market_risk",
-    forecastKind: "model_forecast",
+    recommendation:
+      "acceptable",
+    explanationKey:
+      "acceptable_market_risk",
+    forecastKind:
+      "model_forecast",
   },
   {
     horizonHours: 6,
-    targetTimeUtc: "2026-07-20T21:00:00.000Z",
-    targetTimeLocal: "2026-07-20T15:00:00",
-    temporalWordingKey: "this_afternoon",
+    targetTimeUtc:
+      "2026-07-20T21:00:00.000Z",
+    targetTimeLocal:
+      "2026-07-20T15:00:00",
+    temporalWordingKey:
+      "this_afternoon",
     priceCents: 4.54,
     recommendation: "avoid",
-    explanationKey: "higher_than_usual",
-    forecastKind: "model_forecast",
+    explanationKey:
+      "higher_than_usual",
+    forecastKind:
+      "model_forecast",
   },
   {
     horizonHours: 12,
-    targetTimeUtc: "2026-07-21T03:00:00.000Z",
-    targetTimeLocal: "2026-07-20T21:00:00",
-    temporalWordingKey: "this_evening",
+    targetTimeUtc:
+      "2026-07-21T03:00:00.000Z",
+    targetTimeLocal:
+      "2026-07-20T21:00:00",
+    temporalWordingKey:
+      "this_evening",
     priceCents: 5.2,
     recommendation: "avoid",
-    explanationKey: "higher_than_usual",
-    forecastKind: "model_forecast",
+    explanationKey:
+      "higher_than_usual",
+    forecastKind:
+      "model_forecast",
   },
   {
     horizonHours: 24,
-    targetTimeUtc: "2026-07-21T15:00:00.000Z",
-    targetTimeLocal: "2026-07-21T09:00:00",
+    targetTimeUtc:
+      "2026-07-21T15:00:00.000Z",
+    targetTimeLocal:
+      "2026-07-21T09:00:00",
     temporalWordingKey:
       "tomorrow_around_this_time",
     priceCents: 1.3,
-    recommendation: "recommended",
-    explanationKey: "lower_than_usual",
-    forecastKind: "persistence_reference",
+    recommendation:
+      "recommended",
+    explanationKey:
+      "lower_than_usual",
+    forecastKind:
+      "persistence_reference",
   },
 ];
 
 const bestTime = {
   horizonHours: 1,
-  targetTimeUtc: "2026-07-20T16:00:00.000Z",
-  targetTimeLocal: "2026-07-20T10:00:00",
+  targetTimeUtc:
+    "2026-07-20T16:00:00.000Z",
+  targetTimeLocal:
+    "2026-07-20T10:00:00",
   priceCents: 2.05,
-  recommendation: "acceptable",
+  recommendation:
+    "acceptable",
 };
 
-function readPointX(horizonHours) {
-  const point = screen.getByTestId(
-    `forecast-point-${horizonHours}`,
-  );
 
+function readPointX(testId) {
   return Number(
-    point.getAttribute("cx"),
+    screen
+      .getByTestId(testId)
+      .getAttribute("cx"),
   );
 }
 
+
 describe("TimelineOverview", () => {
-  test("separates the observed price from forecasts and identifies the persistence reference", () => {
-    render(
-      <TimelineOverview
-        forecasts={forecasts}
-        bestTime={bestTime}
-        comparison="forecast_equal"
-        currentPriceCents={2.05}
-        currentObservedAtUtc="2026-07-20T14:00:00.000Z"
-        forecastSourceTimeUtc="2026-07-20T15:00:00.000Z"
-      />,
-    );
-
-    expect(
-      screen.getByText(
-        /Price observed at 8:00 a.m./i,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getAllByText("+1 h").length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText("+24 h").length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getByText("Persistence reference"),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByTestId("best-forecast-halo"),
-    ).not.toBeInTheDocument();
+  beforeEach(() => {
+    setLanguage("en");
   });
 
-  test("uses a smooth line only as a visual guide", () => {
-    render(
-      <TimelineOverview
-        forecasts={forecasts}
-        bestTime={bestTime}
-        comparison="unavailable"
-        forecastSourceTimeUtc="2026-07-20T15:00:00.000Z"
-      />,
-    );
-
-    const path = screen.getByTestId(
-      "forecast-trend-path",
-    );
-
-    expect(path.getAttribute("d")).toContain(" C ");
-    expect(
-      screen.getByText(
-        /The smooth line is only a visual guide/i,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /Values between the dots are not model predictions/i,
-      ),
-    ).toBeInTheDocument();
+  afterEach(() => {
+    cleanup();
   });
 
-  test("spaces the five authentic forecast points evenly for readability", () => {
-    render(
-      <TimelineOverview
-        forecasts={forecasts}
-        bestTime={bestTime}
-        comparison="unavailable"
-        forecastSourceTimeUtc="2026-07-20T15:00:00.000Z"
-      />,
-    );
-
-    const spacings = [
-      readPointX(3) - readPointX(1),
-      readPointX(6) - readPointX(3),
-      readPointX(12) - readPointX(6),
-      readPointX(24) - readPointX(12),
-    ];
-
-    spacings.forEach((spacing) => {
-      expect(spacing).toBeCloseTo(
-        spacings[0],
-        5,
+  test(
+    "draws the current price followed by five authentic horizons",
+    () => {
+      render(
+        <TimelineOverview
+          forecasts={forecasts}
+          bestTime={bestTime}
+          comparison="forecast_lower"
+          currentPriceCents={2.5}
+          currentPriceSourceAtUtc={
+            "2026-07-20T15:00:00.000Z"
+          }
+          forecastSourceTimeUtc={
+            "2026-07-20T15:00:00.000Z"
+          }
+        />,
       );
-    });
-  });
 
-  test("highlights the selected point only for a genuine lower-price opportunity", () => {
-    const { rerender } = render(
-      <TimelineOverview
-        forecasts={forecasts}
-        bestTime={bestTime}
-        comparison="forecast_equal"
-        currentPriceCents={2.05}
-        forecastSourceTimeUtc="2026-07-20T15:00:00.000Z"
-      />,
-    );
+      expect(
+        screen.getByTestId(
+          "current-price-point",
+        ),
+      ).toHaveAttribute(
+        "fill",
+        "var(--color-text)",
+      );
 
-    expect(
-      screen.queryByTestId("best-forecast-halo"),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByTestId("forecast-point-1"),
-    ).toHaveAttribute(
-      "fill",
-      "var(--color-okay)",
-    );
+      for (
+        const horizon of [
+          1,
+          3,
+          6,
+          12,
+          24,
+        ]
+      ) {
+        expect(
+          screen.getByTestId(
+            `forecast-point-${horizon}`,
+          ),
+        ).toBeInTheDocument();
+      }
 
-    rerender(
-      <TimelineOverview
-        forecasts={forecasts}
-        bestTime={bestTime}
-        comparison="forecast_lower"
-        currentPriceCents={2.5}
-        forecastSourceTimeUtc="2026-07-20T15:00:00.000Z"
-      />,
-    );
+      expect(
+        screen.getAllByText(
+          "Now",
+        ).length,
+      ).toBeGreaterThan(0);
 
-    expect(
-      screen.getByTestId("best-forecast-halo"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByTestId("forecast-point-1"),
-    ).toHaveAttribute(
-      "fill",
-      "var(--color-brand)",
-    );
-  });
+      expect(
+        screen.getByText(
+          /The first point is the current AESO market price/i,
+        ),
+      ).toBeInTheDocument();
 
-  test("uses a neutral curve when comparison evidence is unavailable", () => {
-    render(
-      <TimelineOverview
-        forecasts={forecasts}
-        bestTime={bestTime}
-        comparison="unavailable"
-        forecastSourceTimeUtc="2026-07-20T15:00:00.000Z"
-      />,
-    );
+      expect(
+        screen.getByTestId(
+          "best-forecast-halo",
+        ),
+      ).toBeInTheDocument();
+    },
+  );
 
-    const stops = Array.from(
-      screen
-        .getByTestId("forecast-trend-gradient")
-        .querySelectorAll("stop"),
-    );
+  test(
+    "includes the current price in the chart scale and line",
+    () => {
+      render(
+        <TimelineOverview
+          forecasts={forecasts}
+          bestTime={bestTime}
+          comparison="unavailable"
+          currentPriceCents={8}
+          currentPriceSourceAtUtc={
+            "2026-07-20T15:00:00.000Z"
+          }
+          forecastSourceTimeUtc={
+            "2026-07-20T15:00:00.000Z"
+          }
+        />,
+      );
 
-    expect(
-      stops.map((stop) =>
-        stop.getAttribute("stop-color"),
-      ),
-    ).toEqual([
-      "var(--color-okay)",
-      "var(--color-okay)",
-    ]);
-  });
+      const currentY = Number(
+        screen
+          .getByTestId(
+            "current-price-point",
+          )
+          .getAttribute("cy"),
+      );
+
+      const forecastY = Number(
+        screen
+          .getByTestId(
+            "forecast-point-24",
+          )
+          .getAttribute("cy"),
+      );
+
+      expect(
+        currentY,
+      ).toBeLessThan(
+        forecastY,
+      );
+
+      expect(
+        screen
+          .getByTestId(
+            "forecast-trend-path",
+          )
+          .getAttribute("d"),
+      ).toContain(" C ");
+    },
+  );
+
+  test(
+    "spaces all six supplied points evenly",
+    () => {
+      render(
+        <TimelineOverview
+          forecasts={forecasts}
+          bestTime={bestTime}
+          comparison="unavailable"
+          currentPriceCents={2.5}
+          currentPriceSourceAtUtc={
+            "2026-07-20T15:00:00.000Z"
+          }
+          forecastSourceTimeUtc={
+            "2026-07-20T15:00:00.000Z"
+          }
+        />,
+      );
+
+      const pointIds = [
+        "current-price-point",
+        "forecast-point-1",
+        "forecast-point-3",
+        "forecast-point-6",
+        "forecast-point-12",
+        "forecast-point-24",
+      ];
+
+      const positions =
+        pointIds.map(
+          readPointX,
+        );
+
+      const spacings =
+        positions
+          .slice(1)
+          .map(
+            (position, index) =>
+              position
+              - positions[index],
+          );
+
+      spacings.forEach(
+        (spacing) => {
+          expect(
+            spacing,
+          ).toBeCloseTo(
+            spacings[0],
+            5,
+          );
+        },
+      );
+    },
+  );
+
+  test(
+    "never promotes the current point as bestTime",
+    () => {
+      render(
+        <TimelineOverview
+          forecasts={forecasts}
+          bestTime={bestTime}
+          comparison="forecast_lower"
+          currentPriceCents={0.1}
+          currentPriceSourceAtUtc={
+            "2026-07-20T15:00:00.000Z"
+          }
+          forecastSourceTimeUtc={
+            "2026-07-20T15:00:00.000Z"
+          }
+        />,
+      );
+
+      expect(
+        screen.getByTestId(
+          "current-price-point",
+        ),
+      ).toHaveAttribute(
+        "fill",
+        "var(--color-text)",
+      );
+
+      expect(
+        screen.getByTestId(
+          "forecast-point-1",
+        ),
+      ).toHaveAttribute(
+        "fill",
+        "var(--color-brand)",
+      );
+    },
+  );
+
+  test(
+    "keeps the persistence reference visible",
+    () => {
+      render(
+        <TimelineOverview
+          forecasts={forecasts}
+          bestTime={bestTime}
+          comparison="unavailable"
+          currentPriceCents={2.5}
+          currentPriceSourceAtUtc={
+            "2026-07-20T15:00:00.000Z"
+          }
+          forecastSourceTimeUtc={
+            "2026-07-20T15:00:00.000Z"
+          }
+        />,
+      );
+
+      expect(
+        screen.getByText(
+          "Persistence reference",
+        ),
+      ).toBeInTheDocument();
+    },
+  );
 });

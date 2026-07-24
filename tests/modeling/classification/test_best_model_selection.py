@@ -27,6 +27,7 @@ def make_results() -> pd.DataFrame:
       "precision": 0.60,
       "recall": 0.70,
       "f1": 0.65,
+      "pr_auc": 0.68,
       "model_parameters": "C=1.0",
     },
     {
@@ -38,6 +39,7 @@ def make_results() -> pd.DataFrame:
       "precision": 0.70,
       "recall": 0.75,
       "f1": 0.72,
+      "pr_auc": 0.74,
       "model_parameters": "n_estimators=100",
     },
     {
@@ -49,6 +51,7 @@ def make_results() -> pd.DataFrame:
       "precision": 0.50,
       "recall": 0.80,
       "f1": 0.62,
+      "pr_auc": 0.64,
       "model_parameters": "C=1.0",
     },
     {
@@ -60,6 +63,7 @@ def make_results() -> pd.DataFrame:
       "precision": None,
       "recall": None,
       "f1": None,
+      "pr_auc": None,
       "model_parameters": "",
     },
   ])
@@ -75,6 +79,29 @@ def test_select_best_classification_models_by_horizon():
   assert selected[1]["model_name"] == "logistic_regression"
 
 
+def test_selection_ignores_protected_test_results() -> None:
+  results = make_results()
+  protected_result = results.iloc[0].copy()
+  protected_result["model_name"] = "protected_test_winner"
+  protected_result["split"] = "test"
+  protected_result["accuracy"] = 1.0
+  protected_result["precision"] = 1.0
+  protected_result["recall"] = 1.0
+  protected_result["f1"] = 1.0
+
+  results = pd.concat(
+    [results, protected_result.to_frame().T],
+    ignore_index=True,
+  )
+
+  selected = select_best_classification_models_by_horizon(
+    results=results,
+  )
+
+  assert selected[0]["model_name"] == "random_forest_classifier"
+  assert all(row["split"] == "validation" for row in selected)
+
+
 def test_add_selection_metadata_uses_highest_f1_rule():
   selected = add_selection_metadata(
     selected_model=make_results().iloc[0].to_dict(),
@@ -82,7 +109,7 @@ def test_add_selection_metadata_uses_highest_f1_rule():
 
   assert selected["selection_metric"] == "f1"
   assert selected["selection_rule"] == (
-    "highest_validation_f1_within_horizon"
+    "highest_validation_f1_then_pr_auc_within_horizon"
   )
 
 
@@ -103,3 +130,27 @@ def test_model_selection_loads_classification_validation_report_by_default() -> 
     signature(load_model_results).parameters["file_path"].default
     == CLASSIFICATION_VALIDATION_RESULTS_PATH
   )
+
+
+
+def test_selection_uses_pr_auc_as_first_f1_tie_break():
+  results = make_results()
+
+  tied_candidate = results.iloc[0].copy()
+  tied_candidate["model_name"] = "higher_pr_auc_classifier"
+  tied_candidate["f1"] = 0.72
+  tied_candidate["pr_auc"] = 0.80
+  tied_candidate["recall"] = 0.60
+  tied_candidate["precision"] = 0.60
+  tied_candidate["accuracy"] = 0.90
+
+  results = pd.concat(
+    [results, tied_candidate.to_frame().T],
+    ignore_index=True,
+  )
+
+  selected = select_best_classification_models_by_horizon(
+    results=results,
+  )
+
+  assert selected[0]["model_name"] == "higher_pr_auc_classifier"

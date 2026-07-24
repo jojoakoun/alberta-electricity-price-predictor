@@ -6,12 +6,15 @@ from sklearn.model_selection import TimeSeriesSplit
 from electricity_predictor.config import load_configuration
 from electricity_predictor.modeling.split import get_time_series_cv_gap_hours
 from electricity_predictor.modeling.classification.logistic.logistic_regression import (
-  evaluate_logistic_regression_model,
   train_logistic_regression_model,
+)
+from electricity_predictor.modeling.classification.validation_evaluation import (
+  add_decision_threshold_to_parameters,
+  evaluate_classifier_on_validation,
 )
 from electricity_predictor.modeling.classification.target_builder import (
   build_spike_target_column_name,
-  prepare_classification_splits,
+  prepare_classification_training_splits,
 )
 from electricity_predictor.modeling.metrics import calculate_classification_metrics
 from electricity_predictor.modeling.model_results import (
@@ -99,7 +102,7 @@ def tune_logistic_c(
   train_data: pd.DataFrame,
   target_column: str,
 ) -> dict:
-  """Select the Logistic Regression C value with the highest CV F1."""
+  """Select C by highest CV PR-AUC, then CV F1."""
   tuning_results = []
 
   for c_value in LOGISTIC_C_VALUES:
@@ -118,10 +121,14 @@ def tune_logistic_c(
       }
     )
 
-  # Higher F1 is better because spike detection must balance precision and recall.
+  # PR-AUC evaluates rare-event ranking without depending on a fixed cutoff.
+  # CV F1 provides a deterministic tie-break between equally ranked candidates.
   return sorted(
     tuning_results,
-    key=lambda result: result["cv_f1"],
+    key=lambda result: (
+      result["cv_pr_auc"],
+      result["cv_f1"],
+    ),
     reverse=True,
   )[0]
 
@@ -133,6 +140,7 @@ def build_tuned_logistic_result(
   best_c: float,
   cv_scores: dict[str, float],
   split: str = "validation",
+  decision_threshold: float = 0.5,
 ) -> dict:
   """Build one result row for tuned Logistic Regression."""
   return build_model_result_row(
@@ -142,18 +150,22 @@ def build_tuned_logistic_result(
     split=split,
     evaluation_rows=row_count,
     metrics=scores,
-    model_parameters=(
-      f"best_C={best_c}; "
-      f"cv_splits={LOGISTIC_TUNING_SPLITS}; "
-      f"cv_accuracy={cv_scores['cv_accuracy']:.6f}; "
-      f"cv_precision={cv_scores['cv_precision']:.6f}; "
-      f"cv_recall={cv_scores['cv_recall']:.6f}; "
-      f"cv_f1={cv_scores['cv_f1']:.6f}; "
-      "class_weight=balanced; scaler=StandardScaler"
+    model_parameters=add_decision_threshold_to_parameters(
+      parameter_text=(
+        f"best_C={best_c}; "
+        f"cv_splits={LOGISTIC_TUNING_SPLITS}; "
+        f"cv_accuracy={cv_scores['cv_accuracy']:.6f}; "
+        f"cv_precision={cv_scores['cv_precision']:.6f}; "
+        f"cv_recall={cv_scores['cv_recall']:.6f}; "
+        f"cv_f1={cv_scores['cv_f1']:.6f}; "
+        f"cv_pr_auc={cv_scores['cv_pr_auc']:.6f}; "
+        "class_weight=balanced; scaler=StandardScaler"
+      ),
+      decision_threshold=decision_threshold,
     ),
     notes=(
-      "Logistic Regression C selected by highest TimeSeriesSplit F1 "
-      "on the chronological train split."
+      "Logistic Regression C selected by highest TimeSeriesSplit "
+      "PR-AUC, then F1, on the chronological train split."
     ),
   )
 
@@ -169,15 +181,14 @@ def run_tuned_logistic_regression(
 
   training_data = load_training_dataset(training_dataset_path)
 
-  train_data, validation_data, test_data = split_time_series_data_from_config(
+  train_data, validation_data, _ = split_time_series_data_from_config(
     data=training_data,
     modeling_config=modeling_config,
 )
 
-  prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
+  prepared_train, prepared_validation, threshold = prepare_classification_training_splits(
     train_data=train_data,
     validation_data=validation_data,
-    test_data=test_data,
     horizons_hours=horizons_hours,
   )
 
@@ -201,10 +212,12 @@ def run_tuned_logistic_regression(
       c_value=best_c,
     )
 
-    validation_scores = evaluate_logistic_regression_model(
-      model=tuned_model,
-      evaluation_data=prepared_validation,
-      target_column=target_column,
+    validation_scores, decision_threshold = (
+      evaluate_classifier_on_validation(
+        model=tuned_model,
+        validation_data=prepared_validation,
+        target_column=target_column,
+      )
     )
 
     result = build_tuned_logistic_result(
@@ -213,6 +226,7 @@ def run_tuned_logistic_regression(
       horizon_hours=horizon_hours,
       best_c=best_c,
       cv_scores=best_result,
+      decision_threshold=decision_threshold,
     )
 
     append_model_result(
@@ -223,10 +237,12 @@ def run_tuned_logistic_regression(
     print(f"Best C: {best_c}")
     print(f"Spike threshold: {threshold:.4f}")
     print(f"CV F1: {best_result['cv_f1']:.4f}")
+    print(f"CV PR-AUC: {best_result['cv_pr_auc']:.4f}")
     print(f"Validation accuracy: {validation_scores['accuracy']:.4f}")
     print(f"Validation precision: {validation_scores['precision']:.4f}")
     print(f"Validation recall: {validation_scores['recall']:.4f}")
     print(f"Validation F1: {validation_scores['f1']:.4f}")
+    print(f"Decision threshold: {decision_threshold:.4f}")
 
   return results_path
 

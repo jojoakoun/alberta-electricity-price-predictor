@@ -107,11 +107,25 @@ def test_upsert_hourly_prices_synchronizes_rows() -> None:
   assert "ON CONFLICT (datetime_utc)" in upsert_query
 
 
+
 def test_load_inference_hourly_prices_uses_database_candidate_window() -> None:
-  candidate = datetime(2026, 7, 20, 14, tzinfo=timezone.utc)
+  candidate = datetime(
+    2026,
+    7,
+    20,
+    14,
+    tzinfo=timezone.utc,
+  )
+
   rows = [
     (
-      datetime(2026, 7, 13, 14, tzinfo=timezone.utc),
+      datetime(
+        2026,
+        7,
+        13,
+        14,
+        tzinfo=timezone.utc,
+      ),
       40.0,
       38.0,
       8100.0,
@@ -127,25 +141,63 @@ def test_load_inference_hourly_prices_uses_database_candidate_window() -> None:
       candidate,
     ),
   ]
+
   cursor = MagicMock()
   cursor.fetchall.return_value = rows
+
   connection = MagicMock()
-  connection.cursor.return_value.__enter__.return_value = cursor
+
+  connection.cursor.return_value.__enter__.return_value = (
+    cursor
+  )
 
   with patch(
-    "electricity_predictor.worker.persistence.get_database_connection"
+    "electricity_predictor.worker.persistence."
+    "get_database_connection"
   ) as get_connection:
-    get_connection.return_value.__enter__.return_value = connection
+    get_connection.return_value.__enter__.return_value = (
+      connection
+    )
 
-    result = load_inference_hourly_prices(lookback_hours=168)
+    result = load_inference_hourly_prices(
+      lookback_hours=168
+    )
 
-  query, parameters = cursor.execute.call_args.args
-  assert "MAX(datetime_utc) FILTER" in query
-  assert "inference_candidate_utc" in query
+  query, parameters = (
+    cursor.execute.call_args.args
+  )
+
+  normalized_query = " ".join(
+    query.split()
+  )
+
+  assert (
+    "MAX(datetime_utc) FILTER "
+    "(WHERE datetime_utc <= "
+    "DATE_TRUNC('hour', CURRENT_TIMESTAMP)) "
+    "AS candidate_utc"
+    in normalized_query
+  )
+
+  assert (
+    "inference_candidate_utc"
+    in normalized_query
+  )
+
   assert parameters == (168,)
   assert len(result) == 2
-  assert result.attrs["inference_candidate_utc"] == pd.Timestamp(candidate)
-  assert "inference_candidate_utc" not in result.columns
+
+  assert (
+    result.attrs[
+      "inference_candidate_utc"
+    ]
+    == pd.Timestamp(candidate)
+  )
+
+  assert (
+    "inference_candidate_utc"
+    not in result.columns
+  )
 
 
 def test_repeated_hourly_price_upsert_uses_the_same_conflict_records() -> None:

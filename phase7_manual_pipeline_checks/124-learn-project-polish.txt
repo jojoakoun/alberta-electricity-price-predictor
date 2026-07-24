@@ -1,0 +1,77 @@
+===== PURPOSE =====
+Polish the Learn and Project pages after desktop/mobile bilingual review.
+Remove misleading quantitative confidence bars.
+Fix Project translations, portrait resilience, duplicated actions, and final calls to action.
+Run the complete frontend verification without committing or pushing.
+
+===== PRECONDITIONS =====
+branch=feature/phase-7-modeling
+node_version=v22.22.3
+npm_version=11.16.0
+embedded_patch=PASS
+
+===== APPLY TARGETED UI POLISH =====
+patch_applied=True
+required_polished_files=PASS
+
+===== COPY AND PRESENTATION CONTRACT =====
+qualitative_horizon_guidance=PASS
+bilingual_forecast_horizon_copy=PASS
+bilingual_end_to_end_copy=PASS
+technology_stack_nodejs=PASS
+developer_portrait_asset=PASS
+
+===== FRONTEND TESTS =====
+
+> client@0.0.0 test
+> vitest run --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/Users/joelakoun/Desktop/alberta-electricity-price-predictor/app/client[39m
+
+ [32m✓[39m src/components/StatusBadge.test.jsx [2m([22m[2m4 tests[22m[2m)[22m[32m 34[2mms[22m[39m
+ [32m✓[39m src/components/today/FreshnessLine.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[32m 77[2mms[22m[39m
+ [32m✓[39m src/components/today/TimelineOverview.test.jsx [2m([22m[2m5 tests[22m[2m)[22m[32m 105[2mms[22m[39m
+ [32m✓[39m src/components/now/RecommendationCard.test.jsx [2m([22m[2m3 tests[22m[2m)[22m[32m 106[2mms[22m[39m
+ [32m✓[39m src/layout/AppLayout.test.jsx [2m([22m[2m1 test[22m[2m)[22m[32m 140[2mms[22m[39m
+ [32m✓[39m src/pages/NowPage.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[32m 200[2mms[22m[39m
+ [32m✓[39m src/pages/LearnPage.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 462[2mms[22m[39m
+     [33m[2m✓[22m[39m supports an understandable and honest learning flow [33m 461[2mms[22m[39m
+ [31m❯[39m src/pages/ProjectPage.test.jsx [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 457[2mms[22m[39m
+     [33m[2m✓[22m[39m presents the product, engineering work, and developer [33m 341[2mms[22m[39m
+[31m     [31m×[31m resolves project highlights after a language change[39m[32m 115[2mms[22m[39m
+ [32m✓[39m src/i18n/parity.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m src/api/now.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/components/today/timeline-geometry.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/api/today.test.js [2m([22m[2m12 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/domain/today.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/pages/TodayPage.test.jsx [2m([22m[2m7 tests[22m[2m)[22m[33m 693[2mms[22m[39m
+     [33m[2m✓[22m[39m renders a genuine lower-price opportunity and reveals all forecast details [33m 406[2mms[22m[39m
+ [32m✓[39m src/i18n/language.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 1[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/pages/ProjectPage.test.jsx[2m > [22mProjectPage[2m > [22mresolves project highlights after a language change
+[31m[1mError[22m: [2mexpect([22m[31melement[31m[2m).not.toBeInTheDocument()[22m
+
+[31mexpected document not to contain element, found <p
+  class="text-[var(--color-text-muted)]"
+>
+  Hourly market records
+</p> instead[31m[39m
+[36m [2m❯[22m src/pages/ProjectPage.test.jsx:[2m116:11[22m[39m
+    [90m114|[39m     [34mexpect[39m(
+    [90m115|[39m       screen[33m.[39m[34mqueryByText[39m([32m"Hourly market records"[39m)[33m,[39m
+    [90m116|[39m     )[33m.[39mnot[33m.[39m[34mtoBeInTheDocument[39m()[33m;[39m
+    [90m   |[39m           [31m^[39m
+    [90m117|[39m   })[33m;[39m
+    [90m118|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m14 passed[39m[22m[90m (15)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m52 passed[39m[22m[90m (53)[39m
+[2m   Start at [22m 10:30:19
+[2m   Duration [22m 2.69s[2m (transform 1.54s, setup 1.37s, import 3.52s, tests 2.30s, environment 13.37s)[22m
+

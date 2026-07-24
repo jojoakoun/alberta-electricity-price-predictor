@@ -1,0 +1,437 @@
+===== PURPOSE =====
+Audit why fresh worker cycles may not produce five horizons relative to the current hour.
+Determine whether the real-time feature contract must be redesigned.
+No training, model saving, worker run, database write, protected test, commit, or push occurs.
+
+===== DATABASE MARKET HOURS =====
+         database_now          |      current_hour      | latest_available_hour  | latest_finalized_hour  | finalized_delay_hours 
+-------------------------------+------------------------+------------------------+------------------------+-----------------------
+ 2026-07-24 05:18:06.555292+00 | 2026-07-24 05:00:00+00 | 2026-07-24 05:00:00+00 | 2026-07-24 02:00:00+00 |    3.0000000000000000
+(1 row)
+
+      datetime_utc      | actual_price | forecast_price |  source  
+------------------------+--------------+----------------+----------
+ 2026-07-24 05:00:00+00 |              |          34.77 | aeso_api
+ 2026-07-24 04:00:00+00 |              |          38.71 | aeso_api
+ 2026-07-24 03:00:00+00 |              |          43.12 | aeso_api
+ 2026-07-24 02:00:00+00 |        47.18 |          26.92 | aeso_api
+ 2026-07-24 01:00:00+00 |        46.84 |          40.06 | aeso_api
+ 2026-07-24 00:00:00+00 |        30.71 |          24.34 | aeso_api
+ 2026-07-23 23:00:00+00 |        26.97 |          31.43 | aeso_api
+ 2026-07-23 22:00:00+00 |        38.39 |          71.65 | aeso_api
+(8 rows)
+
+
+===== WORKER SOURCE-HOUR SELECTION =====
+current_utc_hour=2026-07-24T05:00:00+00:00
+selected_source_hour=2026-07-24T03:00:00+00:00
+source_delay_hours=2.0
+horizon_1h_target=2026-07-24T04:00:00+00:00 is_future=False
+horizon_3h_target=2026-07-24T06:00:00+00:00 is_future=True
+horizon_6h_target=2026-07-24T09:00:00+00:00 is_future=True
+horizon_12h_target=2026-07-24T15:00:00+00:00 is_future=True
+horizon_24h_target=2026-07-25T03:00:00+00:00 is_future=True
+
+===== ACTIVE MODEL FEATURE CONTRACTS =====
+
+--- regression ---
+ horizon_hours                             model_name                                                                                                                                                                                         feature_columns
+             1 hist_gradient_boosting_regressor_tuned forecast_price|hour|day_of_week|month|is_weekend|actual_price_lag_1h|actual_price_lag_24h|forecast_price_lag_1h|actual_price_rolling_24h_mean|actual_price_rolling_24h_max|actual_price_rolling_7d_mean
+             3 hist_gradient_boosting_regressor_tuned forecast_price|hour|day_of_week|month|is_weekend|actual_price_lag_1h|actual_price_lag_24h|forecast_price_lag_1h|actual_price_rolling_24h_mean|actual_price_rolling_24h_max|actual_price_rolling_7d_mean
+             6 hist_gradient_boosting_regressor_tuned forecast_price|hour|day_of_week|month|is_weekend|actual_price_lag_1h|actual_price_lag_24h|forecast_price_lag_1h|actual_price_rolling_24h_mean|actual_price_rolling_24h_max|actual_price_rolling_7d_mean
+            12 hist_gradient_boosting_regressor_tuned forecast_price|hour|day_of_week|month|is_weekend|actual_price_lag_1h|actual_price_lag_24h|forecast_price_lag_1h|actual_price_rolling_24h_mean|actual_price_rolling_24h_max|actual_price_rolling_7d_mean
+            24 hist_gradient_boosting_regressor_tuned forecast_price|hour|day_of_week|month|is_weekend|actual_price_lag_1h|actual_price_lag_24h|forecast_price_lag_1h|actual_price_rolling_24h_mean|actual_price_rolling_24h_max|actual_price_rolling_7d_mean
+
+--- classification ---
+ horizon_hours                              model_name                                                                                                                                                                                         feature_columns
+             1       hist_gradient_boosting_classifier forecast_price|hour|day_of_week|month|is_weekend|actual_price_lag_1h|actual_price_lag_24h|forecast_price_lag_1h|actual_price_rolling_24h_mean|actual_price_rolling_24h_max|actual_price_rolling_7d_mean
+             3 hist_gradient_boosting_classifier_tuned forecast_price|hour|day_of_week|month|is_weekend|actual_price_lag_1h|actual_price_lag_24h|forecast_price_lag_1h|actual_price_rolling_24h_mean|actual_price_rolling_24h_max|actual_price_rolling_7d_mean
+             6 hist_gradient_boosting_classifier_tuned forecast_price|hour|day_of_week|month|is_weekend|actual_price_lag_1h|actual_price_lag_24h|forecast_price_lag_1h|actual_price_rolling_24h_mean|actual_price_rolling_24h_max|actual_price_rolling_7d_mean
+            12 hist_gradient_boosting_classifier_tuned forecast_price|hour|day_of_week|month|is_weekend|actual_price_lag_1h|actual_price_lag_24h|forecast_price_lag_1h|actual_price_rolling_24h_mean|actual_price_rolling_24h_max|actual_price_rolling_7d_mean
+            24      gradient_boosting_classifier_tuned forecast_price|hour|day_of_week|month|is_weekend|actual_price_lag_1h|actual_price_lag_24h|forecast_price_lag_1h|actual_price_rolling_24h_mean|actual_price_rolling_24h_max|actual_price_rolling_7d_mean
+
+===== FEATURE AVAILABILITY RULES =====
+"""Build one validated inference feature row from PostgreSQL history."""
+
+import pandas as pd
+
+from electricity_predictor.features.feature_engineering import (
+  ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS,
+  add_lag_features,
+  add_rolling_features,
+  add_time_features,
+)
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
+)
+from electricity_predictor.worker.persistence import (
+  load_inference_hourly_prices,
+)
+
+
+ALBERTA_TIMEZONE = "America/Edmonton"
+
+
+def validate_candidate_forecast_support(
+  window: pd.DataFrame,
+  candidate_timestamp: pd.Timestamp,
+) -> None:
+  """Validate raw forecasts for the candidate and its preceding UTC hour.
+
+  A missing value raises an error naming its timestamp; serving never fills it
+  or substitutes an older candidate.
+  """
+  required_timestamps = [
+    candidate_timestamp - pd.Timedelta(hours=1),
+    candidate_timestamp,
+  ]
+  required_rows = window.loc[
+    window["datetime_universal_time"].isin(
+      required_timestamps
+    )
+  ]
+  missing_forecast_rows = required_rows.loc[
+    required_rows["forecast_price"].isna()
+  ]
+
+  if missing_forecast_rows.empty:
+    return
+
+  missing_timestamp = missing_forecast_rows[
+    "datetime_universal_time"
+  ].iloc[0]
+  raise ValueError(
+    "Inference feature window is missing forecast_price at "
+    f"{missing_timestamp.isoformat()}; the candidate requires its "
+    "forecast and the previous hour for forecast_price_lag_1h."
+  )
+
+
+def select_inference_feature_window(
+  data: pd.DataFrame,
+) -> pd.DataFrame:
+  """Return the exact validated support window for one inference candidate.
+
+  Missing hourly, finalized-actual, or forecast support raises an error with
+  the affected UTC timestamp; serving must not fall back to an older row.
+  """
+  ordered_data = data.sort_values(
+    "datetime_universal_time"
+  ).reset_index(drop=True)
+  candidate_hint = data.attrs.get(
+    "inference_candidate_utc"
+  )
+
+  finalized_rows = ordered_data.loc[
+    ordered_data["actual_price"].notna()
+  ]
+
+  if finalized_rows.empty:
+    raise ValueError(
+      "Inference feature preparation requires at least one finalized actual price."
+    )
+
+  latest_timestamp = ordered_data[
+    "datetime_universal_time"
+  ].iloc[-1]
+  latest_finalized_timestamp = finalized_rows[
+    "datetime_universal_time"
+  ].iloc[-1]
+  if candidate_hint is None:
+    candidate_timestamp = min(
+      latest_timestamp,
+      latest_finalized_timestamp + pd.Timedelta(hours=1),
+    )
+  else:
+    candidate_timestamp = pd.Timestamp(candidate_hint)
+
+    if candidate_timestamp.tzinfo is None:
+      candidate_timestamp = candidate_timestamp.tz_localize("UTC")
+    else:
+      candidate_timestamp = candidate_timestamp.tz_convert("UTC")
+  window_start = candidate_timestamp - pd.Timedelta(
+    hours=ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS
+  )
+  expected_timestamps = pd.date_range(
+    start=window_start,
+    end=candidate_timestamp,
+    freq="h",
+    tz="UTC",
+  )
+  window = ordered_data.loc[
+    ordered_data["datetime_universal_time"].between(
+      window_start,
+      candidate_timestamp,
+    )
+  ].copy()
+  duplicate_timestamps = window.loc[
+    window[
+      "datetime_universal_time"
+    ].duplicated(),
+    "datetime_universal_time",
+  ]
+
+  if not duplicate_timestamps.empty:
+    duplicate_timestamp = duplicate_timestamps.iloc[0]
+    raise ValueError(
+      "Inference feature window contains duplicate hourly price at "
+      f"{duplicate_timestamp.isoformat()}."
+    )
+
+  available_timestamps = pd.DatetimeIndex(
+    window["datetime_universal_time"]
+  )
+  missing_timestamps = expected_timestamps.difference(
+    available_timestamps
+  )
+
+  if not missing_timestamps.empty:
+    missing_timestamp = missing_timestamps[0]
+    raise ValueError(
+      "Inference feature window is missing hourly price at "
+      f"{missing_timestamp.isoformat()}."
+    )
+
+  # The candidate may be forecast-only, but all observations used by its
+  # lagged and rolling actual-price features must already be finalized.
+  required_actual_rows = window.loc[
+    window["datetime_universal_time"] < candidate_timestamp
+  ]
+  missing_actual_rows = required_actual_rows.loc[
+    required_actual_rows["actual_price"].isna()
+  ]
+
+  if not missing_actual_rows.empty:
+    missing_actual_timestamp = missing_actual_rows[
+      "datetime_universal_time"
+    ].iloc[0]
+    raise ValueError(
+      "Inference feature window is missing finalized actual price at "
+      f"{missing_actual_timestamp.isoformat()}."
+    )
+
+  validate_candidate_forecast_support(
+    window=window,
+    candidate_timestamp=candidate_timestamp,
+  )
+
+  return window.reset_index(drop=True)
+
+
+def prepare_model_features() -> pd.DataFrame:
+  """Return one complete feature row for the latest inference source hour.
+
+  Raises ValueError when required support is incomplete; an older complete row
+  is never substituted for the selected candidate.
+  """
+  data = load_inference_hourly_prices(
+    lookback_hours=ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS
+  )
+
+  if data.empty:
+    raise ValueError("No hourly prices available.")
+
+  data = data.copy()
+
+  data["datetime_universal_time"] = pd.to_datetime(
+    data["datetime_universal_time"],
+    utc=True,
+  )
+
+  data = select_inference_feature_window(data)
+
+  data["datetime_local_time"] = (
+    data["datetime_universal_time"]
+    .dt.tz_convert(ALBERTA_TIMEZONE)
+    .dt.tz_localize(None)
+  )
+
+  # Reuse the same calculations as training, without creating future targets.
+  data = add_time_features(data)
+  data = add_lag_features(data)
+  data = add_rolling_features(data)
+
+  # Only the selected source hour is publishable. Returning older complete rows
+  # would hide a current source-data or feature-contract failure.
+  candidate_row = data.tail(1).copy()
+  missing_feature_columns = [
+    column
+    for column in MODEL_FEATURE_COLUMNS
+    if pd.isna(candidate_row.iloc[0][column])
+  ]
+
+  if missing_feature_columns:
+    candidate_timestamp = candidate_row[
+      "datetime_universal_time"
+    ].iloc[0]
+    raise ValueError(
+      "Inference candidate at "
+      f"{candidate_timestamp.isoformat()} is missing model features: "
+      f"{', '.join(missing_feature_columns)}."
+    )
+
+  return candidate_row.reset_index(drop=True)
+
+===== TRAINING FEATURE DEFINITIONS =====
+src/electricity_predictor/features/feature_engineering.py:84:  data["actual_price_lag_1h"] = data["actual_price"].shift(1)
+src/electricity_predictor/features/feature_engineering.py:85:  data["actual_price_lag_24h"] = data["actual_price"].shift(24)
+src/electricity_predictor/features/feature_engineering.py:88:  data["forecast_price_lag_1h"] = data["forecast_price"].shift(1)
+src/electricity_predictor/features/feature_engineering.py:103:  data["actual_price_rolling_24h_mean"] = past_actual_price.rolling(24).mean()
+src/electricity_predictor/features/feature_engineering.py:105:  data["actual_price_rolling_24h_max"] = past_actual_price.rolling(24).max()
+src/electricity_predictor/features/feature_engineering.py:107:  data["actual_price_rolling_7d_mean"] = past_actual_price.rolling(
+src/electricity_predictor/features/feature_engineering.py:166:    "actual_price_lag_1h",
+src/electricity_predictor/features/feature_engineering.py:167:    "actual_price_lag_24h",
+src/electricity_predictor/features/feature_engineering.py:168:    "forecast_price_lag_1h",
+src/electricity_predictor/features/feature_engineering.py:169:    "actual_price_rolling_24h_mean",
+src/electricity_predictor/features/feature_engineering.py:170:    "actual_price_rolling_24h_max",
+src/electricity_predictor/features/feature_engineering.py:171:    "actual_price_rolling_7d_mean",
+src/electricity_predictor/features/feature_columns.py:8:  "actual_price_lag_1h",
+src/electricity_predictor/features/feature_columns.py:9:  "actual_price_lag_24h",
+src/electricity_predictor/features/feature_columns.py:10:  "forecast_price_lag_1h",
+src/electricity_predictor/features/feature_columns.py:11:  "actual_price_rolling_24h_mean",
+src/electricity_predictor/features/feature_columns.py:12:  "actual_price_rolling_24h_max",
+src/electricity_predictor/features/feature_columns.py:13:  "actual_price_rolling_7d_mean",
+src/electricity_predictor/features/feature_columns.py:16:MODEL_FEATURE_COLUMNS = [
+src/electricity_predictor/features/feature_columns.py:31:  *MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py:26:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py:75:    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/classification/logistic/logistic_regression.py:24:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/logistic/logistic_regression.py:33:CLASSIFICATION_FEATURE_COLUMNS = MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/classification/validation_evaluation.py:7:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/validation_evaluation.py:25:    model.predict_proba(data[MODEL_FEATURE_COLUMNS]),
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:45:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:67:  "naive_spike_baseline": "actual_price_lag_1h",
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:69:  "previous_day_spike_baseline": "actual_price_lag_24h",
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:415:  validation_features = validation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:476:  features = evaluation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py:27:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py:87:    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py:22:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py:31:CLASSIFICATION_FEATURE_COLUMNS = MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py:26:BASELINE_PRICE_COLUMN = "actual_price_lag_1h"
+src/electricity_predictor/modeling/classification/baseline/rule_spike_baseline.py:31:PREVIOUS_DAY_PRICE_COLUMN = "actual_price_lag_24h"
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:11:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:36:CLASSIFICATION_FEATURE_COLUMNS = MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:10:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:127:      MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:10:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:121:      MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:10:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:35:CLASSIFICATION_FEATURE_COLUMNS = MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/classification/save_selected_models.py:20:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/save_selected_models.py:136:      MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py:27:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py:87:    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py:23:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py:32:CLASSIFICATION_FEATURE_COLUMNS = MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/lifecycle/classification_candidate.py:7:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/lifecycle/classification_candidate.py:107:      "actual_price_lag_1h"
+src/electricity_predictor/modeling/lifecycle/classification_candidate.py:178:    MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/ridge/ridge_tuning.py:19:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/ridge/ridge_tuning.py:67:    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/ridge/ridge_regression.py:20:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/ridge/ridge_regression.py:35:  features = train_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/ridge/ridge_regression.py:52:  features = evaluation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/linear/linear_regression.py:20:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/linear/linear_regression.py:33:  features = train_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/linear/linear_regression.py:50:  features = evaluation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/random_forest/random_forest_tuning.py:19:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/random_forest/random_forest_tuning.py:98:    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/random_forest/random_forest.py:20:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/random_forest/random_forest.py:43:  features = train_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/random_forest/random_forest.py:66:  features = evaluation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/baseline/naive_baseline.py:23:NAIVE_BASELINE_PREDICTION_COLUMN = "actual_price_lag_1h"
+src/electricity_predictor/modeling/regression/baseline/naive_baseline.py:30:    "prediction_column": "actual_price_lag_1h",
+src/electricity_predictor/modeling/regression/baseline/naive_baseline.py:35:    "prediction_column": "actual_price_lag_24h",
+src/electricity_predictor/modeling/regression/baseline/naive_baseline.py:45:    "prediction_column": "forecast_price_lag_1h",
+src/electricity_predictor/modeling/regression/baseline/naive_baseline.py:49:    "model_name": "rolling_24h_mean_baseline",
+src/electricity_predictor/modeling/regression/baseline/naive_baseline.py:50:    "prediction_column": "actual_price_rolling_24h_mean",
+src/electricity_predictor/modeling/regression/baseline/naive_baseline.py:54:    "model_name": "rolling_7d_mean_baseline",
+src/electricity_predictor/modeling/regression/baseline/naive_baseline.py:55:    "prediction_column": "actual_price_rolling_7d_mean",
+src/electricity_predictor/modeling/regression/hist_gradient_boosting/hist_gradient_boosting.py:7:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/hist_gradient_boosting/hist_gradient_boosting.py:48:  features = train_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/hist_gradient_boosting/hist_gradient_boosting.py:74:  features = evaluation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/hist_gradient_boosting/hist_gradient_boosting_tuning.py:5:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/hist_gradient_boosting/hist_gradient_boosting_tuning.py:131:    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py:24:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py:85:    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py:20:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py:39:  features = train_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py:59:  features = evaluation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/save_selected_models.py:9:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/save_selected_models.py:62:  prediction_column = "actual_price_lag_1h"
+src/electricity_predictor/modeling/regression/save_selected_models.py:94:    # even if MODEL_FEATURE_COLUMNS changes in a later phase.
+src/electricity_predictor/modeling/regression/save_selected_models.py:95:    "feature_columns": "|".join(MODEL_FEATURE_COLUMNS),
+src/electricity_predictor/modeling/regression/lasso/lasso_regression.py:20:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/lasso/lasso_regression.py:37:  features = train_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/lasso/lasso_regression.py:57:  features = evaluation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py:19:from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
+src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py:68:    fold_features = fold_validation_data[MODEL_FEATURE_COLUMNS]
+src/electricity_predictor/modeling/regression/selected_model.py:8:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/modeling/regression/selected_model.py:365:  predictions = model.predict(data[MODEL_FEATURE_COLUMNS])
+src/electricity_predictor/worker/feature_preparation.py:12:  MODEL_FEATURE_COLUMNS,
+src/electricity_predictor/worker/feature_preparation.py:53:    "forecast and the previous hour for forecast_price_lag_1h."
+src/electricity_predictor/worker/feature_preparation.py:206:    for column in MODEL_FEATURE_COLUMNS
+
+===== LATEST PREDICTION TARGETS =====
+      source_hour       |         persisted_at          | horizon_hours |    target_time_utc     | target_is_future 
+------------------------+-------------------------------+---------------+------------------------+------------------
+ 2026-07-24 03:00:00+00 | 2026-07-24 03:53:45.981089+00 |             1 | 2026-07-24 04:00:00+00 | f
+ 2026-07-24 03:00:00+00 | 2026-07-24 03:53:45.981089+00 |             3 | 2026-07-24 06:00:00+00 | t
+ 2026-07-24 03:00:00+00 | 2026-07-24 03:53:45.981089+00 |             6 | 2026-07-24 09:00:00+00 | t
+ 2026-07-24 03:00:00+00 | 2026-07-24 03:53:45.981089+00 |            12 | 2026-07-24 15:00:00+00 | t
+ 2026-07-24 03:00:00+00 | 2026-07-24 03:53:45.981089+00 |            24 | 2026-07-25 03:00:00+00 | t
+(5 rows)
+
+
+===== HOURLY SCHEDULE =====
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "pip install -r requirements.txt && pip install -e ."
+  },
+  "deploy": {
+    "startCommand": "wattwise-worker",
+    "cronSchedule": "15 * * * *",
+    "restartPolicyType": "NEVER"
+  }
+}
+
+===== FRONTEND REFETCH CONFIGURATION =====
+import { useQuery } from "@tanstack/react-query";
+
+import { fetchNow } from "./now";
+
+export const nowQueryKey = Object.freeze(["now"]);
+
+export function useNowQuery() {
+  return useQuery({
+    queryKey: nowQueryKey,
+    queryFn: ({ signal }) => fetchNow(signal),
+  });
+}
+import { useQuery } from "@tanstack/react-query";
+
+import { fetchToday } from "./today";
+
+export const todayQueryKey = Object.freeze(["today"]);
+
+export function useTodayQuery() {
+  return useQuery({
+    queryKey: todayQueryKey,
+    queryFn: ({ signal }) => fetchToday(signal),
+  });
+}
+
+===== DIFF FORMAT CHECK =====
+git_diff_check=PASS
+
+inspection_only=True
+training_performed=False
+model_saved=False
+worker_run=False
+database_modified=False
+protected_test_invoked=False
+commit_performed=False
+push_performed=False

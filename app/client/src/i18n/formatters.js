@@ -44,6 +44,32 @@ export function formatAlbertaTime(
   ).format(date);
 }
 
+/**
+ * Format the one-hour Alberta market period that starts at the supplied time.
+ */
+export function formatAlbertaHourRange(
+  isoDate,
+) {
+  const startDate = new Date(isoDate);
+
+  if (Number.isNaN(startDate.getTime())) {
+    return isoDate;
+  }
+
+  const endDate = new Date(
+    startDate.getTime() + 60 * 60 * 1000,
+  );
+
+  return [
+    formatAlbertaTime(
+      startDate.toISOString(),
+    ),
+    formatAlbertaTime(
+      endDate.toISOString(),
+    ),
+  ].join(" – ");
+}
+
 function getAlbertaDateParts(isoDate) {
   const date = new Date(isoDate);
 

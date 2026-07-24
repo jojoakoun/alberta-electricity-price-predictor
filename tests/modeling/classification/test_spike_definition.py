@@ -110,37 +110,33 @@ def test_calculate_train_thresholds_returns_all_candidate_methods():
 def test_build_spike_analysis_rows_reuses_train_threshold_for_all_splits():
   train_data = make_horizon_data([1.0, 2.0, 3.0, 4.0, 100.0])
   validation_data = make_horizon_data([1000.0, 1100.0])
-  test_data = make_horizon_data([2000.0, 2100.0])
 
   rows = build_spike_analysis_rows(
     train_data=train_data,
     validation_data=validation_data,
-    test_data=test_data,
     horizons_hours=[1],
   )
 
   iqr_rows = [row for row in rows if row["method"] == "iqr"]
 
   # Extreme future prices must not change the train-derived IQR threshold.
-  assert len(iqr_rows) == 3
+  assert len(iqr_rows) == 2
   assert all(row["threshold"] == pytest.approx(7.0) for row in iqr_rows)
 
 
 def test_build_spike_analysis_rows_creates_one_row_per_method_and_split():
   train_data = make_horizon_data([1.0, 2.0, 3.0, 4.0, 100.0])
   validation_data = make_horizon_data([2.0, 3.0])
-  test_data = make_horizon_data([4.0, 5.0])
 
   rows = build_spike_analysis_rows(
     train_data=train_data,
     validation_data=validation_data,
-    test_data=test_data,
     horizons_hours=[1],
   )
 
-  # Three methods multiplied by three splits produce nine comparison rows.
-  assert len(rows) == 9
-  assert {row["split"] for row in rows} == {"train", "validation", "test"}
+  # Three methods multiplied by two research splits produce six rows.
+  assert len(rows) == 6
+  assert {row["split"] for row in rows} == {"train", "validation"}
 
 
 def test_build_spike_analysis_rows_rejects_missing_target_column():
@@ -150,6 +146,5 @@ def test_build_spike_analysis_rows_rejects_missing_target_column():
     build_spike_analysis_rows(
       train_data=data,
       validation_data=data,
-      test_data=data,
       horizons_hours=[1],
     )

@@ -1,0 +1,48 @@
+........................................................................ [ 16%]
+........................................................................ [ 32%]
+........................................................................ [ 48%]
+........................................................................ [ 64%]
+........................................................................ [ 81%]
+........................................................................ [ 97%]
+............                                                             [100%]
+444 passed in 10.01s
+
+===== FINAL REGRESSION TEST =====
+
+Final test evaluation: 1h
+==================================
+Selected model: hist_gradient_boosting_regressor_tuned
+Target column: actual_price_target_1h
+
+Final test evaluation: 3h
+==================================
+Selected model: hist_gradient_boosting_regressor_tuned
+Target column: actual_price_target_3h
+
+Final test evaluation: 6h
+==================================
+Selected model: hist_gradient_boosting_regressor_tuned
+Target column: actual_price_target_6h
+
+Final test evaluation: 12h
+==================================
+Selected model: hist_gradient_boosting_regressor_tuned
+Target column: actual_price_target_12h
+
+Final test evaluation: 24h
+==================================
+Selected model: hist_gradient_boosting_regressor_tuned
+Target column: actual_price_target_24h
+
+Final protected regression test results
+=======================================
+1h | hist_gradient_boosting_regressor_tuned | MAE: 20.5748 | RMSE: 77.3078
+3h | hist_gradient_boosting_regressor_tuned | MAE: 25.9260 | RMSE: 92.5495
+6h | hist_gradient_boosting_regressor_tuned | MAE: 28.3788 | RMSE: 96.1676
+12h | hist_gradient_boosting_regressor_tuned | MAE: 30.7086 | RMSE: 97.6745
+24h | hist_gradient_boosting_regressor_tuned | MAE: 31.3459 | RMSE: 98.3897
+
+Final test results written to: reports/final_regression_test_results.csv
+
+python_tests_exit_code=0
+final_regression_test_exit_code=0

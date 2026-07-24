@@ -1,0 +1,150 @@
+===== PURPOSE =====
+Audit the exact classification commit scope.
+No staging, commit, push, training, or protected test is performed.
+
+===== CURRENT BRANCH =====
+feature/phase-7-modeling
+
+===== COMPLETE WORKING TREE =====
+ M Makefile
+ M src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+ M src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+ M src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+ M src/electricity_predictor/modeling/classification/best_model_selection.py
+ M src/electricity_predictor/modeling/classification/decision_threshold.py
+ M src/electricity_predictor/modeling/classification/final_test_evaluation.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+ M src/electricity_predictor/modeling/classification/run_classification_models.py
+ M src/electricity_predictor/modeling/classification/save_selected_models.py
+ M src/electricity_predictor/modeling/classification/target_builder.py
+ M src/electricity_predictor/modeling/decision/calibrate_decision_policy.py
+ M src/electricity_predictor/modeling/lifecycle/release_bundle.py
+ M src/electricity_predictor/modeling/split.py
+ M src/electricity_predictor/worker/persistence.py
+ M tests/deployment/test_railway_worker_config.py
+ M tests/modeling/classification/test_analyze_spike_regime.py
+ M tests/modeling/classification/test_best_model_selection.py
+ M tests/modeling/classification/test_decision_threshold.py
+ M tests/modeling/classification/test_final_test_evaluation.py
+ M tests/modeling/classification/test_gradient_boosting_tuning.py
+ M tests/modeling/classification/test_logistic_tuning.py
+ M tests/modeling/classification/test_random_forest_tuning.py
+ M tests/modeling/classification/test_run_classification_models.py
+ M tests/modeling/classification/test_save_selected_models.py
+ M tests/modeling/classification/test_spike_definition.py
+ M tests/modeling/decision/test_decision_threshold_consumers.py
+?? Makefile.useful
+?? architecture_et_comprehension.md
+?? phase7_manual_pipeline_checks/
+?? src/electricity_predictor/modeling/classification/baseline/rule_spike_baseline.py
+?? src/electricity_predictor/modeling/classification/extra_trees/
+?? src/electricity_predictor/modeling/classification/hist_gradient_boosting/
+?? src/electricity_predictor/modeling/classification/validation_evaluation.py
+?? tests/modeling/classification/test_extra_trees_classifier.py
+?? tests/modeling/classification/test_extra_trees_tuning.py
+?? tests/modeling/classification/test_hist_gradient_boosting_classifier.py
+?? tests/modeling/classification/test_hist_gradient_boosting_tuning.py
+?? tests/modeling/classification/test_rule_spike_baseline.py
+?? tests/modeling/classification/test_validation_evaluation.py
+?? wattwise-current-working-tree.zip
+
+===== MODIFIED TRACKED FILES =====
+M	Makefile
+M	src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+M	src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+M	src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+M	src/electricity_predictor/modeling/classification/best_model_selection.py
+M	src/electricity_predictor/modeling/classification/decision_threshold.py
+M	src/electricity_predictor/modeling/classification/final_test_evaluation.py
+M	src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+M	src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+M	src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+M	src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+M	src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+M	src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+M	src/electricity_predictor/modeling/classification/run_classification_models.py
+M	src/electricity_predictor/modeling/classification/save_selected_models.py
+M	src/electricity_predictor/modeling/classification/target_builder.py
+M	src/electricity_predictor/modeling/decision/calibrate_decision_policy.py
+M	src/electricity_predictor/modeling/lifecycle/release_bundle.py
+M	src/electricity_predictor/modeling/split.py
+M	src/electricity_predictor/worker/persistence.py
+M	tests/deployment/test_railway_worker_config.py
+M	tests/modeling/classification/test_analyze_spike_regime.py
+M	tests/modeling/classification/test_best_model_selection.py
+M	tests/modeling/classification/test_decision_threshold.py
+M	tests/modeling/classification/test_final_test_evaluation.py
+M	tests/modeling/classification/test_gradient_boosting_tuning.py
+M	tests/modeling/classification/test_logistic_tuning.py
+M	tests/modeling/classification/test_random_forest_tuning.py
+M	tests/modeling/classification/test_run_classification_models.py
+M	tests/modeling/classification/test_save_selected_models.py
+M	tests/modeling/classification/test_spike_definition.py
+M	tests/modeling/decision/test_decision_threshold_consumers.py
+
+===== UNTRACKED CLASSIFICATION FILES =====
+src/electricity_predictor/modeling/classification/baseline/rule_spike_baseline.py
+src/electricity_predictor/modeling/classification/extra_trees/__init__.py
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/__init__.py
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py
+src/electricity_predictor/modeling/classification/validation_evaluation.py
+tests/modeling/classification/test_extra_trees_classifier.py
+tests/modeling/classification/test_extra_trees_tuning.py
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py
+tests/modeling/classification/test_rule_spike_baseline.py
+tests/modeling/classification/test_validation_evaluation.py
+
+===== CLASSIFICATION DIFF STAT =====
+ .../classification/analyze_spike_definition.py     |   9 +-
+ .../classification/analyze_spike_regime.py         |   8 +-
+ .../baseline/naive_spike_baseline.py               |   7 +-
+ .../classification/best_model_selection.py         |  69 +++++--
+ .../modeling/classification/decision_threshold.py  | 108 ++++++++++-
+ .../classification/final_test_evaluation.py        | 183 ++++++++++++++-----
+ .../gradient_boosting_classifier.py                |  31 ++--
+ .../gradient_boosting/gradient_boosting_tuning.py  |  61 ++++---
+ .../classification/logistic/logistic_regression.py |  27 ++-
+ .../classification/logistic/logistic_tuning.py     |  60 ++++---
+ .../random_forest/random_forest_classifier.py      |  31 ++--
+ .../random_forest/random_forest_tuning.py          |  61 ++++---
+ .../classification/run_classification_models.py    |  64 +++++++
+ .../classification/save_selected_models.py         |  59 ++++--
+ .../modeling/classification/target_builder.py      |  37 +++-
+ .../classification/test_analyze_spike_regime.py    |  12 +-
+ .../classification/test_best_model_selection.py    |  53 +++++-
+ .../classification/test_decision_threshold.py      |  74 +++++++-
+ .../classification/test_final_test_evaluation.py   | 200 +++++++++++++++++++++
+ .../test_gradient_boosting_tuning.py               |  59 ++++++
+ .../classification/test_logistic_tuning.py         |  50 ++++++
+ .../classification/test_random_forest_tuning.py    |  59 ++++++
+ .../test_run_classification_models.py              |  30 ++++
+ .../classification/test_save_selected_models.py    |  43 ++++-
+ .../classification/test_spike_definition.py        |  13 +-
+ 25 files changed, 1177 insertions(+), 231 deletions(-)
+
+===== GENERATED OUTPUT TRACKING STATUS =====
+IGNORED: models/classification
+IGNORED: reports/classification_validation_results.csv
+IGNORED: reports/best_classification_model.csv
+IGNORED: reports/final_classification_test_results.csv
+IGNORED: reports/final_classification_confusion_matrices.csv
+IGNORED: reports/final_classification_confidence_intervals.csv
+IGNORED: reports/classification_protected_test_used.txt
+UNTRACKED_NOT_IGNORED: phase7_manual_pipeline_checks
+
+===== DIFF FORMAT CHECK =====
+git_diff_check=PASS
+
+protected_test_rerun_required=False
+staging_performed=False
+commit_performed=False
+push_performed=False

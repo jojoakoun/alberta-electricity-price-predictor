@@ -49,7 +49,7 @@ export const fr = {
     acceptable: {
       label: "Moment acceptable",
       defaultExplanation:
-        "Le prix est raisonnable, mais un meilleur moment pourrait arriver.",
+        "L’utilisation de l’électricité est acceptable, mais ce n’est pas le meilleur moment.",
     },
     avoid: {
       label: "Mieux vaut attendre",
@@ -100,7 +100,7 @@ export const fr = {
         "Découvrez comment les données officielles du marché de l’électricité en Alberta deviennent une recommandation simple à utiliser.",
       chips: {
         data: "Données officielles",
-        forecasts: "Cinq prévisions",
+        forecasts: "Cinq horizons",
         recommendations: "Conseils faciles à comprendre",
       },
     },
@@ -125,9 +125,9 @@ export const fr = {
             "Le système compare les conditions actuelles aux tendances observées dans plusieurs années de données.",
         },
         forecasts: {
-          title: "Cinq véritables prévisions",
+          title: "Cinq horizons de prévision",
           description:
-            "Les prix sont estimés pour les prochaines 1, 3, 6, 12 et 24 heures. WattWise n’invente pas de valeurs entre ces prévisions.",
+            "Les modèles estiment les prix dans 1, 3, 6, 12 et 24 heures. L’interface affiche uniquement ces cinq horizons de prévision.",
         },
         recommendation: {
           title: "Une recommandation claire",
@@ -177,9 +177,9 @@ export const fr = {
     },
 
     confidence: {
-      title: "Pourquoi la fiabilité change",
+      title: "Comment utiliser chaque horizon",
       description:
-        "Les prévisions à court terme utilisent généralement des renseignements plus récents. L’incertitude augmente lorsque la prévision regarde plus loin dans le temps.",
+        "Chaque horizon répond à un besoin de planification différent. Les horizons proches servent aux décisions immédiates; les horizons éloignés donnent un contexte plus général.",
 
       horizons: {
         one: {
@@ -196,11 +196,11 @@ export const fr = {
         },
         twelve: {
           label: "Dans 12 heures",
-          detail: "Une plus grande incertitude est normale",
+          detail: "À utiliser comme guide général avec plus d’incertitude",
         },
         twentyFour: {
           label: "Dans 24 heures",
-          detail: "À utiliser comme guide de planification",
+          detail: "À utiliser comme référence pour le lendemain",
         },
       },
     },
@@ -210,6 +210,7 @@ export const fr = {
       title: "Limites importantes",
       introduction:
         "WattWise facilite la planification, mais ne peut pas garantir le prix futur de l’électricité.",
+      detailsLabel: "Qu’est-ce qui peut modifier une prévision?",
 
       items: {
         prediction:
@@ -222,6 +223,14 @@ export const fr = {
           "Utilisez WattWise comme outil de planification, et non comme garantie financière.",
       },
     },
+
+    cta: {
+      eyebrow: "Prochaine étape",
+      title: "Utiliser les prévisions dans leur contexte",
+      description:
+        "Ouvrez Aujourd’hui pour comparer le prix actuel du marché aux cinq horizons futurs de WattWise.",
+      label: "Voir les prévisions d’aujourd’hui",
+    },
   },
 
   projectPage: {
@@ -230,10 +239,11 @@ export const fr = {
       title: "WattWise",
       description:
         "Une application complète d’apprentissage automatique qui transforme les données du marché albertain de l’électricité en recommandations claires et pratiques.",
-      byline: "Conçu et développé par",
-      developer: "Joël-Hervé Akoun",
-      linkedInLabel: "Communiquer sur LinkedIn",
-      linkedInUrl: "https://www.linkedin.com/in/joelakoun/",
+      byline: "Conçu en Alberta",
+      ctaTitle: "Voir WattWise en action",
+      ctaDescription:
+        "Comparez le prix actuel aux cinq horizons de prévision et obtenez une recommandation claire.",
+      ctaLabel: "Voir les prévisions",
       disciplines: {
         data: "Ingénierie des données",
         machineLearning: "Apprentissage automatique",
@@ -262,15 +272,15 @@ export const fr = {
       },
       horizons: {
         value: "5",
-        label: "Périodes de prévision",
+        label: "Horizons de prévision",
       },
       window: {
         value: "24 h",
-        label: "Période de planification",
+        label: "Horizon maximal de planification",
       },
       system: {
-        value: "Complet",
-        label: "Des données jusqu’à l’interface",
+        value: "De bout en bout",
+        label: "Données, modèles, API et interface",
       },
     },
 
@@ -327,32 +337,32 @@ export const fr = {
         {
           title: "Validation dans l’ordre du temps",
           description:
-            "Les anciennes données servent à entraîner les modèles et les données plus récentes à vérifier leurs résultats.",
+            "Les modèles sont entraînés sur les données anciennes, puis évalués sur des périodes plus récentes.",
         },
         {
           title: "Protection contre les informations futures",
           description:
-            "Les séparations temporelles empêchent l’utilisation accidentelle de renseignements futurs.",
+            "Les séparations temporelles empêchent les modèles d’utiliser des informations qui ne seraient pas encore disponibles au moment de la prévision.",
         },
         {
-          title: "Seuils calculés avec les données d’entraînement",
+          title: "Seuils choisis sans fuite de données",
           description:
-            "Les seuils sont définis sans consulter les données protégées du test final.",
+            "Les seuils ont été sélectionnés à partir des données d’entraînement et de validation, avant le réentraînement final.",
         },
         {
           title: "Recommandations explicables",
           description:
-            "L’utilisateur reçoit une indication claire plutôt qu’un résultat brut difficile à interpréter.",
+            "L’utilisateur reçoit une indication claire accompagnée d’un contexte compréhensible, plutôt qu’un résultat brut difficile à interpréter.",
         },
         {
           title: "Architecture modulaire",
           description:
-            "Les données, les modèles, le worker, l’API et l’interface restent séparés.",
+            "Les données, les modèles, le worker, l’API et l’interface sont organisés en responsabilités séparées.",
         },
         {
           title: "Vérification automatisée",
           description:
-            "Des tests Python, API et frontend protègent l’application pendant son évolution.",
+            "Des tests Python, API et frontend protègent l’application à chaque évolution.",
         },
       ],
     },
@@ -367,6 +377,7 @@ export const fr = {
         "Pandas",
         "scikit-learn",
         "PostgreSQL",
+        "Node.js",
         "Express",
         "React",
         "JavaScript",
@@ -391,13 +402,15 @@ export const fr = {
       linkedInLabel: "Voir le profil LinkedIn",
       linkedInUrl: "https://www.linkedin.com/in/joelakoun/",
       photoPath: "/joel.png",
+      initials: "JHA",
+      photoFallbackLabel: "Initiales de Joël-Hervé Akoun",
     },
 
     reflection: {
       eyebrow: "Réflexion",
-      title: "Ce que j’ai appris",
+      title: "Ce que ce projet m’a appris",
       description:
-        "La création de WattWise m’a confirmé qu’un bon produit d’apprentissage automatique dépend de beaucoup plus que la performance du modèle. La fiabilité des données, l’évaluation, les tests, l’architecture logicielle et l’expérience utilisateur déterminent si une prévision devient réellement utile.",
+        "Construire WattWise m’a appris à transformer un modèle prédictif en un produit réellement utilisable. Le travail ne s’est pas arrêté à l’entraînement des modèles : j’ai dû organiser les données, prévenir les fuites temporelles, automatiser les prédictions, construire une API fiable et rendre les résultats compréhensibles pour l’utilisateur.",
     },
 
     signature: {
@@ -473,7 +486,9 @@ export const fr = {
     futurePriceLabel:
       "Prévision comparable la plus basse",
     currentObservedPriceLabel:
-      "Prix actuel observé sur le marché",
+      "Prix actuel du marché AESO",
+    currentPriceSourceHour:
+      "Heure du prix de marché",
 
     futureStatus: {
       available:
@@ -500,13 +515,13 @@ export const fr = {
       lowerBefore:
         "La prévision la plus basse est de",
       lowerAfter:
-        "¢/kWh sous le prix actuel observé.",
+        "¢/kWh sous le prix actuel du marché AESO.",
 
       sameEyebrow: "Aucune économie prévue",
       sameTitle:
         "Attendre ne devrait pas réduire le prix",
       sameDescription:
-        "La prévision future la plus basse est identique au prix actuel observé sur le marché.",
+        "La prévision future la plus basse est identique au prix actuel du marché AESO.",
       sameBadge: "Même prix que maintenant",
 
       currentEyebrow:
@@ -514,7 +529,7 @@ export const fr = {
       currentTitle:
         "Le prix actuel est déjà plus bas",
       currentBefore:
-        "Le prix actuel observé est de",
+        "Le prix actuel du marché AESO est de",
       currentAfter:
         "¢/kWh sous la prévision future la plus basse.",
       currentBadge: "Le prix actuel est plus bas",
@@ -530,6 +545,7 @@ export const fr = {
     },
 
     currentPriceReference: "Prix actuel",
+    nowLabel: "Maintenant",
     observedPriceAt: "Prix observé à",
     sameAsObservedPrice:
       "Même valeur que le prix observé",
@@ -552,7 +568,7 @@ export const fr = {
     hideDetails: "Masquer les détails",
     priceTrendTitle: "Évolution prévue du prix",
     priceTrendDescription:
-      "La courbe lissée est seulement un repère visuel reliant cinq prévisions distinctes. Les valeurs entre les points ne sont pas prédites par les modèles.",
+      "Le premier point représente le prix actuel du marché AESO. Les cinq points suivants sont des prévisions des modèles. La courbe lissée est seulement un repère visuel.",
   },
 
   explanations: {
@@ -575,7 +591,17 @@ export const fr = {
   },
 
   price: {
-    label: "Dernier prix observé sur le marché",
+    label: "Prix maintenant",
+    currentTime: "Heure actuelle en Alberta",
+    marketHour: "Heure de marché",
+    kinds: {
+      actual:
+        "Prix finalisé de l’AESO pour l’heure de marché actuelle.",
+      forecast:
+        "Estimation de l’AESO pour l’heure de marché actuelle.",
+      fallback_actual:
+        "Dernier prix finalisé de l’AESO, car les données de l’heure actuelle sont indisponibles.",
+    },
   },
 
   confidence: {

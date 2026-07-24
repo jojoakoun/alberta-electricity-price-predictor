@@ -1,0 +1,370 @@
+===== PURPOSE =====
+Retune live-contract classification across HGB and GB model families.
+Fit the spike definition on train only and use chronological CV.
+Evaluate and select decision thresholds on validation only.
+Do not access the protected test split or save/promote models.
+
+===== SYNTAX CHECK =====
+python_syntax_check=PASS
+
+===== TARGETED TESTS =====
+................................                                         [100%]
+32 passed in 2.50s
+
+===== CLASSIFICATION VALIDATION RUN =====
+
+HORIZON 1H
+================================================
+  candidate=1 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 15, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.443873 pr_auc=0.540120
+    fold=2 f1=0.607410 pr_auc=0.748454
+    fold=3 f1=0.609312 pr_auc=0.672990
+  candidate=2 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.510329 pr_auc=0.575601
+    fold=2 f1=0.633039 pr_auc=0.725982
+    fold=3 f1=0.610303 pr_auc=0.667434
+  candidate=3 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 50, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.477703 pr_auc=0.547681
+    fold=2 f1=0.638889 pr_auc=0.745763
+    fold=3 f1=0.613171 pr_auc=0.669241
+  candidate=4 family=hist_gradient_boosting parameters={"l2_regularization": 1.0, "learning_rate": 0.1, "max_iter": 100, "max_leaf_nodes": 31, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.472195 pr_auc=0.581582
+    fold=2 f1=0.634246 pr_auc=0.739264
+    fold=3 f1=0.613139 pr_auc=0.671097
+  candidate=5 family=hist_gradient_boosting parameters={"l2_regularization": 1.0, "learning_rate": 0.1, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 50, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.466623 pr_auc=0.536085
+    fold=2 f1=0.637099 pr_auc=0.712519
+    fold=3 f1=0.609189 pr_auc=0.658937
+  candidate=6 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.283281 pr_auc=0.608996
+    fold=2 f1=0.572529 pr_auc=0.758487
+    fold=3 f1=0.603377 pr_auc=0.655546
+  candidate=7 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.308579 pr_auc=0.599403
+    fold=2 f1=0.583777 pr_auc=0.760852
+    fold=3 f1=0.603990 pr_auc=0.656589
+  candidate=8 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.303616 pr_auc=0.620720
+    fold=2 f1=0.577727 pr_auc=0.757669
+    fold=3 f1=0.608214 pr_auc=0.659790
+  candidate=9 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.346444 pr_auc=0.593488
+    fold=2 f1=0.592759 pr_auc=0.747583
+    fold=3 f1=0.604662 pr_auc=0.664078
+  candidate=10 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.301205 pr_auc=0.628088
+    fold=2 f1=0.580550 pr_auc=0.760090
+    fold=3 f1=0.606285 pr_auc=0.661553
+  candidate=11 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.349414 pr_auc=0.605908
+    fold=2 f1=0.596031 pr_auc=0.756144
+    fold=3 f1=0.605275 pr_auc=0.662779
+  candidate=12 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.361207 pr_auc=0.634946
+    fold=2 f1=0.589677 pr_auc=0.744735
+    fold=3 f1=0.610044 pr_auc=0.660218
+  candidate=13 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.401949 pr_auc=0.575694
+    fold=2 f1=0.597766 pr_auc=0.711851
+    fold=3 f1=0.605621 pr_auc=0.663579
+selected_model_family=gradient_boosting
+selected_cv_pr_auc=0.683243
+selected_cv_f1=0.496013
+validation_f1=0.596774
+validation_pr_auc=0.642740
+decision_threshold=0.8000
+
+HORIZON 3H
+================================================
+  candidate=1 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 15, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.376941 pr_auc=0.388951
+    fold=2 f1=0.526102 pr_auc=0.621441
+    fold=3 f1=0.515027 pr_auc=0.503379
+  candidate=2 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.389041 pr_auc=0.379461
+    fold=2 f1=0.544149 pr_auc=0.582788
+    fold=3 f1=0.510989 pr_auc=0.505387
+  candidate=3 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 50, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.389862 pr_auc=0.370698
+    fold=2 f1=0.543784 pr_auc=0.607592
+    fold=3 f1=0.506685 pr_auc=0.509762
+  candidate=4 family=hist_gradient_boosting parameters={"l2_regularization": 1.0, "learning_rate": 0.1, "max_iter": 100, "max_leaf_nodes": 31, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.379452 pr_auc=0.378139
+    fold=2 f1=0.538065 pr_auc=0.568733
+    fold=3 f1=0.510975 pr_auc=0.509780
+  candidate=5 family=hist_gradient_boosting parameters={"l2_regularization": 1.0, "learning_rate": 0.1, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 50, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.391682 pr_auc=0.379852
+    fold=2 f1=0.530687 pr_auc=0.534212
+    fold=3 f1=0.497856 pr_auc=0.500532
+  candidate=6 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.261811 pr_auc=0.422922
+    fold=2 f1=0.485032 pr_auc=0.620987
+    fold=3 f1=0.497596 pr_auc=0.489226
+  candidate=7 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.286661 pr_auc=0.419576
+    fold=2 f1=0.497035 pr_auc=0.631699
+    fold=3 f1=0.506058 pr_auc=0.502608
+  candidate=8 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.289368 pr_auc=0.441892
+    fold=2 f1=0.496475 pr_auc=0.615172
+    fold=3 f1=0.510467 pr_auc=0.504835
+  candidate=9 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.302342 pr_auc=0.398811
+    fold=2 f1=0.500620 pr_auc=0.599333
+    fold=3 f1=0.512863 pr_auc=0.502858
+  candidate=10 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.285584 pr_auc=0.441766
+    fold=2 f1=0.495402 pr_auc=0.623037
+    fold=3 f1=0.511637 pr_auc=0.505372
+  candidate=11 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.304110 pr_auc=0.385214
+    fold=2 f1=0.500156 pr_auc=0.590056
+    fold=3 f1=0.513765 pr_auc=0.505308
+  candidate=12 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.316499 pr_auc=0.400611
+    fold=2 f1=0.503512 pr_auc=0.607387
+    fold=3 f1=0.514496 pr_auc=0.505947
+  candidate=13 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.321608 pr_auc=0.333882
+    fold=2 f1=0.510315 pr_auc=0.574922
+    fold=3 f1=0.510336 pr_auc=0.501188
+selected_model_family=gradient_boosting
+selected_cv_pr_auc=0.523392
+selected_cv_f1=0.430875
+validation_f1=0.497696
+validation_pr_auc=0.481359
+decision_threshold=0.6000
+
+HORIZON 6H
+================================================
+  candidate=1 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 15, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.363047 pr_auc=0.340640
+    fold=2 f1=0.488835 pr_auc=0.519262
+    fold=3 f1=0.467073 pr_auc=0.443845
+  candidate=2 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.373437 pr_auc=0.318613
+    fold=2 f1=0.487206 pr_auc=0.505740
+    fold=3 f1=0.468577 pr_auc=0.439704
+  candidate=3 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 50, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.362039 pr_auc=0.321429
+    fold=2 f1=0.494232 pr_auc=0.524287
+    fold=3 f1=0.468254 pr_auc=0.437326
+  candidate=4 family=hist_gradient_boosting parameters={"l2_regularization": 1.0, "learning_rate": 0.1, "max_iter": 100, "max_leaf_nodes": 31, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.354395 pr_auc=0.327579
+    fold=2 f1=0.507410 pr_auc=0.538089
+    fold=3 f1=0.474922 pr_auc=0.437631
+  candidate=5 family=hist_gradient_boosting parameters={"l2_regularization": 1.0, "learning_rate": 0.1, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 50, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.352094 pr_auc=0.317148
+    fold=2 f1=0.478772 pr_auc=0.491216
+    fold=3 f1=0.457341 pr_auc=0.435692
+  candidate=6 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.286284 pr_auc=0.373931
+    fold=2 f1=0.459274 pr_auc=0.558263
+    fold=3 f1=0.450105 pr_auc=0.421967
+  candidate=7 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.303091 pr_auc=0.367711
+    fold=2 f1=0.468807 pr_auc=0.553017
+    fold=3 f1=0.456019 pr_auc=0.437490
+  candidate=8 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.298498 pr_auc=0.356413
+    fold=2 f1=0.473346 pr_auc=0.562707
+    fold=3 f1=0.458809 pr_auc=0.438761
+  candidate=9 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.324081 pr_auc=0.324068
+    fold=2 f1=0.469709 pr_auc=0.518552
+    fold=3 f1=0.457836 pr_auc=0.440808
+  candidate=10 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.299056 pr_auc=0.359561
+    fold=2 f1=0.472899 pr_auc=0.562524
+    fold=3 f1=0.458514 pr_auc=0.437370
+  candidate=11 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.321435 pr_auc=0.321109
+    fold=2 f1=0.479170 pr_auc=0.534265
+    fold=3 f1=0.460467 pr_auc=0.444514
+  candidate=12 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.314821 pr_auc=0.335031
+    fold=2 f1=0.487538 pr_auc=0.544475
+    fold=3 f1=0.462368 pr_auc=0.437797
+  candidate=13 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.318860 pr_auc=0.262176
+    fold=2 f1=0.474958 pr_auc=0.494917
+    fold=3 f1=0.461930 pr_auc=0.434078
+selected_model_family=gradient_boosting
+selected_cv_pr_auc=0.453152
+selected_cv_f1=0.410156
+validation_f1=0.435115
+validation_pr_auc=0.370672
+decision_threshold=0.6000
+
+HORIZON 12H
+================================================
+  candidate=1 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 15, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.277005 pr_auc=0.257298
+    fold=2 f1=0.439195 pr_auc=0.418094
+    fold=3 f1=0.444531 pr_auc=0.397756
+  candidate=2 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.230148 pr_auc=0.250974
+    fold=2 f1=0.407463 pr_auc=0.409735
+    fold=3 f1=0.434706 pr_auc=0.395685
+  candidate=3 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 50, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.172786 pr_auc=0.227812
+    fold=2 f1=0.417593 pr_auc=0.418520
+    fold=3 f1=0.441080 pr_auc=0.389211
+  candidate=4 family=hist_gradient_boosting parameters={"l2_regularization": 1.0, "learning_rate": 0.1, "max_iter": 100, "max_leaf_nodes": 31, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.295631 pr_auc=0.274526
+    fold=2 f1=0.430769 pr_auc=0.427115
+    fold=3 f1=0.432539 pr_auc=0.377800
+  candidate=5 family=hist_gradient_boosting parameters={"l2_regularization": 1.0, "learning_rate": 0.1, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 50, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.188269 pr_auc=0.250159
+    fold=2 f1=0.383004 pr_auc=0.410665
+    fold=3 f1=0.414492 pr_auc=0.378925
+  candidate=6 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.280773 pr_auc=0.296190
+    fold=2 f1=0.442067 pr_auc=0.457125
+    fold=3 f1=0.423490 pr_auc=0.374059
+  candidate=7 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.310235 pr_auc=0.249209
+    fold=2 f1=0.451141 pr_auc=0.451876
+    fold=3 f1=0.430575 pr_auc=0.384947
+  candidate=8 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.317955 pr_auc=0.298322
+    fold=2 f1=0.451777 pr_auc=0.455674
+    fold=3 f1=0.431223 pr_auc=0.382656
+  candidate=9 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.318001 pr_auc=0.248112
+    fold=2 f1=0.449726 pr_auc=0.434698
+    fold=3 f1=0.439292 pr_auc=0.391690
+  candidate=10 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.315068 pr_auc=0.306660
+    fold=2 f1=0.455557 pr_auc=0.461456
+    fold=3 f1=0.431583 pr_auc=0.383038
+  candidate=11 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.313725 pr_auc=0.236581
+    fold=2 f1=0.454744 pr_auc=0.428176
+    fold=3 f1=0.435399 pr_auc=0.392091
+  candidate=12 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.344353 pr_auc=0.340349
+    fold=2 f1=0.447761 pr_auc=0.432448
+    fold=3 f1=0.437231 pr_auc=0.388338
+  candidate=13 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.292922 pr_auc=0.234491
+    fold=2 f1=0.428462 pr_auc=0.377540
+    fold=3 f1=0.442114 pr_auc=0.396037
+selected_model_family=gradient_boosting
+selected_cv_pr_auc=0.387045
+selected_cv_f1=0.409782
+validation_f1=0.324455
+validation_pr_auc=0.269630
+decision_threshold=0.6000
+
+HORIZON 24H
+================================================
+  candidate=1 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 15, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.268645 pr_auc=0.214844
+    fold=2 f1=0.380347 pr_auc=0.351252
+    fold=3 f1=0.435872 pr_auc=0.382228
+  candidate=2 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.237697 pr_auc=0.216369
+    fold=2 f1=0.354824 pr_auc=0.317744
+    fold=3 f1=0.414572 pr_auc=0.383925
+  candidate=3 family=hist_gradient_boosting parameters={"l2_regularization": 0.0, "learning_rate": 0.05, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 50, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.251491 pr_auc=0.220728
+    fold=2 f1=0.366741 pr_auc=0.337784
+    fold=3 f1=0.429790 pr_auc=0.381926
+  candidate=4 family=hist_gradient_boosting parameters={"l2_regularization": 1.0, "learning_rate": 0.1, "max_iter": 100, "max_leaf_nodes": 31, "min_samples_leaf": 20, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.267947 pr_auc=0.238972
+    fold=2 f1=0.352100 pr_auc=0.327554
+    fold=3 f1=0.414423 pr_auc=0.384375
+  candidate=5 family=hist_gradient_boosting parameters={"l2_regularization": 1.0, "learning_rate": 0.1, "max_iter": 200, "max_leaf_nodes": 31, "min_samples_leaf": 50, "model_family": "hist_gradient_boosting", "model_name": "hist_gradient_boosting_classifier_tuned"}
+    fold=1 f1=0.248120 pr_auc=0.222805
+    fold=2 f1=0.312466 pr_auc=0.290465
+    fold=3 f1=0.404134 pr_auc=0.372696
+  candidate=6 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.238360 pr_auc=0.305377
+    fold=2 f1=0.421930 pr_auc=0.420902
+    fold=3 f1=0.424658 pr_auc=0.373510
+  candidate=7 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.246560 pr_auc=0.230027
+    fold=2 f1=0.404527 pr_auc=0.382028
+    fold=3 f1=0.431380 pr_auc=0.385168
+  candidate=8 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.248943 pr_auc=0.311766
+    fold=2 f1=0.391272 pr_auc=0.401526
+    fold=3 f1=0.439527 pr_auc=0.382222
+  candidate=9 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 100}
+    fold=1 f1=0.267099 pr_auc=0.211301
+    fold=2 f1=0.379552 pr_auc=0.359620
+    fold=3 f1=0.433473 pr_auc=0.386190
+  candidate=10 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.249253 pr_auc=0.309244
+    fold=2 f1=0.394467 pr_auc=0.402876
+    fold=3 f1=0.437583 pr_auc=0.383481
+  candidate=11 family=gradient_boosting parameters={"learning_rate": 0.05, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.262981 pr_auc=0.203052
+    fold=2 f1=0.381300 pr_auc=0.370639
+    fold=3 f1=0.433460 pr_auc=0.387412
+  candidate=12 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 2, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.265842 pr_auc=0.243542
+    fold=2 f1=0.376755 pr_auc=0.381691
+    fold=3 f1=0.432807 pr_auc=0.380856
+  candidate=13 family=gradient_boosting parameters={"learning_rate": 0.1, "max_depth": 3, "model_family": "gradient_boosting", "model_name": "gradient_boosting_classifier_tuned", "n_estimators": 200}
+    fold=1 f1=0.247832 pr_auc=0.195790
+    fold=2 f1=0.371724 pr_auc=0.336291
+    fold=3 f1=0.434124 pr_auc=0.382485
+selected_model_family=gradient_boosting
+selected_cv_pr_auc=0.366596
+selected_cv_f1=0.361649
+validation_f1=0.357970
+validation_pr_auc=0.294182
+decision_threshold=0.6500
+
+LIVE CLASSIFICATION VALIDATION SUMMARY
+======================================
+ horizon_hours      model_family  train_rows  validation_rows  spike_threshold    cv_f1  cv_pr_auc  validation_f1  validation_pr_auc  decision_threshold
+             1 gradient_boosting       34842             8760       170.848750 0.496013   0.683243       0.596774           0.642740            0.800000
+             3 gradient_boosting       34842             8760       170.848750 0.430875   0.523392       0.497696           0.481359            0.600000
+             6 gradient_boosting       34842             8760       170.848750 0.410156   0.453152       0.435115           0.370672            0.600000
+            12 gradient_boosting       34842             8760       170.848750 0.409782   0.387045       0.324455           0.269630            0.600000
+            24 gradient_boosting       34842             8760       170.848750 0.361649   0.366596       0.357970           0.294182            0.650000
+
+selected_live_contract=conservative_hybrid
+selected_live_feature_count=14
+protected_test_used=False
+models_saved=False
+active_registry_modified=False
+
+validation_results_path=phase7_manual_pipeline_checks/114-live-classification-validation-results.csv
+
+===== RESULT CONTRACT =====
+
+===== CLASSIFICATION SUMMARY =====
+ horizon_hours      model_family  train_rows  validation_rows  spike_threshold    cv_f1  cv_pr_auc  validation_f1  validation_pr_auc  decision_threshold
+             1 gradient_boosting       34842             8760       170.848750 0.496013   0.683243       0.596774           0.642740            0.800000
+             3 gradient_boosting       34842             8760       170.848750 0.430875   0.523392       0.497696           0.481359            0.600000
+             6 gradient_boosting       34842             8760       170.848750 0.410156   0.453152       0.435115           0.370672            0.600000
+            12 gradient_boosting       34842             8760       170.848750 0.409782   0.387045       0.324455           0.269630            0.600000
+            24 gradient_boosting       34842             8760       170.848750 0.361649   0.366596       0.357970           0.294182            0.650000
+
+classification_result_rows=5
+all_horizons_present=PASS
+selected_live_feature_count=14
+train_derived_spike_threshold=PASS
+same_train_rows_across_horizons=PASS
+same_validation_rows_across_horizons=PASS
+validation_metrics_complete=PASS
+protected_test_used=False
+models_saved=False
+
+===== ACTIVE ARTIFACT STATUS =====
+
+===== DIFF FORMAT CHECK =====
+
+live_classification_validation=PASS
+temporary_training_only=True
+protected_test_invoked=False
+models_saved=False
+active_registry_modified=False
+worker_modified=False
+database_modified=False
+commit_performed=False
+push_performed=False

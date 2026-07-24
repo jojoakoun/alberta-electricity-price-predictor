@@ -1,0 +1,13 @@
+===== WHY THIS STEP EXISTS =====
+The implementation now stores CV PR-AUC.
+Three test fixtures were missing that already-calculated metric.
+No production modeling logic is changed in this step.
+
+===== CLASSIFICATION INTEGRATION TESTS =====
+.................................................                        [100%]
+49 passed in 4.09s
+
+===== GIT DIFF CHECK =====
+
+classification_integration_tests_exit_code=0
+git_diff_check_exit_code=0

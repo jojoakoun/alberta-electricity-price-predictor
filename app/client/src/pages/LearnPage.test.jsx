@@ -4,15 +4,21 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
+  beforeEach,
   describe,
   expect,
   test,
 } from "vitest";
 
+import { setLanguage } from "../i18n/language";
 import { LearnPage } from "./LearnPage";
 
 describe("LearnPage", () => {
-  test("supports an understandable interactive learning flow", async () => {
+  beforeEach(() => {
+    setLanguage("en");
+  });
+
+  test("supports an understandable and honest learning flow", async () => {
     const user = userEvent.setup();
 
     render(<LearnPage />);
@@ -29,14 +35,6 @@ describe("LearnPage", () => {
       ),
     ).toBeInTheDocument();
 
-
-    expect(
-      screen.getByText(
-        /Models are periodically re-evaluated with newer market data/i,
-      ),
-    ).toBeInTheDocument();
-
-
     expect(
       screen.getByText(
         /Models are periodically re-evaluated with newer market data/i,
@@ -44,14 +42,30 @@ describe("LearnPage", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText(
-        /Models are periodically re-evaluated with newer market data/i,
-      ),
+      screen.getByRole("heading", {
+        name: "How to use each forecast horizon",
+      }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getAllByRole("progressbar"),
-    ).toHaveLength(5);
+      screen.queryAllByRole("progressbar"),
+    ).toHaveLength(0);
+
+    expect(
+      screen.getByText(
+        "The displayed market price is not the same as your complete electricity bill.",
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByText("What can change a forecast?"),
+    );
+
+    expect(
+      screen.getByText(
+        /Unexpected outages, weather, demand, and market events/i,
+      ),
+    ).toBeInTheDocument();
 
     await user.click(
       screen.getByRole("tab", {
@@ -79,5 +93,11 @@ describe("LearnPage", () => {
       "href",
       "https://www.aeso.ca",
     );
+
+    expect(
+      screen.getByRole("link", {
+        name: "View today’s outlook",
+      }),
+    ).toHaveAttribute("href", "/today");
   });
 });

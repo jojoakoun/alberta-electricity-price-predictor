@@ -1,0 +1,17 @@
+===== MODEL SELECTION TESTS =====
+.................                                                        [100%]
+17 passed in 0.31s
+
+===== VALIDATION FILTERS =====
+src/electricity_predictor/modeling/classification/best_model_selection.py:59:  """Keep usable classification results from the validation split."""
+src/electricity_predictor/modeling/classification/best_model_selection.py:65:    & (results["split"] == "validation")
+src/electricity_predictor/modeling/regression/best_model_selection.py:59:  validation_results = regression_results[regression_results["split"] == "validation"].copy()
+
+===== PROTECTED RESULT REJECTION TESTS =====
+tests/modeling/classification/test_best_model_selection.py:78:def test_selection_ignores_protected_test_results() -> None:
+tests/modeling/classification/test_best_model_selection.py:82:  protected_result["split"] = "test"
+tests/modeling/regression/test_best_model_selection.py:27:        "split": "test",
+tests/modeling/regression/test_best_model_selection.py:177:        "split": "test",
+tests/modeling/regression/test_best_model_selection.py:185:  with pytest.raises(ValueError, match="No validation regression results"):
+
+===== DIFF CHECK =====

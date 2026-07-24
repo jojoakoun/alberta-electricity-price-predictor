@@ -7,12 +7,15 @@ from sklearn.model_selection import TimeSeriesSplit
 from electricity_predictor.config import load_configuration
 from electricity_predictor.modeling.split import get_time_series_cv_gap_hours
 from electricity_predictor.modeling.classification.random_forest.random_forest_classifier import (
-  evaluate_random_forest_classifier,
   train_random_forest_classifier,
+)
+from electricity_predictor.modeling.classification.validation_evaluation import (
+  add_decision_threshold_to_parameters,
+  evaluate_classifier_on_validation,
 )
 from electricity_predictor.modeling.classification.target_builder import (
   build_spike_target_column_name,
-  prepare_classification_splits,
+  prepare_classification_training_splits,
 )
 from electricity_predictor.modeling.metrics import calculate_classification_metrics
 from electricity_predictor.modeling.model_results import (
@@ -111,7 +114,7 @@ def tune_random_forest(
   train_data: pd.DataFrame,
   target_column: str,
 ) -> dict:
-  """Select the Random Forest parameters with the highest CV F1."""
+  """Select parameters by highest CV PR-AUC, then CV F1."""
   tuning_results = []
 
   parameter_combinations = product(
@@ -147,7 +150,10 @@ def tune_random_forest(
 
   return sorted(
     tuning_results,
-    key=lambda result: result["cv_f1"],
+    key=lambda result: (
+      result["cv_pr_auc"],
+      result["cv_f1"],
+    ),
     reverse=True,
   )[0]
 
@@ -158,6 +164,7 @@ def build_tuned_random_forest_result(
   horizon_hours: int,
   best_parameters: dict,
   split: str = "validation",
+  decision_threshold: float = 0.5,
 ) -> dict:
   """Build one result row for tuned Random Forest classification."""
   return build_model_result_row(
@@ -167,20 +174,24 @@ def build_tuned_random_forest_result(
     split=split,
     evaluation_rows=row_count,
     metrics=scores,
-    model_parameters=(
-      f"n_estimators={best_parameters['n_estimators']}; "
-      f"max_depth={best_parameters['max_depth']}; "
-      f"min_samples_leaf={best_parameters['min_samples_leaf']}; "
-      f"cv_splits={RANDOM_FOREST_TUNING_SPLITS}; "
-      f"cv_accuracy={best_parameters['cv_accuracy']:.6f}; "
-      f"cv_precision={best_parameters['cv_precision']:.6f}; "
-      f"cv_recall={best_parameters['cv_recall']:.6f}; "
-      f"cv_f1={best_parameters['cv_f1']:.6f}; "
-      "class_weight=balanced; random_state=42; n_jobs=-1"
+    model_parameters=add_decision_threshold_to_parameters(
+      parameter_text=(
+        f"n_estimators={best_parameters['n_estimators']}; "
+        f"max_depth={best_parameters['max_depth']}; "
+        f"min_samples_leaf={best_parameters['min_samples_leaf']}; "
+        f"cv_splits={RANDOM_FOREST_TUNING_SPLITS}; "
+        f"cv_accuracy={best_parameters['cv_accuracy']:.6f}; "
+        f"cv_precision={best_parameters['cv_precision']:.6f}; "
+        f"cv_recall={best_parameters['cv_recall']:.6f}; "
+        f"cv_f1={best_parameters['cv_f1']:.6f}; "
+        f"cv_pr_auc={best_parameters['cv_pr_auc']:.6f}; "
+        "class_weight=balanced; random_state=42; n_jobs=-1"
+      ),
+      decision_threshold=decision_threshold,
     ),
     notes=(
-      "Random Forest parameters selected by highest TimeSeriesSplit F1 "
-      "on the chronological train split."
+      "Random Forest parameters selected by highest TimeSeriesSplit "
+      "PR-AUC, then F1, on the chronological train split."
     ),
   )
 
@@ -196,15 +207,14 @@ def run_tuned_random_forest(
 
   training_data = load_training_dataset(training_dataset_path)
 
-  train_data, validation_data, test_data = split_time_series_data_from_config(
+  train_data, validation_data, _ = split_time_series_data_from_config(
     data=training_data,
     modeling_config=modeling_config,
 )
 
-  prepared_train, prepared_validation, _, threshold = prepare_classification_splits(
+  prepared_train, prepared_validation, threshold = prepare_classification_training_splits(
     train_data=train_data,
     validation_data=validation_data,
-    test_data=test_data,
     horizons_hours=horizons_hours,
   )
 
@@ -228,10 +238,12 @@ def run_tuned_random_forest(
       min_samples_leaf=best_parameters["min_samples_leaf"],
     )
 
-    validation_scores = evaluate_random_forest_classifier(
-      model=tuned_model,
-      evaluation_data=prepared_validation,
-      target_column=target_column,
+    validation_scores, decision_threshold = (
+      evaluate_classifier_on_validation(
+        model=tuned_model,
+        validation_data=prepared_validation,
+        target_column=target_column,
+      )
     )
 
     result = build_tuned_random_forest_result(
@@ -239,6 +251,7 @@ def run_tuned_random_forest(
       row_count=len(prepared_validation),
       horizon_hours=horizon_hours,
       best_parameters=best_parameters,
+      decision_threshold=decision_threshold,
     )
 
     append_model_result(
@@ -251,10 +264,12 @@ def run_tuned_random_forest(
     print(f"Best min_samples_leaf: {best_parameters['min_samples_leaf']}")
     print(f"Spike threshold: {threshold:.4f}")
     print(f"CV F1: {best_parameters['cv_f1']:.4f}")
+    print(f"CV PR-AUC: {best_parameters['cv_pr_auc']:.4f}")
     print(f"Validation accuracy: {validation_scores['accuracy']:.4f}")
     print(f"Validation precision: {validation_scores['precision']:.4f}")
     print(f"Validation recall: {validation_scores['recall']:.4f}")
     print(f"Validation F1: {validation_scores['f1']:.4f}")
+    print(f"Decision threshold: {decision_threshold:.4f}")
 
   return results_path
 

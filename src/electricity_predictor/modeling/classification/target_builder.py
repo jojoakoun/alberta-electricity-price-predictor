@@ -63,6 +63,36 @@ def prepare_classification_splits(
   horizons_hours: list[int],
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, float]:
   """Create classification targets after fitting the spike threshold on train."""
+  (
+    prepared_train,
+    prepared_validation,
+    threshold,
+  ) = prepare_classification_training_splits(
+    train_data=train_data,
+    validation_data=validation_data,
+    horizons_hours=horizons_hours,
+  )
+
+  prepared_test = add_spike_targets(
+    data=test_data,
+    threshold=threshold,
+    horizons_hours=horizons_hours,
+  )
+
+  return (
+    prepared_train,
+    prepared_validation,
+    prepared_test,
+    threshold,
+  )
+
+
+def prepare_classification_training_splits(
+  train_data: pd.DataFrame,
+  validation_data: pd.DataFrame,
+  horizons_hours: list[int],
+) -> tuple[pd.DataFrame, pd.DataFrame, float]:
+  """Prepare train and validation targets without accessing protected test data."""
   validate_classification_target_inputs(
     data=train_data,
     horizons_hours=horizons_hours,
@@ -85,15 +115,8 @@ def prepare_classification_splits(
     horizons_hours=horizons_hours,
   )
 
-  prepared_test = add_spike_targets(
-    data=test_data,
-    threshold=threshold,
-    horizons_hours=horizons_hours,
-  )
-
   return (
     prepared_train,
     prepared_validation,
-    prepared_test,
     threshold,
   )

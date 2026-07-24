@@ -1,0 +1,15 @@
+===== LIFECYCLE TEST SUITE =====
+.............................................                            [100%]
+45 passed in 1.38s
+
+===== SAME FROZEN TEST FOR BOTH SIDES =====
+src/electricity_predictor/modeling/lifecycle/comparison.py:792:    "promotion_mode": "manual",
+src/electricity_predictor/modeling/lifecycle/comparison.py:904:      evaluation_data=test_data,
+src/electricity_predictor/modeling/lifecycle/comparison.py:917:      evaluation_data=test_data,
+src/electricity_predictor/modeling/lifecycle/comparison.py:932:      evaluation_data=test_data,
+src/electricity_predictor/modeling/lifecycle/comparison.py:948:      evaluation_data=test_data,
+src/electricity_predictor/modeling/lifecycle/runner.py:386:  if promotion_mode != "manual":
+src/electricity_predictor/modeling/lifecycle/runner.py:389:      "promotion_mode: manual."
+src/electricity_predictor/modeling/lifecycle/runner.py:709:    "automatic_promotion_performed": (
+
+===== DIFF CHECK =====

@@ -20,8 +20,11 @@ describe("GET /api/v1/today", () => {
       futureForecastStatus: "none_remaining",
       comparison: "unavailable",
       currentPriceCents: 7,
+      currentPriceKind: "forecast",
+      currentPriceSourceAtUtc:
+        "2026-07-18T20:00:00.000Z",
       currentObservedAtUtc:
-        "2026-07-18T19:00:00.000Z",
+        "2026-07-18T20:00:00.000Z",
       priceDifferenceCents: null,
       forecasts: [],
       bestTime: null,

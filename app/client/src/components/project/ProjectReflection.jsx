@@ -20,7 +20,10 @@ export function ProjectReflection() {
   return (
     <>
       <Reveal>
-        <section aria-labelledby="project-reflection">
+        <section
+          aria-labelledby="project-reflection"
+          data-project-reflection="true"
+        >
           <Card className="project-reflection">
             <Lightbulb
               aria-hidden="true"
@@ -48,7 +51,13 @@ export function ProjectReflection() {
               </blockquote>
 
               {detail && (
-                <p className="max-w-3xl text-[var(--color-text-muted)]">
+                <p
+                  className={[
+                    "project-reflection-description",
+                    "max-w-3xl",
+                    "text-[var(--color-text-muted)]",
+                  ].join(" ")}
+                >
                   {detail.endsWith(".")
                     ? detail
                     : `${detail}.`}

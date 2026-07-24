@@ -76,6 +76,7 @@ def test_build_tuned_logistic_result_uses_shared_schema():
       "cv_precision": 0.70,
       "cv_recall": 0.75,
       "cv_f1": 0.72,
+      "cv_pr_auc": 0.74,
     },
   )
 
@@ -85,3 +86,52 @@ def test_build_tuned_logistic_result_uses_shared_schema():
   assert result["f1"] == pytest.approx(0.77)
   assert "best_C=10.0" in result["model_parameters"]
   assert result["mae"] is None
+
+
+def test_tune_logistic_c_prioritizes_pr_auc_then_f1(monkeypatch):
+  data = make_time_series_classification_data()
+
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification.logistic."
+    "logistic_tuning.LOGISTIC_C_VALUES",
+    [0.1, 1.0, 10.0],
+  )
+
+  scores_by_c = {
+    0.1: {
+      "cv_accuracy": 0.80,
+      "cv_precision": 0.70,
+      "cv_recall": 0.80,
+      "cv_f1": 0.90,
+      "cv_pr_auc": 0.60,
+    },
+    1.0: {
+      "cv_accuracy": 0.82,
+      "cv_precision": 0.72,
+      "cv_recall": 0.75,
+      "cv_f1": 0.70,
+      "cv_pr_auc": 0.75,
+    },
+    10.0: {
+      "cv_accuracy": 0.83,
+      "cv_precision": 0.73,
+      "cv_recall": 0.78,
+      "cv_f1": 0.74,
+      "cv_pr_auc": 0.75,
+    },
+  }
+
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification.logistic."
+    "logistic_tuning.evaluate_logistic_c_with_time_series_cv",
+    lambda **kwargs: scores_by_c[kwargs["c_value"]],
+  )
+
+  best_result = tune_logistic_c(
+    train_data=data,
+    target_column="is_spike_target_1h",
+  )
+
+  # C=0.1 has the highest F1 but weaker PR-AUC, so it must not win.
+  # C=10 and C=1 tie on PR-AUC; C=10 wins through the F1 tie-break.
+  assert best_result["c_value"] == 10.0

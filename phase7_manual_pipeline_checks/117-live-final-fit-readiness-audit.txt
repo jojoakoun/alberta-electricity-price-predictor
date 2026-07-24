@@ -1,0 +1,41 @@
+===== PURPOSE =====
+Audit whether the validated live candidate is ready for production fitting.
+Compare its training period with the complete available live dataset.
+Do not train, save, promote, evaluate, run the worker, or modify the database.
+
+LIVE FINAL-FIT READINESS AUDIT
+==============================
+selected_live_contract=conservative_hybrid
+selected_live_feature_count=14
+validated_candidate_rows=43602
+validated_candidate_start_utc=2020-01-09T06:00:00+00:00
+validated_candidate_end_utc=2024-12-30T23:00:00+00:00
+all_available_training_rows=57286
+all_available_training_start_utc=2020-01-09T06:00:00+00:00
+all_available_training_end_utc=2026-07-23T03:00:00+00:00
+rows_excluded_from_validated_candidate=13684
+approximate_days_excluded=570.17
+validated_candidate_artifacts=10
+all_required_final_fit_inputs_present=PASS
+all_available_training_values_complete=PASS
+validated_hyperparameters_frozen=PASS
+validated_decision_thresholds_frozen=PASS
+recommendation=REFIT_ALL_AVAILABLE_BEFORE_WORKER_MIGRATION
+training_performed=False
+protected_holdout_evaluated=False
+models_saved=False
+active_registry_modified=False
+
+===== ACTIVE ARTIFACT STATUS =====
+
+===== DIFF FORMAT CHECK =====
+
+final_fit_readiness_audit=PASS
+training_performed=False
+protected_holdout_evaluated=False
+models_saved=False
+active_registry_modified=False
+worker_modified=False
+database_modified=False
+commit_performed=False
+push_performed=False

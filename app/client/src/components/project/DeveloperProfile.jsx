@@ -2,13 +2,15 @@ import {
   ArrowUpRight,
   MapPin,
 } from "lucide-react";
+import { useState } from "react";
 
-import { Reveal } from "../motion/Reveal";
 import { Card } from "../Card";
+import { Reveal } from "../motion/Reveal";
 import { copy } from "../../copy";
 
 export function DeveloperProfile() {
   const developer = copy.projectPage.developer;
+  const [photoUnavailable, setPhotoUnavailable] = useState(false);
 
   return (
     <Reveal>
@@ -23,15 +25,26 @@ export function DeveloperProfile() {
           ].join(" ")}
         >
           <div className="project-developer-photo-wrap">
-            <img
-              alt={developer.name}
-              className={[
-                "aspect-square w-40",
-                "rounded-full object-cover",
-                "sm:w-48",
-              ].join(" ")}
-              src={developer.photoPath}
-            />
+            {photoUnavailable ? (
+              <div
+                aria-label={developer.photoFallbackLabel}
+                className="project-developer-avatar-fallback"
+                role="img"
+              >
+                {developer.initials}
+              </div>
+            ) : (
+              <img
+                alt={developer.name}
+                className={[
+                  "aspect-square w-40",
+                  "rounded-full object-cover",
+                  "sm:w-48",
+                ].join(" ")}
+                onError={() => setPhotoUnavailable(true)}
+                src={developer.photoPath}
+              />
+            )}
           </div>
 
           <div className="project-developer-copy space-y-[var(--space-4)]">

@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 from hashlib import sha256
 import json
 from pathlib import Path
-import re
 import shutil
 import tarfile
 from uuid import uuid4
@@ -51,24 +50,6 @@ def calculate_file_sha256(
       digest.update(chunk)
 
   return digest.hexdigest()
-
-
-def sanitize_version(
-  value: str,
-) -> str:
-  """Normalize a model version for use in identifiers."""
-  normalized = re.sub(
-    r"[^A-Za-z0-9._-]+",
-    "-",
-    str(value).strip(),
-  ).strip("-")
-
-  if not normalized:
-    raise ValueError(
-      "Model version must not be empty."
-    )
-
-  return normalized
 
 
 def load_release_metadata(

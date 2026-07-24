@@ -22,58 +22,100 @@ const MARKET_CONTEXT_KEYS = new Set([
   "higher_than_usual",
 ]);
 
+const CURRENT_PRICE_KINDS = new Set([
+  "actual",
+  "forecast",
+  "fallback_actual",
+]);
+
 /**
- * Validates the observed-price response before React receives external data.
+ * Validate the current-hour price response before React receives external data.
  */
 export function validateNowApiResponse(payload) {
-  const nowResponse = requireObject(payload, "Now", "response");
+  const nowResponse = requireObject(
+    payload,
+    "Now",
+    "response",
+  );
 
-  requireTimestamp(nowResponse.generatedAt, "Now", "generatedAt");
+  requireTimestamp(
+    nowResponse.generatedAt,
+    "Now",
+    "generatedAt",
+  );
+
   requireKnownValue(
     nowResponse.confidence,
     CONFIDENCE_LEVELS,
     "Now",
     "confidence",
   );
-  requireBoolean(nowResponse.stale, "Now", "stale");
 
-  const observedPrice = requireObject(nowResponse.price, "Now", "price");
-  requireFiniteNumber(observedPrice.value, "Now", "price.value");
+  requireBoolean(
+    nowResponse.stale,
+    "Now",
+    "stale",
+  );
 
-  if (observedPrice.unit !== "¢/kWh") {
-    failContract("Now", "price.unit", "must equal ¢/kWh");
-  }
+  const currentPrice = requireObject(
+    nowResponse.price,
+    "Now",
+    "price",
+  );
 
-  if (observedPrice.observedAtUtc !== undefined) {
-    requireTimestamp(
-      observedPrice.observedAtUtc,
+  requireFiniteNumber(
+    currentPrice.value,
+    "Now",
+    "price.value",
+  );
+
+  if (currentPrice.unit !== "¢/kWh") {
+    failContract(
       "Now",
-      "price.observedAtUtc",
+      "price.unit",
+      "must equal ¢/kWh",
     );
   }
+
+  requireKnownValue(
+    currentPrice.kind,
+    CURRENT_PRICE_KINDS,
+    "Now",
+    "price.kind",
+  );
+
+  requireTimestamp(
+    currentPrice.sourceAtUtc,
+    "Now",
+    "price.sourceAtUtc",
+  );
 
   const recommendation = requireObject(
     nowResponse.recommendation,
     "Now",
     "recommendation",
   );
+
   validatePublicRecommendation(
     recommendation.level,
     "Now",
     "recommendation.level",
   );
+
   requireKnownValue(
     recommendation.explanationKey,
     EXPLANATION_KEYS,
     "Now",
     "recommendation.explanationKey",
   );
+
   requireKnownValue(
     recommendation.actionKey,
     ACTION_KEYS,
     "Now",
     "recommendation.actionKey",
   );
+
   requireKnownValue(
     nowResponse.contextKey,
     MARKET_CONTEXT_KEYS,

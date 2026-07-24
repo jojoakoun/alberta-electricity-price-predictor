@@ -1,0 +1,46 @@
+===== PURPOSE =====
+Load the saved regression and classification artifacts through serving inference.
+Use one validation feature row for all five horizons.
+No protected-test evaluation, tuning, or selection is performed.
+
+===== PROTECTED OUTPUT PREFLIGHT =====
+protected_test_marker_status=COMPLETED
+protected_output_hashes_saved=PASS
+protected_test_will_be_invoked=False
+
+===== FIVE-HORIZON SERVING INFERENCE =====
+validation_feature_timestamp=2024-12-30 23:00:00
+inference_output=phase7_manual_pipeline_checks/85-classification-serving-inference-output.csv
+
+five_horizon_inference:
+ horizon_hours  predicted_price  spike_probability  decision_threshold  is_spike                       regression_model                    classification_model  forecast_kind
+             1        39.305437           0.088846            0.700000     False hist_gradient_boosting_regressor_tuned       hist_gradient_boosting_classifier model_forecast
+             3        36.372056           0.066158            0.650000     False hist_gradient_boosting_regressor_tuned hist_gradient_boosting_classifier_tuned model_forecast
+             6        31.900545           0.049905            0.600000     False hist_gradient_boosting_regressor_tuned hist_gradient_boosting_classifier_tuned model_forecast
+            12        30.970638           0.033154            0.600000     False hist_gradient_boosting_regressor_tuned hist_gradient_boosting_classifier_tuned model_forecast
+            24        38.971190           0.157668            0.600000     False hist_gradient_boosting_regressor_tuned      gradient_boosting_classifier_tuned model_forecast
+
+inference_horizon_count=5
+saved_regression_artifacts_loaded=PASS
+saved_classification_artifacts_loaded=PASS
+frozen_decision_thresholds_preserved=PASS
+spike_decisions_consistent=PASS
+validation_features_used=True
+protected_test_evaluated=False
+serving_inference_status=PASS
+
+===== PROTECTED OUTPUT IMMUTABILITY =====
+protected_outputs_unchanged=PASS
+protected_test_invoked=False
+
+===== SERVING TESTS =====
+..........                                                               [100%]
+10 passed in 1.94s
+
+===== GIT DIFF CHECK =====
+
+inference_preflight_exit_code=0
+serving_inference_exit_code=0
+protected_immutability_exit_code=0
+serving_tests_exit_code=0
+git_diff_check_exit_code=0

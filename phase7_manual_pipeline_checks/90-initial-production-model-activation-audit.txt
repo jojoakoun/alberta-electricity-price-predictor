@@ -1,0 +1,1452 @@
+===== PURPOSE =====
+Determine the supported initial activation path for final regression and classification models.
+No registry, model, database row, commit, or release is modified.
+
+===== CURRENT PRODUCTION MODEL STATE =====
+active_registry_present=False
+
+===== AVAILABLE MODEL DIRECTORIES =====
+models/classification/selected_classification_model_12h_hist_gradient_boosting_classifier_tuned.joblib
+models/classification/selected_classification_model_1h_hist_gradient_boosting_classifier.joblib
+models/classification/selected_classification_model_24h_gradient_boosting_classifier_tuned.joblib
+models/classification/selected_classification_model_3h_hist_gradient_boosting_classifier_tuned.joblib
+models/classification/selected_classification_model_6h_hist_gradient_boosting_classifier_tuned.joblib
+models/classification/selected_classification_model_metadata.csv
+models/regression/selected_regression_model_12h_hist_gradient_boosting_regressor_tuned.joblib
+models/regression/selected_regression_model_1h_hist_gradient_boosting_regressor_tuned.joblib
+models/regression/selected_regression_model_24h_hist_gradient_boosting_regressor_tuned.joblib
+models/regression/selected_regression_model_3h_hist_gradient_boosting_regressor_tuned.joblib
+models/regression/selected_regression_model_6h_hist_gradient_boosting_regressor_tuned.joblib
+models/regression/selected_regression_model_metadata.csv
+
+===== PROMOTION MODULE =====
+"""Validate and manually activate model tasks that passed lifecycle gates."""
+
+import argparse
+from copy import deepcopy
+from datetime import UTC, datetime
+from pathlib import Path
+
+import pandas as pd
+
+from electricity_predictor.features.feature_columns import (
+  SUPPORTED_FORECAST_HORIZONS_HOURS,
+)
+from electricity_predictor.modeling.lifecycle.candidate import (
+  read_json_file,
+  write_json_file,
+)
+from electricity_predictor.modeling.lifecycle.frozen_splits import (
+  resolve_latest_candidate_manifest_path,
+)
+from electricity_predictor.serving.model_registry import (
+  ACTIVE_MODEL_REGISTRY_PATH,
+  TASK_NAMES,
+  current_utc_timestamp,
+  initialize_active_registry,
+  read_active_registry,
+  validate_active_registry,
+  write_active_registry_atomic,
+)
+
+
+ACTIVE_MODEL_HISTORY_DIRECTORY = Path(
+  "models/production/history"
+)
+
+
+def validate_metadata_bundle(
+  task_name: str,
+  metadata_path: Path,
+) -> None:
+  """Validate one complete deployable metadata bundle."""
+  if not metadata_path.exists():
+    raise FileNotFoundError(
+      f"Candidate {task_name} metadata not found: "
+      f"{metadata_path}"
+    )
+
+  metadata = pd.read_csv(
+    metadata_path
+  )
+
+  required_columns = {
+    "model_name",
+    "horizon_hours",
+    "artifact_path",
+    "feature_columns",
+  }
+
+  if task_name == "classification":
+    required_columns.update(
+      {
+        "spike_threshold",
+        "decision_threshold",
+      }
+    )
+
+  missing_columns = (
+    required_columns
+    - set(metadata.columns)
+  )
+
+  if missing_columns:
+    raise ValueError(
+      f"Candidate {task_name} metadata is missing: "
+      f"{sorted(missing_columns)}"
+    )
+
+  if metadata.empty:
+    raise ValueError(
+      f"Candidate {task_name} metadata is empty."
+    )
+
+  horizons = set(
+    metadata[
+      "horizon_hours"
+    ].astype(int)
+  )
+
+  if horizons != set(
+    SUPPORTED_FORECAST_HORIZONS_HOURS
+  ):
+    raise ValueError(
+      f"Candidate {task_name} horizons must be "
+      f"{list(SUPPORTED_FORECAST_HORIZONS_HOURS)}, received "
+      f"{sorted(horizons)}."
+    )
+
+  if metadata[
+    "horizon_hours"
+  ].astype(int).duplicated().any():
+    raise ValueError(
+      f"Candidate {task_name} contains duplicate horizons."
+    )
+
+  for artifact_path_text in metadata[
+    "artifact_path"
+  ]:
+    artifact_path = Path(
+      str(
+        artifact_path_text
+      )
+    )
+
+    if not artifact_path.exists():
+      raise FileNotFoundError(
+        f"Candidate artifact not found: "
+        f"{artifact_path}"
+      )
+
+
+def validate_task_promotion_gate(
+  candidate_manifest: dict,
+  task_name: str,
+) -> None:
+  """Require one completed task and successful comparison gate."""
+  if task_name not in TASK_NAMES:
+    raise ValueError(
+      f"Unsupported promotion task: {task_name}"
+    )
+
+  task = candidate_manifest[
+    "tasks"
+  ][task_name]
+
+  if task.get(
+    "status"
+  ) != "completed":
+    raise ValueError(
+      f"Candidate task {task_name} is not completed."
+    )
+
+  comparison = candidate_manifest.get(
+    "comparison"
+  )
+
+  if not comparison:
+    raise ValueError(
+      "Candidate has no champion comparison."
+    )
+
+  gate_name = (
+    "regression_gate_pass"
+    if task_name == "regression"
+    else "classification_gate_pass"
+  )
+
+  if not comparison.get(
+    gate_name,
+    False,
+  ):
+    raise ValueError(
+      f"Candidate {task_name} promotion gate did not pass."
+    )
+
+  validate_metadata_bundle(
+    task_name=task_name,
+    metadata_path=Path(
+      task[
+        "metadata_path"
+      ]
+    ),
+  )
+
+
+def archive_active_registry(
+  registry: dict,
+  history_directory: Path = (
+    ACTIVE_MODEL_HISTORY_DIRECTORY
+  ),
+) -> Path:
+  """Archive the current registry before changing it."""
+  history_directory.mkdir(
+    parents=True,
+    exist_ok=True,
+  )
+
+  timestamp = datetime.now(
+    UTC
+  ).strftime(
+    "%Y%m%dT%H%M%S%fZ"
+  )
+
+  history_path = (
+    history_directory
+    / f"{timestamp}-active_models.json"
+  )
+
+  write_active_registry_atomic(
+    registry=registry,
+    registry_path=history_path,
+  )
+
+  return history_path
+
+
+def promote_candidate_tasks(
+  candidate_manifest_path: Path,
+  task_names: list[str],
+  registry_path: Path = (
+    ACTIVE_MODEL_REGISTRY_PATH
+  ),
+  history_directory: Path = (
+    ACTIVE_MODEL_HISTORY_DIRECTORY
+  ),
+) -> tuple[Path, Path, dict]:
+  """Promote selected candidate tasks through the active registry."""
+  if not task_names:
+    raise ValueError(
+      "At least one promotion task is required."
+    )
+
+  unique_task_names = list(
+    dict.fromkeys(
+      task_names
+    )
+  )
+
+  candidate_manifest = read_json_file(
+    candidate_manifest_path
+  )
+
+  if candidate_manifest.get(
+    "status"
+  ) != "evaluated":
+    raise ValueError(
+      "Candidate must be evaluated before promotion."
+    )
+
+  for task_name in unique_task_names:
+    validate_task_promotion_gate(
+      candidate_manifest=(
+        candidate_manifest
+      ),
+      task_name=task_name,
+    )
+
+  initialize_active_registry(
+    registry_path=registry_path
+  )
+
+  current_registry = read_active_registry(
+    registry_path=registry_path
+  )
+
+  history_path = archive_active_registry(
+    registry=current_registry,
+    history_directory=history_directory,
+  )
+
+  updated_registry = deepcopy(
+    current_registry
+  )
+
+  promoted_at = (
+    current_utc_timestamp()
+  )
+
+  for task_name in unique_task_names:
+    task = candidate_manifest[
+      "tasks"
+    ][task_name]
+
+    updated_registry[
+      "tasks"
+    ][task_name] = {
+      "model_version": (
+        candidate_manifest[
+          "model_version"
+        ]
+      ),
+      "metadata_path": str(
+        task[
+          "metadata_path"
+        ]
+      ),
+      "source": "candidate",
+      "candidate_manifest_path": str(
+        candidate_manifest_path
+      ),
+      "promoted_at_utc": promoted_at,
+    }
+
+  updated_registry[
+    "updated_at_utc"
+  ] = promoted_at
+
+  written_registry_path = (
+    write_active_registry_atomic(
+      registry=updated_registry,
+      registry_path=registry_path,
+    )
+  )
+
+  promotion = candidate_manifest.setdefault(
+    "promotion",
+    {}
+  )
+
+  promoted_tasks = set(
+    promotion.get(
+      "promoted_tasks",
+      [],
+    )
+  )
+
+  promoted_tasks.update(
+    unique_task_names
+  )
+
+  promotion.update(
+    {
+      "mode": "manual",
+      "promoted_at_utc": promoted_at,
+      "promoted_tasks": sorted(
+        promoted_tasks
+      ),
+      "active_registry_path": str(
+        written_registry_path
+      ),
+      "previous_registry_snapshot": str(
+        history_path
+      ),
+    }
+  )
+
+  write_json_file(
+    content=candidate_manifest,
+    file_path=candidate_manifest_path,
+  )
+
+  return (
+    written_registry_path,
+    history_path,
+    updated_registry,
+  )
+
+
+def rollback_active_registry(
+  snapshot_path: Path,
+  registry_path: Path = (
+    ACTIVE_MODEL_REGISTRY_PATH
+  ),
+  history_directory: Path = (
+    ACTIVE_MODEL_HISTORY_DIRECTORY
+  ),
+) -> tuple[Path, Path, dict]:
+  """Restore one archived active registry."""
+  snapshot = read_json_file(
+    snapshot_path
+  )
+
+  validate_active_registry(
+    snapshot,
+    require_metadata_files=True,
+  )
+
+  current_registry = read_active_registry(
+    registry_path=registry_path
+  )
+
+  current_snapshot_path = (
+    archive_active_registry(
+      registry=current_registry,
+      history_directory=(
+        history_directory
+      ),
+    )
+  )
+
+  restored_registry = deepcopy(
+    snapshot
+  )
+
+  restored_registry[
+    "updated_at_utc"
+  ] = current_utc_timestamp()
+
+  restored_registry[
+    "restored_from_snapshot"
+  ] = str(
+    snapshot_path
+  )
+
+  written_path = (
+    write_active_registry_atomic(
+      registry=restored_registry,
+      registry_path=registry_path,
+    )
+  )
+
+  return (
+    written_path,
+    current_snapshot_path,
+    restored_registry,
+  )
+
+
+def print_registry_summary(
+  registry: dict,
+) -> None:
+  """Print active task versions and metadata paths."""
+  print("Active model registry")
+  print("=====================")
+
+  for task_name in TASK_NAMES:
+    task = registry[
+      "tasks"
+    ][task_name]
+
+    print("")
+    print(task_name)
+
+===== LIFECYCLE CANDIDATE MODULE =====
+from datetime import UTC, datetime
+import json
+from pathlib import Path
+
+from electricity_predictor.config import (
+  load_configuration,
+)
+from electricity_predictor.modeling.lifecycle.paths import (
+  CANDIDATE_ROOT,
+  LATEST_SPLIT_MANIFEST_PATH,
+)
+
+
+REGRESSION_CHAMPION_METADATA_PATH = Path(
+  "models/regression/"
+  "selected_regression_model_metadata.csv"
+)
+
+CLASSIFICATION_CHAMPION_METADATA_PATH = Path(
+  "models/classification/"
+  "selected_classification_model_metadata.csv"
+)
+
+
+def read_json_file(
+  file_path: Path,
+) -> dict:
+  """Read one JSON object from disk."""
+  if not file_path.exists():
+    raise FileNotFoundError(
+      f"JSON file not found: {file_path}"
+    )
+
+  content = json.loads(
+    file_path.read_text(
+      encoding="utf-8"
+    )
+  )
+
+  if not isinstance(content, dict):
+    raise ValueError(
+      f"Expected a JSON object in {file_path}."
+    )
+
+  return content
+
+
+def write_json_file(
+  content: dict,
+  file_path: Path,
+) -> Path:
+  """Write one consistently formatted JSON object."""
+  file_path.parent.mkdir(
+    parents=True,
+    exist_ok=True,
+  )
+
+  file_path.write_text(
+    json.dumps(
+      content,
+      indent=2,
+      sort_keys=True,
+    )
+    + "\n",
+    encoding="utf-8",
+  )
+
+  return file_path
+
+
+def validate_split_manifest(
+  split_manifest: dict,
+) -> None:
+  """Validate the fields required for a candidate run."""
+  required_top_level = {
+    "dataset",
+    "plan",
+    "schema_version",
+    "split_version",
+    "splits",
+    "strategy",
+  }
+
+  missing_top_level = (
+    required_top_level
+    - set(split_manifest)
+  )
+
+  if missing_top_level:
+    raise ValueError(
+      "Split manifest is missing required fields: "
+      f"{sorted(missing_top_level)}"
+    )
+
+  required_dataset_fields = {
+    "path",
+    "sha256",
+    "version",
+    "row_count",
+    "start_utc",
+    "end_utc",
+  }
+
+  missing_dataset_fields = (
+    required_dataset_fields
+    - set(split_manifest["dataset"])
+  )
+
+  if missing_dataset_fields:
+    raise ValueError(
+      "Split manifest dataset is missing fields: "
+      f"{sorted(missing_dataset_fields)}"
+    )
+
+  required_splits = {
+    "train",
+    "validation",
+    "test",
+  }
+
+  missing_splits = (
+    required_splits
+    - set(split_manifest["splits"])
+  )
+
+  if missing_splits:
+    raise ValueError(
+      "Split manifest is missing splits: "
+      f"{sorted(missing_splits)}"
+    )
+
+
+def build_candidate_model_version(
+  split_version: str,
+) -> str:
+  """Build a deterministic candidate model version."""
+  normalized_version = str(
+    split_version
+  ).strip()
+
+  if not normalized_version:
+    raise ValueError(
+      "split_version must not be empty."
+    )
+
+  return (
+    f"candidate-{normalized_version}"
+  )
+
+
+def build_candidate_manifest(
+  split_manifest: dict,
+  source_split_manifest_path: Path,
+  candidate_root: Path,
+  promotion_mode: str,
+  created_at_utc: str | None = None,
+) -> dict:
+  """Build metadata for an isolated candidate run."""
+  validate_split_manifest(
+    split_manifest
+  )
+
+  model_version = (
+    build_candidate_model_version(
+      split_manifest["split_version"]
+    )
+  )
+
+  candidate_directory = (
+    candidate_root / model_version
+  )
+
+  created_at = (
+    created_at_utc
+    or datetime.now(UTC).isoformat()
+  )
+
+  return {
+    "schema_version": 1,
+    "model_version": model_version,
+    "status": "prepared",
+    "created_at_utc": created_at,
+    "promotion_mode": promotion_mode,
+    "dataset_version": (
+      split_manifest["dataset"][
+        "version"
+      ]
+    ),
+    "dataset_sha256": (
+      split_manifest["dataset"][
+        "sha256"
+      ]
+    ),
+    "split_version": (
+      split_manifest["split_version"]
+    ),
+    "source_split_manifest_path": str(
+      source_split_manifest_path
+    ),
+    "frozen_split_manifest_path": str(
+      candidate_directory
+      / "split_manifest.json"
+    ),
+    "candidate_directory": str(
+      candidate_directory
+    ),
+    "tasks": {
+      "regression": {
+        "status": "pending",
+        "artifact_directory": str(
+          candidate_directory
+          / "regression"
+        ),
+        "report_directory": str(
+          candidate_directory
+          / "reports"
+          / "regression"
+        ),
+        "metadata_path": str(
+          candidate_directory
+          / "regression"
+          / "selected_regression_model_metadata.csv"
+        ),
+      },
+      "classification": {
+        "status": "pending",
+        "artifact_directory": str(
+          candidate_directory
+          / "classification"
+        ),
+        "report_directory": str(
+          candidate_directory
+          / "reports"
+          / "classification"
+        ),
+        "metadata_path": str(
+          candidate_directory
+          / "classification"
+          / "selected_classification_model_metadata.csv"
+        ),
+      },
+    },
+    "current_champion": {
+      "status": "legacy_unversioned",
+      "regression_metadata_path": str(
+        REGRESSION_CHAMPION_METADATA_PATH
+      ),
+      "classification_metadata_path": str(
+        CLASSIFICATION_CHAMPION_METADATA_PATH
+      ),
+    },
+  }
+
+
+def prepare_candidate_run(
+  split_manifest_path: Path = (
+    LATEST_SPLIT_MANIFEST_PATH
+  ),
+  candidate_root: Path = (
+    CANDIDATE_ROOT
+  ),
+  promotion_mode: str | None = None,
+  created_at_utc: str | None = None,
+) -> tuple[Path, Path, dict]:
+  """Prepare one isolated candidate directory."""
+  split_manifest = read_json_file(
+    split_manifest_path
+  )
+
+  resolved_promotion_mode = (
+    promotion_mode
+  )
+
+  if resolved_promotion_mode is None:
+    configuration = (
+      load_configuration()
+    )
+
+    resolved_promotion_mode = (
+      configuration[
+        "model_lifecycle"
+      ][
+        "promotion_mode"
+      ]
+    )
+
+  candidate_manifest = (
+    build_candidate_manifest(
+      split_manifest=split_manifest,
+      source_split_manifest_path=(
+        split_manifest_path
+      ),
+      candidate_root=candidate_root,
+      promotion_mode=(
+        resolved_promotion_mode
+      ),
+      created_at_utc=created_at_utc,
+    )
+  )
+
+  candidate_directory = Path(
+    candidate_manifest[
+      "candidate_directory"
+    ]
+  )
+
+  candidate_manifest_path = (
+    candidate_directory
+    / "candidate_manifest.json"
+  )
+
+  frozen_split_manifest_path = (
+    candidate_directory
+    / "split_manifest.json"
+  )
+
+  # The same split version maps to one stable candidate.
+  if candidate_manifest_path.exists():
+    existing_manifest = read_json_file(
+      candidate_manifest_path
+    )
+
+    if (
+      existing_manifest.get(
+        "split_version"
+      )
+      != split_manifest[
+        "split_version"
+      ]
+    ):
+      raise ValueError(
+        "Existing candidate uses a different "
+        "split version."
+      )
+
+    return (
+      candidate_manifest_path,
+      frozen_split_manifest_path,
+      existing_manifest,
+    )
+
+  for directory in [
+    candidate_directory
+    / "regression",
+    candidate_directory
+    / "classification",
+    candidate_directory
+    / "reports"
+    / "regression",
+    candidate_directory
+    / "reports"
+    / "classification",
+  ]:
+    directory.mkdir(
+      parents=True,
+      exist_ok=True,
+    )
+
+  write_json_file(
+    content=split_manifest,
+
+===== MODEL REGISTRY MODULE =====
+"""Manage independent active regression and classification model lineages."""
+
+from datetime import UTC, datetime
+import json
+import os
+from pathlib import Path
+from uuid import uuid4
+
+
+ACTIVE_MODEL_REGISTRY_PATH = Path(
+  "models/production/active_models.json"
+)
+
+LEGACY_REGRESSION_METADATA_PATH = Path(
+  "models/regression/"
+  "selected_regression_model_metadata.csv"
+)
+
+LEGACY_CLASSIFICATION_METADATA_PATH = Path(
+  "models/classification/"
+  "selected_classification_model_metadata.csv"
+)
+
+TASK_NAMES = (
+  "regression",
+  "classification",
+)
+
+
+def current_utc_timestamp() -> str:
+  """Return one ISO-formatted UTC timestamp."""
+  return datetime.now(
+    UTC
+  ).isoformat()
+
+
+def build_legacy_registry(
+  updated_at_utc: str | None = None,
+) -> dict:
+  """Build the initial registry without merging the two task lineages."""
+  return {
+    "schema_version": 1,
+    "updated_at_utc": (
+      updated_at_utc
+      or current_utc_timestamp()
+    ),
+    "tasks": {
+      "regression": {
+        "model_version": (
+          "legacy-unversioned"
+        ),
+        "metadata_path": str(
+          LEGACY_REGRESSION_METADATA_PATH
+        ),
+        "source": "legacy",
+      },
+      "classification": {
+        "model_version": (
+          "legacy-unversioned"
+        ),
+        "metadata_path": str(
+          LEGACY_CLASSIFICATION_METADATA_PATH
+        ),
+        "source": "legacy",
+      },
+    },
+  }
+
+
+def validate_active_registry(
+  registry: dict,
+  require_metadata_files: bool = True,
+) -> None:
+  """Validate the active model registry."""
+  if not isinstance(registry, dict):
+    raise ValueError(
+      "Active model registry must be a JSON object."
+    )
+
+  required_top_level = {
+    "schema_version",
+    "updated_at_utc",
+    "tasks",
+  }
+
+  missing_top_level = (
+    required_top_level
+    - set(registry)
+  )
+
+  if missing_top_level:
+    raise ValueError(
+      "Active model registry is missing fields: "
+      f"{sorted(missing_top_level)}"
+    )
+
+  if registry["schema_version"] != 1:
+    raise ValueError(
+      "Unsupported active model registry schema."
+    )
+
+  tasks = registry["tasks"]
+
+  if not isinstance(tasks, dict):
+    raise ValueError(
+      "Active model registry tasks must be an object."
+    )
+
+  for task_name in TASK_NAMES:
+    if task_name not in tasks:
+      raise ValueError(
+        "Active model registry is missing task: "
+        f"{task_name}"
+      )
+
+    task = tasks[task_name]
+
+    required_task_fields = {
+      "model_version",
+      "metadata_path",
+      "source",
+    }
+
+    missing_task_fields = (
+      required_task_fields
+      - set(task)
+    )
+
+    if missing_task_fields:
+      raise ValueError(
+        f"Registry task {task_name} is missing fields: "
+        f"{sorted(missing_task_fields)}"
+      )
+
+    if not str(
+      task["model_version"]
+    ).strip():
+      raise ValueError(
+        f"Registry task {task_name} has no model version."
+      )
+
+    metadata_path = Path(
+      str(
+        task["metadata_path"]
+      )
+    )
+
+    if (
+      require_metadata_files
+      and not metadata_path.exists()
+    ):
+      raise FileNotFoundError(
+        f"Active {task_name} metadata not found: "
+        f"{metadata_path}"
+      )
+
+
+def read_active_registry(
+  registry_path: Path = (
+    ACTIVE_MODEL_REGISTRY_PATH
+  ),
+  require_metadata_files: bool = True,
+) -> dict:
+  """Read and validate the active model registry."""
+  if not registry_path.exists():
+    raise FileNotFoundError(
+      "Active model registry not found: "
+      f"{registry_path}"
+    )
+
+  registry = json.loads(
+    registry_path.read_text(
+      encoding="utf-8"
+    )
+  )
+
+  validate_active_registry(
+    registry=registry,
+    require_metadata_files=(
+      require_metadata_files
+    ),
+  )
+
+  return registry
+
+
+def write_active_registry_atomic(
+  registry: dict,
+  registry_path: Path = (
+    ACTIVE_MODEL_REGISTRY_PATH
+  ),
+  require_metadata_files: bool = True,
+) -> Path:
+  """Write the registry through an atomic file replacement."""
+  validate_active_registry(
+    registry=registry,
+    require_metadata_files=(
+      require_metadata_files
+    ),
+  )
+
+  registry_path.parent.mkdir(
+    parents=True,
+    exist_ok=True,
+  )
+
+  temporary_path = (
+    registry_path.parent
+    / (
+      f".{registry_path.name}."
+      f"{uuid4().hex}.tmp"
+    )
+  )
+
+  serialized = json.dumps(
+    registry,
+    indent=2,
+    sort_keys=True,
+  ) + "\n"
+
+  try:
+    temporary_path.write_text(
+      serialized,
+      encoding="utf-8",
+    )
+
+    # Readers must see either the previous complete registry or the new one,
+    # never a partially written activation file.
+    os.replace(
+      temporary_path,
+      registry_path,
+    )
+  finally:
+    if temporary_path.exists():
+      temporary_path.unlink()
+
+  return registry_path
+
+
+def initialize_active_registry(
+  registry_path: Path = (
+    ACTIVE_MODEL_REGISTRY_PATH
+  ),
+) -> tuple[Path, dict]:
+  """Create the legacy registry without overwriting one already present."""
+  if registry_path.exists():
+    registry = read_active_registry(
+      registry_path=registry_path
+    )
+
+    return (
+      registry_path,
+      registry,
+    )
+
+  registry = build_legacy_registry()
+
+  written_path = (
+    write_active_registry_atomic(
+      registry=registry,
+      registry_path=registry_path,
+    )
+  )
+
+  return (
+    written_path,
+    registry,
+  )
+
+
+def _resolve_task_metadata_path(
+  registry: dict,
+  task_name: str,
+) -> Path:
+  """Return the normalized metadata path exposed by one registry task."""
+  return Path(
+    str(registry["tasks"][task_name]["metadata_path"])
+  )
+
+
+def resolve_active_metadata_paths(
+  registry_path: Path = (
+    ACTIVE_MODEL_REGISTRY_PATH
+  ),
+) -> tuple[Path, Path, dict]:
+  """Resolve each active task's metadata without conflating its lineage."""
+  registry = read_active_registry(
+    registry_path=registry_path
+  )
+
+  regression_path = _resolve_task_metadata_path(
+    registry=registry,
+    task_name="regression",
+  )
+  classification_path = _resolve_task_metadata_path(
+    registry=registry,
+    task_name="classification",
+  )
+
+  return (
+    regression_path,
+    classification_path,
+    registry,
+  )
+
+===== RELEASE BUNDLE METADATA CONTRACT =====
+from copy import deepcopy
+from datetime import UTC, datetime
+from hashlib import sha256
+import json
+from pathlib import Path
+import shutil
+import tarfile
+from uuid import uuid4
+
+import pandas as pd
+
+from electricity_predictor.serving.model_registry import (
+  ACTIVE_MODEL_REGISTRY_PATH,
+  read_active_registry,
+)
+
+
+RELEASE_BUILD_ROOT = Path(
+  "dist/model-releases"
+)
+
+RELEASE_INSTALL_ROOT = Path(
+  "models/production/releases"
+)
+
+TASK_NAMES = (
+  "regression",
+  "classification",
+)
+
+
+def calculate_file_sha256(
+  file_path: Path,
+) -> str:
+  """Calculate the SHA-256 checksum of one file."""
+  if not file_path.exists():
+    raise FileNotFoundError(
+      f"Release source file not found: {file_path}"
+    )
+
+  digest = sha256()
+
+  with file_path.open("rb") as source_file:
+    for chunk in iter(
+      lambda: source_file.read(
+        1024 * 1024
+      ),
+      b"",
+    ):
+      digest.update(chunk)
+
+  return digest.hexdigest()
+
+
+def load_release_metadata(
+  task_name: str,
+  metadata_path: Path,
+) -> pd.DataFrame:
+  """Load and validate active task metadata."""
+  if not metadata_path.exists():
+    raise FileNotFoundError(
+      f"Active {task_name} metadata not found: "
+      f"{metadata_path}"
+    )
+
+  metadata = pd.read_csv(
+    metadata_path
+  )
+
+  required_columns = {
+    "model_name",
+    "horizon_hours",
+    "artifact_path",
+    "feature_columns",
+  }
+
+  if task_name == "classification":
+    required_columns.update(
+      {
+        "spike_threshold",
+        "decision_threshold",
+      }
+    )
+
+  missing_columns = (
+    required_columns
+    - set(metadata.columns)
+  )
+
+  if missing_columns:
+    raise ValueError(
+      f"Active {task_name} metadata is missing: "
+      f"{sorted(missing_columns)}"
+    )
+
+  if metadata.empty:
+    raise ValueError(
+      f"Active {task_name} metadata is empty."
+    )
+
+  if metadata[
+    "horizon_hours"
+  ].astype(int).duplicated().any():
+    raise ValueError(
+      f"Active {task_name} metadata contains "
+      "duplicate horizons."
+    )
+
+  for artifact_text in metadata[
+    "artifact_path"
+  ]:
+    artifact_path = Path(
+      str(
+        artifact_text
+      )
+    )
+
+    if not artifact_path.exists():
+      raise FileNotFoundError(
+        f"Active artifact not found: "
+        f"{artifact_path}"
+      )
+
+  return metadata.sort_values(
+    "horizon_hours"
+  ).reset_index(drop=True)
+
+
+def build_release_identity(
+  registry: dict,
+  metadata_by_task: dict[
+    str,
+    pd.DataFrame,
+  ],
+) -> tuple[str, str]:
+  """Build a deterministic release identifier."""
+  digest = sha256()
+
+  identity = {
+    task_name: {
+      "model_version": registry[
+        "tasks"
+      ][task_name][
+        "model_version"
+      ],
+      "metadata_path": registry[
+        "tasks"
+      ][task_name][
+        "metadata_path"
+      ],
+    }
+    for task_name in TASK_NAMES
+  }
+
+  digest.update(
+    json.dumps(
+      identity,
+      sort_keys=True,
+    ).encode(
+      "utf-8"
+    )
+  )
+
+  for task_name in TASK_NAMES:
+    metadata = metadata_by_task[
+      task_name
+    ]
+
+    digest.update(
+      metadata.to_csv(
+        index=False
+      ).encode(
+        "utf-8"
+      )
+    )
+
+    for artifact_text in metadata[
+      "artifact_path"
+    ]:
+      artifact_path = Path(
+        str(
+          artifact_text
+        )
+      )
+
+      digest.update(
+        calculate_file_sha256(
+          artifact_path
+        ).encode(
+          "utf-8"
+        )
+      )
+
+  release_hash = digest.hexdigest()
+
+  release_id = (
+    f"release-{release_hash[:16]}"
+  )
+
+  return (
+    release_id,
+    release_hash,
+  )
+
+
+def copy_task_into_release(
+  task_name: str,
+  metadata: pd.DataFrame,
+  payload_root: Path,
+  release_id: str,
+  install_root: Path,
+) -> tuple[Path, pd.DataFrame]:
+  """Copy one active task and rewrite its artifact paths."""
+  payload_task_directory = (
+    payload_root
+    / install_root
+    / release_id
+    / task_name
+  )
+
+  payload_task_directory.mkdir(
+    parents=True,
+    exist_ok=True,
+  )
+
+  installed_task_directory = (
+    install_root
+    / release_id
+    / task_name
+  )
+
+  rewritten_metadata = (
+    metadata.copy()
+  )
+
+  rewritten_artifact_paths = []
+
+  for artifact_text in metadata[
+    "artifact_path"
+  ]:
+    source_artifact = Path(
+      str(
+        artifact_text
+      )
+    )
+
+    destination_artifact = (
+      payload_task_directory
+      / source_artifact.name
+    )
+
+    if destination_artifact.exists():
+      raise ValueError(
+        "Duplicate release artifact filename: "
+        f"{source_artifact.name}"
+      )
+
+    shutil.copy2(
+      source_artifact,
+      destination_artifact,
+
+===== PROMOTION AND REGISTRY TESTS =====
+tests/modeling/lifecycle/__pycache__/test_promotion.cpython-314-pytest-9.0.3.pyc
+tests/modeling/lifecycle/__pycache__/test_release_bundle.cpython-314-pytest-9.0.3.pyc
+tests/modeling/lifecycle/test_promotion.py
+tests/modeling/lifecycle/test_release_bundle.py
+tests/serving/__pycache__/test_model_registry.cpython-314-pytest-9.0.3.pyc
+tests/serving/__pycache__/test_release_installer.cpython-314-pytest-9.0.3.pyc
+tests/serving/__pycache__/test_release_installer.cpython-314.pyc
+tests/serving/test_model_registry.py
+tests/serving/test_release_installer.py
+
+===== INITIALIZATION AND MISSING-CHAMPION REFERENCES =====
+src/electricity_predictor/modeling/lifecycle/promotion.py:24:  initialize_active_registry,
+src/electricity_predictor/modeling/lifecycle/promotion.py:194:    / f"{timestamp}-active_models.json"
+src/electricity_predictor/modeling/lifecycle/promotion.py:205:def promote_candidate_tasks(
+src/electricity_predictor/modeling/lifecycle/promotion.py:246:  initialize_active_registry(
+src/electricity_predictor/modeling/lifecycle/promotion.py:263:  promoted_at = (
+src/electricity_predictor/modeling/lifecycle/promotion.py:289:      "promoted_at_utc": promoted_at,
+src/electricity_predictor/modeling/lifecycle/promotion.py:294:  ] = promoted_at
+src/electricity_predictor/modeling/lifecycle/promotion.py:308:  promoted_tasks = set(
+src/electricity_predictor/modeling/lifecycle/promotion.py:310:      "promoted_tasks",
+src/electricity_predictor/modeling/lifecycle/promotion.py:315:  promoted_tasks.update(
+src/electricity_predictor/modeling/lifecycle/promotion.py:322:      "promoted_at_utc": promoted_at,
+src/electricity_predictor/modeling/lifecycle/promotion.py:323:      "promoted_tasks": sorted(
+src/electricity_predictor/modeling/lifecycle/promotion.py:324:        promoted_tasks
+src/electricity_predictor/modeling/lifecycle/promotion.py:440:  """Initialize, promote, or roll back active models."""
+src/electricity_predictor/modeling/lifecycle/promotion.py:444:    "--initialize",
+src/electricity_predictor/modeling/lifecycle/promotion.py:465:      bool(arguments.initialize),
+src/electricity_predictor/modeling/lifecycle/promotion.py:474:      "--initialize, --task, or --rollback."
+src/electricity_predictor/modeling/lifecycle/promotion.py:477:  if arguments.initialize:
+src/electricity_predictor/modeling/lifecycle/promotion.py:479:      initialize_active_registry()
+src/electricity_predictor/modeling/lifecycle/promotion.py:528:  ) = promote_candidate_tasks(
+src/electricity_predictor/modeling/lifecycle/release_bundle.py:552:      / "active_models.json"
+src/electricity_predictor/serving/release_installer.py:155:    "models/production/active_models.json"
+src/electricity_predictor/serving/release_installer.py:161:      "active_models.json."
+src/electricity_predictor/serving/release_installer.py:430:    / "active_models.json"
+src/electricity_predictor/serving/release_installer.py:515:    / "active_models.json"
+src/electricity_predictor/serving/release_installer.py:660:          / "active_models.json"
+src/electricity_predictor/serving/release_installer.py:713:        / "active_models.json"
+src/electricity_predictor/serving/model_registry.py:11:  "models/production/active_models.json"
+src/electricity_predictor/serving/model_registry.py:40:  """Build the initial registry without merging the two task lineages."""
+src/electricity_predictor/serving/model_registry.py:240:def initialize_active_registry(
+tests/modeling/lifecycle/test_promotion.py:9:  promote_candidate_tasks,
+tests/modeling/lifecycle/test_promotion.py:197:def test_promote_regression_preserves_classification(
+tests/modeling/lifecycle/test_promotion.py:212:  ) = promote_candidate_tasks(
+tests/modeling/lifecycle/test_promotion.py:267:def test_classification_failed_gate_cannot_promote(
+tests/modeling/lifecycle/test_promotion.py:282:    promote_candidate_tasks(
+tests/modeling/lifecycle/test_release_bundle.py:129:    tmp_path / "active_models.json"
+tests/modeling/lifecycle/test_release_bundle.py:209:    / "active_models.json"
+tests/serving/test_inference.py:298:    tmp_path / "active_models.json"
+tests/serving/test_model_registry.py:5:  initialize_active_registry,
+tests/serving/test_model_registry.py:38:def test_initialize_active_registry_is_idempotent(
+tests/serving/test_model_registry.py:87:    initialize_active_registry(
+tests/serving/test_model_registry.py:93:    initialize_active_registry(
+tests/serving/test_release_installer.py:232:    tmp_path / "active_models.json"
+tests/serving/test_release_installer.py:287:    / "active_models.json"
+tests/serving/test_release_installer.py:556:      production_root / "active_models.json"
+
+===== COMMAND HELP =====
+usage: python -m electricity_predictor.modeling.lifecycle.promotion
+       [-h] [--initialize] [--task {regression,classification}]
+       [--rollback ROLLBACK]
+
+options:
+  -h, --help            show this help message and exit
+  --initialize
+  --task {regression,classification}
+  --rollback ROLLBACK
+
+===== DIFF FORMAT CHECK =====
+git_diff_check=PASS
+
+activation_performed=False
+registry_created=False
+release_created=False
+database_modified=False
+commit_performed=False
+push_performed=False
+protected_test_invoked=False

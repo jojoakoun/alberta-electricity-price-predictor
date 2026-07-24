@@ -89,27 +89,17 @@ def test_build_spike_regime_rows_reuses_train_threshold_for_all_splits():
     prices=[1000.0, 1100.0],
   )
 
-  test_data = make_regime_data(
-    timestamps=[
-      "2022-01-01 00:00:00",
-      "2022-01-01 01:00:00",
-    ],
-    prices=[2000.0, 2100.0],
-  )
-
   rows = build_spike_regime_rows(
     train_data=train_data,
     validation_data=validation_data,
-    test_data=test_data,
   )
 
   # Q1=2, Q3=4, and IQR=2, so the frozen train threshold is 7.
-  assert len(rows) == 3
+  assert len(rows) == 2
   assert all(row["threshold"] == pytest.approx(7.0) for row in rows)
   assert {row["split"] for row in rows} == {
     "train",
     "validation",
-    "test",
   }
 
 

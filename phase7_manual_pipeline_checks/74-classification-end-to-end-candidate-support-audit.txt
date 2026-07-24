@@ -1,0 +1,1486 @@
+===== PURPOSE =====
+Audit end-to-end support for every classification candidate.
+No model is trained.
+No validation results are changed.
+Protected test data is not accessed.
+
+===== FINAL TEST EVALUATION: IMPORTS AND CONSTANTS =====
+from pathlib import Path
+
+import pandas as pd
+from sklearn.metrics import confusion_matrix
+
+from electricity_predictor.config import load_configuration
+from electricity_predictor.modeling.block_bootstrap import (
+  calculate_f1_block_bootstrap_interval,
+)
+from electricity_predictor.modeling.classification.baseline.naive_spike_baseline import (
+  evaluate_classification_baseline,
+)
+from electricity_predictor.modeling.classification.decision_threshold import (
+  apply_decision_threshold,
+  select_f1_decision_threshold,
+)
+from electricity_predictor.modeling.classification.gradient_boosting.gradient_boosting_classifier import (
+  evaluate_gradient_boosting_classifier,
+  train_gradient_boosting_classifier,
+)
+from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_classifier import (
+  train_hist_gradient_boosting_classifier,
+)
+from electricity_predictor.modeling.classification.logistic.logistic_regression import (
+  evaluate_logistic_regression_model,
+  train_logistic_regression_model,
+)
+from electricity_predictor.modeling.classification.random_forest.random_forest_classifier import (
+  evaluate_random_forest_classifier,
+  train_random_forest_classifier,
+)
+from electricity_predictor.modeling.classification.target_builder import (
+  build_spike_target_column_name,
+  prepare_classification_splits,
+)
+from electricity_predictor.modeling.metrics import calculate_classification_metrics
+from electricity_predictor.modeling.model_results import (
+  build_model_result_row,
+  write_model_results,
+)
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
+)
+from electricity_predictor.modeling.split import (
+  TRAINING_DATASET_PATH,
+  load_training_dataset,
+  split_time_series_data_from_config,
+)
+
+
+BEST_MODEL_PATH = Path("reports/best_classification_model.csv")
+FINAL_TEST_RESULTS_PATH = Path(
+  "reports/final_classification_test_results.csv"
+)
+FINAL_CONFUSION_MATRICES_PATH = Path(
+  "reports/final_classification_confusion_matrices.csv"
+)
+FINAL_CONFIDENCE_INTERVALS_PATH = Path(
+  "reports/final_classification_confidence_intervals.csv"
+)
+
+
+TUNED_REQUIRED_PARAMETERS = {
+  "logistic_regression_tuned": ["best_C"],
+  "random_forest_classifier_tuned": [
+    "n_estimators",
+    "max_depth",
+    "min_samples_leaf",
+  ],
+  "gradient_boosting_classifier_tuned": [
+    "n_estimators",
+    "learning_rate",
+    "max_depth",
+  ],
+  "hist_gradient_boosting_classifier_tuned": [
+    "learning_rate",
+    "max_iter",
+    "max_leaf_nodes",
+    "min_samples_leaf",
+    "l2_regularization",
+  ],
+}
+
+
+def parse_model_parameters(parameter_text: str) -> dict[str, str]:
+  """Parse the saved semicolon-separated model parameters."""
+  if not isinstance(parameter_text, str) or not parameter_text.strip():
+    return {}
+
+  parameters = {}
+
+  for part in parameter_text.split(";"):
+    if "=" not in part:
+      continue
+
+    key, value = part.split("=", 1)
+    parameters[key.strip()] = value.strip()
+
+  return parameters
+
+
+def validate_tuned_model_parameters(
+  model_name: str,
+  parameters: dict[str, str],
+) -> None:
+  """Reject tuned models that are missing selected hyperparameters."""
+  required_parameters = TUNED_REQUIRED_PARAMETERS.get(
+    model_name,
+    [],
+  )
+
+  missing_parameters = [
+    parameter
+    for parameter in required_parameters
+    if parameter not in parameters
+  ]
+
+  if missing_parameters:
+    raise ValueError(
+      f"Tuned model {model_name} is missing required parameters: "
+      f"{missing_parameters}."
+    )
+
+
+def get_float_parameter(
+  parameters: dict[str, str],
+  names: list[str],
+  default: float,
+) -> float:
+  """Read the first available float parameter."""
+  for name in names:
+    if name in parameters:
+      return float(parameters[name])
+
+  return default
+
+
+def get_int_parameter(
+  parameters: dict[str, str],
+  names: list[str],
+  default: int,
+) -> int:
+  """Read the first available integer parameter."""
+  for name in names:
+    if name in parameters:
+      return int(parameters[name])
+
+  return default
+
+
+def get_optional_int_parameter(
+  parameters: dict[str, str],
+  names: list[str],
+  default: int | None,
+) -> int | None:
+  """Read an integer parameter that may be stored as None."""
+  for name in names:
+    if name not in parameters:
+      continue
+
+    if parameters[name] == "None":
+      return None
+
+    return int(parameters[name])
+
+  return default
+
+
+def load_selected_classification_models(
+  file_path: Path = BEST_MODEL_PATH,
+) -> pd.DataFrame:
+  """Load validation-selected classification models."""
+  if not file_path.exists():
+    raise FileNotFoundError(
+      f"Best classification model file not found: {file_path}"
+    )
+
+  selected_models = pd.read_csv(file_path)
+
+  required_columns = {
+    "model_name",
+    "horizon_hours",
+    "model_parameters",
+    "selection_metric",
+    "selection_rule",
+  }
+
+  missing_columns = required_columns - set(selected_models.columns)
+
+  if missing_columns:
+
+===== FINAL TEST EVALUATION: MODEL RECONSTRUCTION =====
+  if missing_columns:
+    raise ValueError(
+      f"Best classification model file is missing columns: "
+      f"{sorted(missing_columns)}"
+    )
+
+  return selected_models.sort_values(
+    "horizon_hours"
+  ).reset_index(drop=True)
+
+
+def train_selected_classification_model(
+  selected_model: dict,
+  train_data: pd.DataFrame,
+  target_column: str,
+):
+  """Train one selected learned classification model."""
+  model_name = selected_model["model_name"]
+  parameters = parse_model_parameters(
+    selected_model.get("model_parameters", "")
+  )
+
+  validate_tuned_model_parameters(
+    model_name=model_name,
+    parameters=parameters,
+  )
+
+  if model_name in [
+    "logistic_regression",
+    "logistic_regression_tuned",
+  ]:
+    c_value = get_float_parameter(
+      parameters,
+      ["best_C", "C"],
+      1.0,
+    )
+
+    return train_logistic_regression_model(
+      train_data=train_data,
+      target_column=target_column,
+      c_value=c_value,
+    )
+
+  if model_name in [
+    "random_forest_classifier",
+    "random_forest_classifier_tuned",
+  ]:
+    return train_random_forest_classifier(
+      train_data=train_data,
+      target_column=target_column,
+      n_estimators=get_int_parameter(
+        parameters,
+        ["n_estimators"],
+        100,
+      ),
+      max_depth=get_optional_int_parameter(
+        parameters,
+        ["max_depth"],
+        None,
+      ),
+      min_samples_leaf=get_int_parameter(
+        parameters,
+        ["min_samples_leaf"],
+        1,
+      ),
+    )
+
+  if model_name in [
+    "gradient_boosting_classifier",
+    "gradient_boosting_classifier_tuned",
+  ]:
+    return train_gradient_boosting_classifier(
+      train_data=train_data,
+      target_column=target_column,
+      n_estimators=get_int_parameter(
+        parameters,
+        ["n_estimators"],
+        100,
+      ),
+      learning_rate=get_float_parameter(
+        parameters,
+        ["learning_rate"],
+        0.1,
+      ),
+      max_depth=get_int_parameter(
+        parameters,
+        ["max_depth"],
+        3,
+      ),
+    )
+
+  if model_name in [
+    "hist_gradient_boosting_classifier",
+    "hist_gradient_boosting_classifier_tuned",
+  ]:
+    return train_hist_gradient_boosting_classifier(
+      train_data=train_data,
+      target_column=target_column,
+      learning_rate=get_float_parameter(
+        parameters,
+        ["learning_rate"],
+        0.1,
+      ),
+      max_iter=get_int_parameter(
+        parameters,
+        ["max_iter"],
+        100,
+      ),
+      max_leaf_nodes=get_int_parameter(
+        parameters,
+        ["max_leaf_nodes"],
+        31,
+      ),
+      min_samples_leaf=get_int_parameter(
+        parameters,
+        ["min_samples_leaf"],
+        20,
+      ),
+      l2_regularization=get_float_parameter(
+        parameters,
+        ["l2_regularization"],
+        0.0,
+      ),
+    )
+
+  raise ValueError(
+    f"Unsupported selected classification model: {model_name}"
+  )
+
+
+def select_model_decision_threshold(
+  selected_model: dict,
+  train_data: pd.DataFrame,
+  validation_data: pd.DataFrame,
+  target_column: str,
+) -> dict[str, float]:
+  """Select a probability cutoff using validation data only."""
+  model = train_selected_classification_model(
+    selected_model=selected_model,
+    train_data=train_data,
+    target_column=target_column,
+  )
+
+  validation_features = validation_data[MODEL_FEATURE_COLUMNS]
+  validation_probability = model.predict_proba(
+    validation_features
+  )[:, 1]
+
+  return select_f1_decision_threshold(
+    target=validation_data[target_column],
+    probability=validation_probability,
+  )
+
+
+def evaluate_selected_classification_model(
+  selected_model: dict,
+  train_data: pd.DataFrame,
+  validation_data: pd.DataFrame,
+  evaluation_data: pd.DataFrame,
+  target_column: str,
+  threshold: float,
+) -> tuple[dict[str, float | None], pd.Series, float | None]:
+  """Select a validation cutoff and evaluate once on protected test data."""
+  target = evaluation_data[target_column]
+
+  if selected_model["model_name"] == "naive_spike_baseline":
+    prediction = (
+      evaluation_data["actual_price_lag_1h"] > threshold
+    ).astype(int)
+
+    scores = calculate_classification_metrics(
+      target=target,
+      prediction=prediction,
+    )
+
+    return scores, prediction, None
+
+  threshold_result = select_model_decision_threshold(
+    selected_model=selected_model,
+    train_data=train_data,
+    validation_data=validation_data,
+    target_column=target_column,
+  )
+  decision_threshold = threshold_result["decision_threshold"]
+
+  final_training_data = pd.concat(
+    [train_data, validation_data],
+    ignore_index=True,
+  )
+
+  model = train_selected_classification_model(
+
+===== FINAL TEST EVALUATION: RESULT AND WORKFLOW =====
+  model = train_selected_classification_model(
+    selected_model=selected_model,
+    train_data=final_training_data,
+    target_column=target_column,
+  )
+
+  features = evaluation_data[MODEL_FEATURE_COLUMNS]
+  probability = pd.Series(
+    model.predict_proba(features)[:, 1],
+    index=evaluation_data.index,
+  )
+  prediction = pd.Series(
+    apply_decision_threshold(
+      probability=probability,
+      threshold=decision_threshold,
+    ),
+    index=evaluation_data.index,
+  )
+
+  scores = calculate_classification_metrics(
+    target=target,
+    prediction=prediction,
+    probability=probability,
+  )
+
+  return scores, prediction, decision_threshold
+
+
+def build_confusion_matrix_row(
+  selected_model: dict,
+  target: pd.Series,
+  prediction: pd.Series,
+) -> dict:
+  """Build one auditable binary confusion-matrix row."""
+  true_negative, false_positive, false_negative, true_positive = (
+    confusion_matrix(
+      target,
+      prediction,
+      labels=[0, 1],
+    ).ravel()
+  )
+
+  return {
+    "model_name": selected_model["model_name"],
+    "horizon_hours": int(selected_model["horizon_hours"]),
+    "split": "test",
+    "true_negative": int(true_negative),
+    "false_positive": int(false_positive),
+    "false_negative": int(false_negative),
+    "true_positive": int(true_positive),
+  }
+
+
+def write_confusion_matrices(
+  rows: list[dict],
+  output_path: Path = FINAL_CONFUSION_MATRICES_PATH,
+) -> Path:
+  """Persist final confusion matrices for every forecast horizon."""
+  output_path.parent.mkdir(parents=True, exist_ok=True)
+
+  columns = [
+    "model_name",
+    "horizon_hours",
+    "split",
+    "true_negative",
+    "false_positive",
+    "false_negative",
+    "true_positive",
+  ]
+
+  pd.DataFrame(rows, columns=columns).to_csv(
+    output_path,
+    index=False,
+  )
+
+  return output_path
+
+
+def build_f1_confidence_interval_row(
+  selected_model: dict,
+  target: pd.Series,
+  prediction: pd.Series,
+) -> dict:
+  """Build one block-bootstrap F1 confidence-interval row."""
+  interval = calculate_f1_block_bootstrap_interval(
+    target=target,
+    prediction=prediction,
+  )
+
+  return {
+    "model_name": selected_model["model_name"],
+    "horizon_hours": int(selected_model["horizon_hours"]),
+    "split": "test",
+    "metric": interval["metric"],
+    "estimate": interval["estimate"],
+    "confidence_level": interval["confidence_level"],
+    "ci_lower": interval["ci_lower"],
+    "ci_upper": interval["ci_upper"],
+    "block_size": interval["block_size"],
+    "iterations": interval["iterations"],
+  }
+
+
+def write_confidence_intervals(
+  rows: list[dict],
+  output_path: Path = FINAL_CONFIDENCE_INTERVALS_PATH,
+) -> Path:
+  """Persist block-bootstrap confidence intervals by horizon."""
+  output_path.parent.mkdir(parents=True, exist_ok=True)
+
+  columns = [
+    "model_name",
+    "horizon_hours",
+    "split",
+    "metric",
+    "estimate",
+    "confidence_level",
+    "ci_lower",
+    "ci_upper",
+    "block_size",
+    "iterations",
+  ]
+
+  pd.DataFrame(rows, columns=columns).to_csv(
+    output_path,
+    index=False,
+  )
+
+  return output_path
+
+
+def build_final_classification_test_result(
+  selected_model: dict,
+  scores: dict[str, float],
+  row_count: int,
+) -> dict:
+  """Build one protected classification test result."""
+  horizon_hours = int(selected_model["horizon_hours"])
+
+  return build_model_result_row(
+    model_name=selected_model["model_name"],
+    task="classification",
+    horizon_hours=horizon_hours,
+    split="test",
+    evaluation_rows=row_count,
+    metrics=scores,
+    model_parameters=selected_model.get(
+      "model_parameters",
+      "",
+    ),
+    notes=(
+      "Final protected classification test evaluation after "
+      f"validation selection for the {horizon_hours}h horizon."
+    ),
+  )
+
+
+def run_final_classification_test_evaluation() -> Path:
+  """Evaluate selected classifiers on the protected test split."""
+  configuration = load_configuration()
+  modeling_config = configuration["modeling"]
+  horizons_hours = modeling_config["horizons_hours"]
+
+  selected_models = load_selected_classification_models()
+  training_data = load_training_dataset(TRAINING_DATASET_PATH)
+
+  train_data, validation_data, test_data = split_time_series_data_from_config(
+    data=training_data,
+    modeling_config=modeling_config,
+)
+
+  (
+    prepared_train,
+    prepared_validation,
+    prepared_test,
+    threshold,
+  ) = prepare_classification_splits(
+    train_data=train_data,
+    validation_data=validation_data,
+    test_data=test_data,
+    horizons_hours=horizons_hours,
+  )
+
+  # Validation selects the probability cutoff before final retraining.
+  final_results = []
+  confusion_matrix_rows = []
+  confidence_interval_rows = []
+
+  for selected_model in selected_models.to_dict(orient="records"):
+    horizon_hours = int(selected_model["horizon_hours"])
+    target_column = build_spike_target_column_name(horizon_hours)
+
+    print("")
+    print(f"Final classification test: {horizon_hours}h")
+    print("=" * 36)
+    print(f"Selected model: {selected_model['model_name']}")
+    print(f"Target column: {target_column}")
+    print(f"Frozen spike threshold: {threshold:.4f}")
+
+    scores, prediction, decision_threshold = (
+      evaluate_selected_classification_model(
+        selected_model=selected_model,
+        train_data=prepared_train,
+        validation_data=prepared_validation,
+        evaluation_data=prepared_test,
+        target_column=target_column,
+        threshold=threshold,
+      )
+    )
+
+    if decision_threshold is not None:
+      selected_model["model_parameters"] = (
+        f"{selected_model.get('model_parameters', '')}; "
+        f"decision_threshold={decision_threshold:.4f}"
+      ).strip("; ")
+
+    confusion_matrix_rows.append(
+      build_confusion_matrix_row(
+        selected_model=selected_model,
+        target=prepared_test[target_column],
+        prediction=prediction,
+      )
+    )
+
+    confidence_interval_rows.append(
+      build_f1_confidence_interval_row(
+        selected_model=selected_model,
+        target=prepared_test[target_column],
+        prediction=prediction,
+      )
+    )
+
+    final_results.append(
+      build_final_classification_test_result(
+        selected_model=selected_model,
+        scores=scores,
+        row_count=len(prepared_test),
+      )
+    )
+
+  results_path = write_model_results(
+
+===== SELECTED MODEL SAVING =====
+from pathlib import Path
+
+import joblib
+import pandas as pd
+import sklearn
+
+from electricity_predictor.config import load_configuration
+from electricity_predictor.modeling.classification.final_test_evaluation import (
+  BEST_MODEL_PATH,
+  load_selected_classification_models,
+  train_selected_classification_model,
+)
+from electricity_predictor.modeling.classification.target_builder import (
+  build_spike_target_column_name,
+  prepare_classification_training_splits,
+)
+from electricity_predictor.features.feature_columns import (
+  MODEL_FEATURE_COLUMNS,
+)
+from electricity_predictor.modeling.split import (
+  TRAINING_DATASET_PATH,
+  load_training_dataset,
+  split_time_series_data_from_config,
+)
+
+
+MODEL_OUTPUT_DIR = Path("models/classification")
+FINAL_TEST_RESULTS_PATH = Path(
+  "reports/final_classification_test_results.csv"
+)
+MODEL_METADATA_PATH = (
+  MODEL_OUTPUT_DIR / "selected_classification_model_metadata.csv"
+)
+
+MODEL_METADATA_COLUMNS = [
+  "model_name",
+  "horizon_hours",
+  "target_column",
+  "spike_threshold",
+  "decision_threshold",
+  "artifact_path",
+  "training_rows",
+  "feature_columns",
+  "sklearn_version",
+  "training_start_utc",
+  "training_end_utc",
+  "selection_metric",
+  "selection_rule",
+  "model_parameters",
+]
+
+
+def build_model_artifact_filename(
+  model_name: str,
+  horizon_hours: int,
+) -> str:
+  """Build a stable selected-classifier artifact filename."""
+  return (
+    f"selected_classification_model_"
+    f"{horizon_hours}h_{model_name}.joblib"
+  )
+
+
+def save_model_artifact(model, output_path: Path) -> Path:
+  """Save one classification model or rule artifact."""
+  output_path.parent.mkdir(parents=True, exist_ok=True)
+  joblib.dump(model, output_path)
+
+  return output_path
+
+
+def build_naive_spike_baseline_artifact(
+  selected_model: dict,
+  target_column: str,
+  threshold: float,
+) -> dict:
+  """Build a serializable naive spike baseline rule."""
+  return {
+    "model_name": "naive_spike_baseline",
+    "model_type": "rule_baseline",
+    "horizon_hours": int(selected_model["horizon_hours"]),
+    "target_column": target_column,
+    "prediction_column": "actual_price_lag_1h",
+    "spike_threshold": threshold,
+    "model_parameters": selected_model.get(
+      "model_parameters",
+      "",
+    ),
+  }
+
+
+def build_model_metadata_row(
+  selected_model: dict,
+  target_column: str,
+  threshold: float,
+  decision_threshold: float | None,
+  artifact_path: Path,
+  training_rows: int,
+  training_start_utc: str,
+  training_end_utc: str,
+) -> dict:
+  """Build metadata for one selected classification artifact."""
+  return {
+    "model_name": selected_model["model_name"],
+    "horizon_hours": int(selected_model["horizon_hours"]),
+    "target_column": target_column,
+    "spike_threshold": threshold,
+    "decision_threshold": decision_threshold,
+    "artifact_path": str(artifact_path),
+    "training_rows": training_rows,
+    "feature_columns": "|".join(
+      MODEL_FEATURE_COLUMNS
+    ),
+    "sklearn_version": sklearn.__version__,
+    "training_start_utc": training_start_utc,
+    "training_end_utc": training_end_utc,
+    "selection_metric": selected_model.get(
+      "selection_metric",
+      "",
+    ),
+    "selection_rule": selected_model.get(
+      "selection_rule",
+      "",
+    ),
+    "model_parameters": selected_model.get(
+      "model_parameters",
+      "",
+    ),
+  }
+
+
+def load_final_decision_thresholds(
+  file_path: Path = FINAL_TEST_RESULTS_PATH,
+) -> dict[int, float]:
+  """Load validation-selected decision thresholds by horizon."""
+  if not file_path.exists():
+    raise FileNotFoundError(
+      f"Final classification results not found: {file_path}"
+    )
+
+  results = pd.read_csv(file_path)
+  thresholds = {}
+
+  for row in results.to_dict(orient="records"):
+    parameters = str(row.get("model_parameters", ""))
+    decision_threshold = None
+
+    for part in parameters.split(";"):
+      if "=" not in part:
+        continue
+
+      key, value = part.split("=", 1)
+
+      if key.strip() == "decision_threshold":
+        decision_threshold = float(value.strip())
+        break
+
+    if decision_threshold is not None:
+      thresholds[int(row["horizon_hours"])] = decision_threshold
+
+  return thresholds
+
+
+def save_selected_classification_models(
+  best_model_path: Path = BEST_MODEL_PATH,
+  training_dataset_path: Path = TRAINING_DATASET_PATH,
+  output_dir: Path = MODEL_OUTPUT_DIR,
+  metadata_path: Path = MODEL_METADATA_PATH,
+  final_results_path: Path = FINAL_TEST_RESULTS_PATH,
+) -> Path:
+  """Train and save the selected classifier for each horizon."""
+  configuration = load_configuration()
+  modeling_config = configuration["modeling"]
+  horizons_hours = modeling_config["horizons_hours"]
+
+  selected_models = load_selected_classification_models(
+    best_model_path
+  )
+  decision_thresholds = load_final_decision_thresholds(
+    final_results_path
+  )
+  training_data = load_training_dataset(
+    training_dataset_path
+  )
+
+  train_data, validation_data, _ = split_time_series_data_from_config(
+    data=training_data,
+    modeling_config=modeling_config,
+)
+
+  (
+    prepared_train,
+    prepared_validation,
+    threshold,
+  ) = prepare_classification_training_splits(
+    train_data=train_data,
+    validation_data=validation_data,
+    horizons_hours=horizons_hours,
+  )
+
+  final_training_data = pd.concat(
+    [prepared_train, prepared_validation],
+    ignore_index=True,
+  )
+
+  training_start_utc = str(
+    final_training_data["datetime_universal_time"].min()
+  )
+  training_end_utc = str(
+    final_training_data["datetime_universal_time"].max()
+  )
+
+  metadata_rows = []
+
+  for selected_model in selected_models.to_dict(
+    orient="records"
+  ):
+    horizon_hours = int(selected_model["horizon_hours"])
+    target_column = build_spike_target_column_name(
+      horizon_hours
+    )
+
+    print("")
+    print(f"Saving selected classifier: {horizon_hours}h")
+    print("=" * 38)
+    print(f"Model: {selected_model['model_name']}")
+    print(f"Target column: {target_column}")
+
+    if selected_model["model_name"] == "naive_spike_baseline":
+      artifact = build_naive_spike_baseline_artifact(
+        selected_model=selected_model,
+        target_column=target_column,
+        threshold=threshold,
+      )
+    else:
+      artifact = train_selected_classification_model(
+        selected_model=selected_model,
+        train_data=final_training_data,
+        target_column=target_column,
+      )
+
+    artifact_path = output_dir / build_model_artifact_filename(
+      model_name=selected_model["model_name"],
+      horizon_hours=horizon_hours,
+    )
+
+    saved_path = save_model_artifact(
+      model=artifact,
+      output_path=artifact_path,
+    )
+
+    metadata_rows.append(
+      build_model_metadata_row(
+        selected_model=selected_model,
+        target_column=target_column,
+        threshold=threshold,
+        decision_threshold=decision_thresholds.get(horizon_hours),
+        artifact_path=saved_path,
+        training_rows=len(final_training_data),
+        training_start_utc=training_start_utc,
+        training_end_utc=training_end_utc,
+      )
+    )
+
+  output_dir.mkdir(parents=True, exist_ok=True)
+
+  pd.DataFrame(
+    metadata_rows,
+    columns=MODEL_METADATA_COLUMNS,
+  ).to_csv(
+    metadata_path,
+    index=False,
+  )
+
+  return metadata_path
+
+
+def print_saved_classification_model_summary(
+  metadata_path: Path,
+) -> None:
+  """Print saved selected classification artifacts."""
+  metadata = pd.read_csv(metadata_path)
+
+  print("")
+  print("Saved selected classification models")
+  print("====================================")
+
+  for _, row in metadata.iterrows():
+    print(
+      f"{int(row['horizon_hours'])}h | "
+      f"{row['model_name']} | "
+      f"{row['artifact_path']}"
+    )
+
+  print("")
+  print(f"Metadata written to: {metadata_path}")
+
+
+if __name__ == "__main__":
+  written_path = save_selected_classification_models()
+
+  print_saved_classification_model_summary(
+    metadata_path=written_path,
+  )
+
+===== COMPLETE CLASSIFICATION RUNNER =====
+from pathlib import Path
+
+from electricity_predictor.modeling.classification.baseline.naive_spike_baseline import (
+  run_classification_baseline,
+)
+from electricity_predictor.modeling.classification.baseline.rule_spike_baseline import (
+  run_aeso_forecast_spike_baseline,
+  run_previous_day_spike_baseline,
+)
+from electricity_predictor.modeling.classification.gradient_boosting.gradient_boosting_classifier import (
+  run_gradient_boosting_classifier,
+)
+from electricity_predictor.modeling.classification.gradient_boosting.gradient_boosting_tuning import (
+  run_tuned_gradient_boosting,
+)
+from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_classifier import (
+  run_hist_gradient_boosting_classifier,
+)
+from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_tuning import (
+  run_tuned_hist_gradient_boosting,
+)
+from electricity_predictor.modeling.classification.extra_trees.extra_trees_classifier import (
+  run_extra_trees_classifier,
+)
+from electricity_predictor.modeling.classification.extra_trees.extra_trees_tuning import (
+  run_tuned_extra_trees,
+)
+from electricity_predictor.modeling.classification.logistic.logistic_regression import (
+  run_logistic_regression,
+)
+from electricity_predictor.modeling.classification.logistic.logistic_tuning import (
+  run_tuned_logistic_regression,
+)
+from electricity_predictor.modeling.classification.random_forest.random_forest_classifier import (
+  run_random_forest_classifier,
+)
+from electricity_predictor.modeling.classification.random_forest.random_forest_tuning import (
+  run_tuned_random_forest,
+)
+from electricity_predictor.modeling.model_results import (
+  CLASSIFICATION_VALIDATION_RESULTS_PATH,
+  write_model_results,
+)
+from electricity_predictor.modeling.split import TRAINING_DATASET_PATH
+
+
+def run_classification_models(
+  training_dataset_path: Path = TRAINING_DATASET_PATH,
+  results_path: Path = CLASSIFICATION_VALIDATION_RESULTS_PATH,
+) -> Path:
+  """Run the current classification model comparison workflow."""
+  # Each task owns a complete validation report, so a rerun starts from headers
+  # rather than filtering rows that belong to another model lineage.
+  write_model_results(results=[], output_path=results_path)
+
+  print("Running naive spike baseline")
+  print("============================")
+  run_classification_baseline(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running AESO forecast spike baseline")
+  print("====================================")
+  run_aeso_forecast_spike_baseline(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running previous-day spike baseline")
+  print("===================================")
+  run_previous_day_spike_baseline(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running Logistic Regression")
+  print("===========================")
+  run_logistic_regression(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running tuned Logistic Regression")
+  print("==================================")
+  run_tuned_logistic_regression(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running Random Forest Classifier")
+  print("================================")
+  run_random_forest_classifier(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running tuned Random Forest Classifier")
+  print("======================================")
+  run_tuned_random_forest(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running Gradient Boosting Classifier")
+  print("====================================")
+  run_gradient_boosting_classifier(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running tuned Gradient Boosting Classifier")
+  print("==========================================")
+  run_tuned_gradient_boosting(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running HistGradientBoosting Classifier")
+  print("=======================================")
+  run_hist_gradient_boosting_classifier(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running tuned HistGradientBoosting Classifier")
+  print("=============================================")
+  run_tuned_hist_gradient_boosting(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running ExtraTrees Classifier")
+  print("=============================")
+  run_extra_trees_classifier(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running tuned ExtraTrees Classifier")
+  print("===================================")
+  run_tuned_extra_trees(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  return results_path
+
+
+if __name__ == "__main__":
+  written_path = run_classification_models()
+
+  print("")
+  print("Classification model comparison complete")
+  print("========================================")
+  print(f"Results written to: {written_path}")
+
+===== RELEVANT SUPPORT REFERENCES =====
+src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py:12:  add_decision_threshold_to_parameters,
+src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py:143:  decision_threshold: float = 0.5,
+src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py:153:    model_parameters=add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py:164:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py:215:    validation_scores, decision_threshold = (
+src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py:229:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py:245:    print(f"Decision threshold: {decision_threshold:.4f}")
+Binary file src/electricity_predictor/modeling/classification/logistic/__pycache__/logistic_regression.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/logistic/__pycache__/logistic_tuning.cpython-314.pyc matches
+src/electricity_predictor/modeling/classification/logistic/logistic_regression.py:14:  add_decision_threshold_to_parameters,
+src/electricity_predictor/modeling/classification/logistic/logistic_regression.py:95:  decision_threshold: float = 0.5,
+src/electricity_predictor/modeling/classification/logistic/logistic_regression.py:105:    model_parameters=add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/logistic/logistic_regression.py:110:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/logistic/logistic_regression.py:149:    scores, decision_threshold = evaluate_classifier_on_validation(
+src/electricity_predictor/modeling/classification/logistic/logistic_regression.py:159:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/logistic/logistic_regression.py:175:    print(f"Decision threshold: {decision_threshold:.4f}")
+src/electricity_predictor/modeling/classification/validation_evaluation.py:9:from electricity_predictor.modeling.classification.decision_threshold import (
+src/electricity_predictor/modeling/classification/validation_evaluation.py:69:def add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/validation_evaluation.py:71:  decision_threshold: float,
+src/electricity_predictor/modeling/classification/validation_evaluation.py:81:    f"decision_threshold={decision_threshold:.4f}"
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:10:from electricity_predictor.modeling.classification.baseline.naive_spike_baseline import (
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:13:from electricity_predictor.modeling.classification.decision_threshold import (
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:14:  apply_decision_threshold,
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:15:  select_f1_decision_threshold,
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:21:from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_classifier import (
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:22:  train_hist_gradient_boosting_classifier,
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:75:  "hist_gradient_boosting_classifier_tuned": [
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:201:def train_selected_classification_model(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:282:    "hist_gradient_boosting_classifier",
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:283:    "hist_gradient_boosting_classifier_tuned",
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:285:    return train_hist_gradient_boosting_classifier(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:320:def select_model_decision_threshold(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:327:  model = train_selected_classification_model(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:338:  return select_f1_decision_threshold(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:355:  if selected_model["model_name"] == "naive_spike_baseline":
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:367:  threshold_result = select_model_decision_threshold(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:373:  decision_threshold = threshold_result["decision_threshold"]
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:380:  model = train_selected_classification_model(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:392:    apply_decision_threshold(
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:394:      threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:405:  return scores, prediction, decision_threshold
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:579:    scores, prediction, decision_threshold = (
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:590:    if decision_threshold is not None:
+src/electricity_predictor/modeling/classification/final_test_evaluation.py:593:        f"decision_threshold={decision_threshold:.4f}"
+src/electricity_predictor/modeling/classification/decision_threshold.py:59:def select_f1_decision_threshold(
+src/electricity_predictor/modeling/classification/decision_threshold.py:86:      "decision_threshold": float(threshold),
+src/electricity_predictor/modeling/classification/decision_threshold.py:101:      result["decision_threshold"],
+src/electricity_predictor/modeling/classification/decision_threshold.py:106:def apply_decision_threshold(
+src/electricity_predictor/modeling/classification/decision_threshold.py:131:  threshold_result = select_f1_decision_threshold(
+src/electricity_predictor/modeling/classification/decision_threshold.py:137:  decision_threshold = threshold_result[
+src/electricity_predictor/modeling/classification/decision_threshold.py:138:    "decision_threshold"
+src/electricity_predictor/modeling/classification/decision_threshold.py:141:  prediction = apply_decision_threshold(
+src/electricity_predictor/modeling/classification/decision_threshold.py:143:    threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/decision_threshold.py:152:  return scores, decision_threshold
+Binary file src/electricity_predictor/modeling/classification/random_forest/__pycache__/random_forest_classifier.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/random_forest/__pycache__/random_forest_tuning.cpython-314.pyc matches
+src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py:13:  add_decision_threshold_to_parameters,
+src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py:167:  decision_threshold: float = 0.5,
+src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py:177:    model_parameters=add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py:190:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py:241:    validation_scores, decision_threshold = (
+src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py:254:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py:272:    print(f"Decision threshold: {decision_threshold:.4f}")
+src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py:12:  add_decision_threshold_to_parameters,
+src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py:91:  decision_threshold: float = 0.5,
+src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py:101:    model_parameters=add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py:108:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py:147:    scores, decision_threshold = evaluate_classifier_on_validation(
+src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py:157:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py:173:    print(f"Decision threshold: {decision_threshold:.4f}")
+src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py:25:CLASSIFICATION_BASELINE_NAME = "naive_spike_baseline"
+Binary file src/electricity_predictor/modeling/classification/baseline/__pycache__/rule_spike_baseline.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/baseline/__pycache__/naive_spike_baseline.cpython-313.pyc matches
+Binary file src/electricity_predictor/modeling/classification/baseline/__pycache__/naive_spike_baseline.cpython-314.pyc matches
+src/electricity_predictor/modeling/classification/baseline/rule_spike_baseline.py:27:AESO_FORECAST_BASELINE_NAME = "aeso_forecast_spike_baseline"
+src/electricity_predictor/modeling/classification/baseline/rule_spike_baseline.py:30:PREVIOUS_DAY_BASELINE_NAME = "previous_day_spike_baseline"
+src/electricity_predictor/modeling/classification/baseline/rule_spike_baseline.py:170:def run_aeso_forecast_spike_baseline(
+src/electricity_predictor/modeling/classification/baseline/rule_spike_baseline.py:183:def run_previous_day_spike_baseline(
+Binary file src/electricity_predictor/modeling/classification/__pycache__/save_selected_models.cpython-313.pyc matches
+Binary file src/electricity_predictor/modeling/classification/__pycache__/save_selected_models.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/__pycache__/validation_evaluation.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/__pycache__/run_classification_models.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/__pycache__/run_classification_models.cpython-313.pyc matches
+Binary file src/electricity_predictor/modeling/classification/__pycache__/decision_threshold.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/__pycache__/final_test_evaluation.cpython-313.pyc matches
+Binary file src/electricity_predictor/modeling/classification/__pycache__/final_test_evaluation.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/__pycache__/decision_threshold.cpython-313.pyc matches
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:18:  add_decision_threshold_to_parameters,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:45:def train_hist_gradient_boosting_classifier(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:89:def evaluate_hist_gradient_boosting_classifier(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:112:def build_hist_gradient_boosting_result(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:116:  decision_threshold: float,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:136:    model_name="hist_gradient_boosting_classifier",
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:142:    model_parameters=add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:144:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:153:def run_hist_gradient_boosting_classifier(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:186:    model = train_hist_gradient_boosting_classifier(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:191:    scores, decision_threshold = (
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:199:    result = build_hist_gradient_boosting_result(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:203:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:215:    print(f"Decision threshold: {decision_threshold:.4f}")
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_classifier.py:226:  written_path = run_hist_gradient_boosting_classifier()
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:12:from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_classifier import (
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:13:  train_hist_gradient_boosting_classifier,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:20:  add_decision_threshold_to_parameters,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:39:HIST_GRADIENT_BOOSTING_TUNING_SPLITS = 3
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:47:HIST_GRADIENT_BOOSTING_CANDIDATES = [
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:86:def evaluate_hist_gradient_boosting_parameters_with_time_series_cv(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:90:  n_splits: int = HIST_GRADIENT_BOOSTING_TUNING_SPLITS,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:120:    model = train_hist_gradient_boosting_classifier(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:166:def tune_hist_gradient_boosting(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:173:  for parameters in HIST_GRADIENT_BOOSTING_CANDIDATES:
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:180:      evaluate_hist_gradient_boosting_parameters_with_time_series_cv(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:202:def build_tuned_hist_gradient_boosting_result(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:207:  decision_threshold: float,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:217:    f"cv_splits={HIST_GRADIENT_BOOSTING_TUNING_SPLITS}; "
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:228:    model_name="hist_gradient_boosting_classifier_tuned",
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:234:    model_parameters=add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:236:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:245:def run_tuned_hist_gradient_boosting(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:282:    best_parameters = tune_hist_gradient_boosting(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:287:    tuned_model = train_hist_gradient_boosting_classifier(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:299:    validation_scores, decision_threshold = (
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:307:    result = build_tuned_hist_gradient_boosting_result(
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:312:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:343:      f"{decision_threshold:.4f}"
+src/electricity_predictor/modeling/classification/hist_gradient_boosting/hist_gradient_boosting_tuning.py:366:  written_path = run_tuned_hist_gradient_boosting()
+Binary file src/electricity_predictor/modeling/classification/hist_gradient_boosting/__pycache__/hist_gradient_boosting_tuning.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/hist_gradient_boosting/__pycache__/hist_gradient_boosting_classifier.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/hist_gradient_boosting/__pycache__/__init__.cpython-314.pyc matches
+src/electricity_predictor/modeling/classification/run_classification_models.py:3:from electricity_predictor.modeling.classification.baseline.naive_spike_baseline import (
+src/electricity_predictor/modeling/classification/run_classification_models.py:7:  run_aeso_forecast_spike_baseline,
+src/electricity_predictor/modeling/classification/run_classification_models.py:8:  run_previous_day_spike_baseline,
+src/electricity_predictor/modeling/classification/run_classification_models.py:16:from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_classifier import (
+src/electricity_predictor/modeling/classification/run_classification_models.py:17:  run_hist_gradient_boosting_classifier,
+src/electricity_predictor/modeling/classification/run_classification_models.py:19:from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_tuning import (
+src/electricity_predictor/modeling/classification/run_classification_models.py:20:  run_tuned_hist_gradient_boosting,
+src/electricity_predictor/modeling/classification/run_classification_models.py:22:from electricity_predictor.modeling.classification.extra_trees.extra_trees_classifier import (
+src/electricity_predictor/modeling/classification/run_classification_models.py:23:  run_extra_trees_classifier,
+src/electricity_predictor/modeling/classification/run_classification_models.py:25:from electricity_predictor.modeling.classification.extra_trees.extra_trees_tuning import (
+src/electricity_predictor/modeling/classification/run_classification_models.py:26:  run_tuned_extra_trees,
+src/electricity_predictor/modeling/classification/run_classification_models.py:66:  run_aeso_forecast_spike_baseline(
+src/electricity_predictor/modeling/classification/run_classification_models.py:74:  run_previous_day_spike_baseline(
+src/electricity_predictor/modeling/classification/run_classification_models.py:130:  run_hist_gradient_boosting_classifier(
+src/electricity_predictor/modeling/classification/run_classification_models.py:138:  run_tuned_hist_gradient_boosting(
+src/electricity_predictor/modeling/classification/run_classification_models.py:146:  run_extra_trees_classifier(
+src/electricity_predictor/modeling/classification/run_classification_models.py:154:  run_tuned_extra_trees(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:12:from electricity_predictor.modeling.classification.extra_trees.extra_trees_classifier import (
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:13:  train_extra_trees_classifier,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:20:  add_decision_threshold_to_parameters,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:39:EXTRA_TREES_TUNING_SPLITS = 3
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:47:EXTRA_TREES_CANDIDATES = [
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:81:def evaluate_extra_trees_parameters_with_time_series_cv(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:85:  n_splits: int = EXTRA_TREES_TUNING_SPLITS,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:114:    model = train_extra_trees_classifier(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:160:def tune_extra_trees(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:167:  for parameters in EXTRA_TREES_CANDIDATES:
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:170:    scores = evaluate_extra_trees_parameters_with_time_series_cv(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:191:def build_tuned_extra_trees_result(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:196:  decision_threshold: float,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:205:    f"cv_splits={EXTRA_TREES_TUNING_SPLITS}; "
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:215:    model_name="extra_trees_classifier_tuned",
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:221:    model_parameters=add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:223:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:232:def run_tuned_extra_trees(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:269:    best_parameters = tune_extra_trees(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:274:    tuned_model = train_extra_trees_classifier(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:285:    validation_scores, decision_threshold = (
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:293:    result = build_tuned_extra_trees_result(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:298:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:325:      f"{decision_threshold:.4f}"
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_tuning.py:348:  written_path = run_tuned_extra_trees()
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:17:  add_decision_threshold_to_parameters,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:43:def train_extra_trees_classifier(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:75:def evaluate_extra_trees_classifier(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:98:def build_extra_trees_result(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:102:  decision_threshold: float,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:119:    model_name="extra_trees_classifier",
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:125:    model_parameters=add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:127:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:136:def run_extra_trees_classifier(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:169:    model = train_extra_trees_classifier(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:174:    scores, decision_threshold = (
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:182:    result = build_extra_trees_result(
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:186:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:198:    print(f"Decision threshold: {decision_threshold:.4f}")
+src/electricity_predictor/modeling/classification/extra_trees/extra_trees_classifier.py:209:  written_path = run_extra_trees_classifier()
+Binary file src/electricity_predictor/modeling/classification/extra_trees/__pycache__/extra_trees_classifier.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/extra_trees/__pycache__/extra_trees_tuning.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/extra_trees/__pycache__/__init__.cpython-314.pyc matches
+src/electricity_predictor/modeling/classification/save_selected_models.py:11:  train_selected_classification_model,
+src/electricity_predictor/modeling/classification/save_selected_models.py:40:  "decision_threshold",
+src/electricity_predictor/modeling/classification/save_selected_models.py:72:def build_naive_spike_baseline_artifact(
+src/electricity_predictor/modeling/classification/save_selected_models.py:79:    "model_name": "naive_spike_baseline",
+src/electricity_predictor/modeling/classification/save_selected_models.py:96:  decision_threshold: float | None,
+src/electricity_predictor/modeling/classification/save_selected_models.py:108:    "decision_threshold": decision_threshold,
+src/electricity_predictor/modeling/classification/save_selected_models.py:132:def load_final_decision_thresholds(
+src/electricity_predictor/modeling/classification/save_selected_models.py:146:    decision_threshold = None
+src/electricity_predictor/modeling/classification/save_selected_models.py:154:      if key.strip() == "decision_threshold":
+src/electricity_predictor/modeling/classification/save_selected_models.py:155:        decision_threshold = float(value.strip())
+src/electricity_predictor/modeling/classification/save_selected_models.py:158:    if decision_threshold is not None:
+src/electricity_predictor/modeling/classification/save_selected_models.py:159:      thresholds[int(row["horizon_hours"])] = decision_threshold
+src/electricity_predictor/modeling/classification/save_selected_models.py:179:  decision_thresholds = load_final_decision_thresholds(
+src/electricity_predictor/modeling/classification/save_selected_models.py:229:    if selected_model["model_name"] == "naive_spike_baseline":
+src/electricity_predictor/modeling/classification/save_selected_models.py:230:      artifact = build_naive_spike_baseline_artifact(
+src/electricity_predictor/modeling/classification/save_selected_models.py:236:      artifact = train_selected_classification_model(
+src/electricity_predictor/modeling/classification/save_selected_models.py:257:        decision_threshold=decision_thresholds.get(horizon_hours),
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py:13:  add_decision_threshold_to_parameters,
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py:167:  decision_threshold: float = 0.5,
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py:177:    model_parameters=add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py:190:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py:241:    validation_scores, decision_threshold = (
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py:254:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py:272:    print(f"Decision threshold: {decision_threshold:.4f}")
+Binary file src/electricity_predictor/modeling/classification/gradient_boosting/__pycache__/gradient_boosting_tuning.cpython-314.pyc matches
+Binary file src/electricity_predictor/modeling/classification/gradient_boosting/__pycache__/gradient_boosting_classifier.cpython-314.pyc matches
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py:13:  add_decision_threshold_to_parameters,
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py:101:  decision_threshold: float = 0.5,
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py:111:    model_parameters=add_decision_threshold_to_parameters(
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py:118:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py:157:    scores, decision_threshold = evaluate_classifier_on_validation(
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py:167:      decision_threshold=decision_threshold,
+src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py:183:    print(f"Decision threshold: {decision_threshold:.4f}")
+tests/modeling/classification/test_save_selected_models.py:8:  load_final_decision_thresholds,
+tests/modeling/classification/test_save_selected_models.py:9:  build_naive_spike_baseline_artifact,
+tests/modeling/classification/test_save_selected_models.py:27:def test_build_naive_spike_baseline_artifact():
+tests/modeling/classification/test_save_selected_models.py:28:  artifact = build_naive_spike_baseline_artifact(
+tests/modeling/classification/test_save_selected_models.py:30:      "model_name": "naive_spike_baseline",
+tests/modeling/classification/test_save_selected_models.py:126:      "model_name": "naive_spike_baseline",
+tests/modeling/classification/test_save_selected_models.py:150:      "model_parameters": "C=1.0; decision_threshold=0.45",
+tests/modeling/classification/test_save_selected_models.py:153:      "model_name": "naive_spike_baseline",
+tests/modeling/classification/test_save_selected_models.py:155:      "model_parameters": "decision_threshold=0.50",
+tests/modeling/classification/test_save_selected_models.py:172:  assert metadata["decision_threshold"].tolist() == [0.45, 0.50]
+tests/modeling/classification/test_save_selected_models.py:186:      metadata["model_name"] == "naive_spike_baseline",
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:5:from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_classifier import (
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:7:  build_hist_gradient_boosting_result,
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:8:  evaluate_hist_gradient_boosting_classifier,
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:9:  train_hist_gradient_boosting_classifier,
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:35:def test_train_hist_gradient_boosting_returns_fitted_model():
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:38:  model = train_hist_gradient_boosting_classifier(
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:51:def test_train_hist_gradient_boosting_rejects_missing_target():
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:58:    train_hist_gradient_boosting_classifier(
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:64:def test_evaluate_hist_gradient_boosting_returns_metrics():
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:67:  model = train_hist_gradient_boosting_classifier(
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:74:  scores = evaluate_hist_gradient_boosting_classifier(
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:94:def test_build_hist_gradient_boosting_result_records_cutoff():
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:95:  result = build_hist_gradient_boosting_result(
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:105:    decision_threshold=0.45,
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:109:    "hist_gradient_boosting_classifier"
+tests/modeling/classification/test_hist_gradient_boosting_classifier.py:114:  assert "decision_threshold=0.4500" in (
+tests/modeling/classification/test_run_classification_models.py:14:    "electricity_predictor.modeling.classification.baseline.naive_spike_baseline",
+tests/modeling/classification/test_run_classification_models.py:19:    "run_aeso_forecast_spike_baseline",
+tests/modeling/classification/test_run_classification_models.py:23:    "run_previous_day_spike_baseline",
+tests/modeling/classification/test_run_classification_models.py:50:    "electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_classifier",
+tests/modeling/classification/test_run_classification_models.py:51:    "run_hist_gradient_boosting_classifier",
+tests/modeling/classification/test_run_classification_models.py:54:    "electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_tuning",
+tests/modeling/classification/test_run_classification_models.py:55:    "run_tuned_hist_gradient_boosting",
+tests/modeling/classification/test_run_classification_models.py:58:    "electricity_predictor.modeling.classification.extra_trees.extra_trees_classifier",
+tests/modeling/classification/test_run_classification_models.py:59:    "run_extra_trees_classifier",
+tests/modeling/classification/test_run_classification_models.py:62:    "electricity_predictor.modeling.classification.extra_trees.extra_trees_tuning",
+tests/modeling/classification/test_run_classification_models.py:63:    "run_tuned_extra_trees",
+tests/modeling/classification/test_run_classification_models.py:77:    "run_aeso_forecast_spike_baseline",
+tests/modeling/classification/test_run_classification_models.py:78:    "run_previous_day_spike_baseline",
+tests/modeling/classification/test_run_classification_models.py:85:    "run_hist_gradient_boosting_classifier",
+tests/modeling/classification/test_run_classification_models.py:86:    "run_tuned_hist_gradient_boosting",
+tests/modeling/classification/test_run_classification_models.py:87:    "run_extra_trees_classifier",
+tests/modeling/classification/test_run_classification_models.py:88:    "run_tuned_extra_trees",
+Binary file tests/modeling/classification/__pycache__/test_extra_trees_tuning.cpython-314-pytest-9.0.3.pyc matches
+Binary file tests/modeling/classification/__pycache__/test_save_selected_models.cpython-314-pytest-9.0.3.pyc matches
+Binary file tests/modeling/classification/__pycache__/test_decision_threshold.cpython-314-pytest-9.0.3.pyc matches
+Binary file tests/modeling/classification/__pycache__/test_hist_gradient_boosting_classifier.cpython-314-pytest-9.0.3.pyc matches
+Binary file tests/modeling/classification/__pycache__/test_hist_gradient_boosting_tuning.cpython-314-pytest-9.0.3.pyc matches
+Binary file tests/modeling/classification/__pycache__/test_final_test_evaluation.cpython-314-pytest-9.0.3.pyc matches
+Binary file tests/modeling/classification/__pycache__/test_baseline.cpython-314-pytest-9.0.3.pyc matches
+Binary file tests/modeling/classification/__pycache__/test_run_classification_models.cpython-314-pytest-9.0.3.pyc matches
+Binary file tests/modeling/classification/__pycache__/test_extra_trees_classifier.cpython-314-pytest-9.0.3.pyc matches
+Binary file tests/modeling/classification/__pycache__/test_validation_evaluation.cpython-314-pytest-9.0.3.pyc matches
+tests/modeling/classification/test_baseline.py:4:from electricity_predictor.modeling.classification.baseline.naive_spike_baseline import (
+tests/modeling/classification/test_baseline.py:80:  assert result["model_name"] == "naive_spike_baseline"
+tests/modeling/classification/test_extra_trees_classifier.py:5:from electricity_predictor.modeling.classification.extra_trees.extra_trees_classifier import (
+tests/modeling/classification/test_extra_trees_classifier.py:7:  build_extra_trees_result,
+tests/modeling/classification/test_extra_trees_classifier.py:8:  evaluate_extra_trees_classifier,
+tests/modeling/classification/test_extra_trees_classifier.py:9:  train_extra_trees_classifier,
+tests/modeling/classification/test_extra_trees_classifier.py:35:def test_train_extra_trees_returns_fitted_model():
+tests/modeling/classification/test_extra_trees_classifier.py:38:  model = train_extra_trees_classifier(
+tests/modeling/classification/test_extra_trees_classifier.py:51:def test_train_extra_trees_rejects_missing_target():
+tests/modeling/classification/test_extra_trees_classifier.py:58:    train_extra_trees_classifier(
+tests/modeling/classification/test_extra_trees_classifier.py:64:def test_evaluate_extra_trees_returns_metrics():
+tests/modeling/classification/test_extra_trees_classifier.py:67:  model = train_extra_trees_classifier(
+tests/modeling/classification/test_extra_trees_classifier.py:74:  scores = evaluate_extra_trees_classifier(
+tests/modeling/classification/test_extra_trees_classifier.py:94:def test_build_extra_trees_result_records_cutoff():
+tests/modeling/classification/test_extra_trees_classifier.py:95:  result = build_extra_trees_result(
+tests/modeling/classification/test_extra_trees_classifier.py:105:    decision_threshold=0.45,
+tests/modeling/classification/test_extra_trees_classifier.py:108:  assert result["model_name"] == "extra_trees_classifier"
+tests/modeling/classification/test_extra_trees_classifier.py:112:  assert "decision_threshold=0.4500" in (
+tests/modeling/classification/test_final_test_evaluation.py:13:  select_model_decision_threshold,
+tests/modeling/classification/test_final_test_evaluation.py:14:  train_selected_classification_model,
+tests/modeling/classification/test_final_test_evaluation.py:114:def test_select_model_decision_threshold_uses_validation_probabilities(
+tests/modeling/classification/test_final_test_evaluation.py:131:    "final_test_evaluation.train_selected_classification_model",
+tests/modeling/classification/test_final_test_evaluation.py:150:  result = select_model_decision_threshold(
+tests/modeling/classification/test_final_test_evaluation.py:160:  assert 0.0 <= result["decision_threshold"] <= 1.0
+tests/modeling/classification/test_final_test_evaluation.py:237:  scores, prediction, decision_threshold = (
+tests/modeling/classification/test_final_test_evaluation.py:240:        "model_name": "naive_spike_baseline",
+tests/modeling/classification/test_final_test_evaluation.py:254:  assert decision_threshold is None
+tests/modeling/classification/test_final_test_evaluation.py:257:def test_train_selected_classification_model_rejects_unknown_model():
+tests/modeling/classification/test_final_test_evaluation.py:264:    train_selected_classification_model(
+tests/modeling/classification/test_final_test_evaluation.py:274:def test_train_selected_classification_model_applies_tuned_parameters(
+tests/modeling/classification/test_final_test_evaluation.py:291:  train_selected_classification_model(
+tests/modeling/classification/test_final_test_evaluation.py:311:def test_train_selected_classification_model_applies_tuned_hist_gradient_boosting_parameters(
+tests/modeling/classification/test_final_test_evaluation.py:318:  def fake_train_hist_gradient_boosting_classifier(**kwargs):
+tests/modeling/classification/test_final_test_evaluation.py:325:    "train_hist_gradient_boosting_classifier",
+tests/modeling/classification/test_final_test_evaluation.py:326:    fake_train_hist_gradient_boosting_classifier,
+tests/modeling/classification/test_final_test_evaluation.py:329:  train_selected_classification_model(
+tests/modeling/classification/test_final_test_evaluation.py:332:        "hist_gradient_boosting_classifier_tuned"
+tests/modeling/classification/test_extra_trees_tuning.py:7:from electricity_predictor.modeling.classification.extra_trees.extra_trees_tuning import (
+tests/modeling/classification/test_extra_trees_tuning.py:8:  build_tuned_extra_trees_result,
+tests/modeling/classification/test_extra_trees_tuning.py:9:  evaluate_extra_trees_parameters_with_time_series_cv,
+tests/modeling/classification/test_extra_trees_tuning.py:10:  tune_extra_trees,
+tests/modeling/classification/test_extra_trees_tuning.py:36:def test_evaluate_extra_trees_parameters_returns_cv_metrics():
+tests/modeling/classification/test_extra_trees_tuning.py:39:  scores = evaluate_extra_trees_parameters_with_time_series_cv(
+tests/modeling/classification/test_extra_trees_tuning.py:65:def test_tune_extra_trees_prioritizes_pr_auc_then_f1(
+tests/modeling/classification/test_extra_trees_tuning.py:93:    "extra_trees.extra_trees_tuning.EXTRA_TREES_CANDIDATES",
+tests/modeling/classification/test_extra_trees_tuning.py:123:    "extra_trees.extra_trees_tuning."
+tests/modeling/classification/test_extra_trees_tuning.py:124:    "evaluate_extra_trees_parameters_with_time_series_cv",
+tests/modeling/classification/test_extra_trees_tuning.py:130:  best_result = tune_extra_trees(
+tests/modeling/classification/test_extra_trees_tuning.py:140:def test_build_tuned_extra_trees_result_uses_schema():
+tests/modeling/classification/test_extra_trees_tuning.py:141:  result = build_tuned_extra_trees_result(
+tests/modeling/classification/test_extra_trees_tuning.py:162:    decision_threshold=0.60,
+tests/modeling/classification/test_extra_trees_tuning.py:166:    "extra_trees_classifier_tuned"
+tests/modeling/classification/test_extra_trees_tuning.py:170:  assert "decision_threshold=0.6000" in (
+tests/modeling/classification/test_validation_evaluation.py:9:  add_decision_threshold_to_parameters,
+tests/modeling/classification/test_validation_evaluation.py:109:def test_add_decision_threshold_to_parameters_appends_cutoff():
+tests/modeling/classification/test_validation_evaluation.py:110:  parameters = add_decision_threshold_to_parameters(
+tests/modeling/classification/test_validation_evaluation.py:112:    decision_threshold=0.45,
+tests/modeling/classification/test_validation_evaluation.py:117:    "decision_threshold=0.4500"
+tests/modeling/classification/test_validation_evaluation.py:121:def test_add_decision_threshold_to_parameters_supports_empty_text():
+tests/modeling/classification/test_validation_evaluation.py:122:  parameters = add_decision_threshold_to_parameters(
+tests/modeling/classification/test_validation_evaluation.py:124:    decision_threshold=0.70,
+tests/modeling/classification/test_validation_evaluation.py:127:  assert parameters == "decision_threshold=0.7000"
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:7:from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_tuning import (
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:8:  build_tuned_hist_gradient_boosting_result,
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:9:  evaluate_hist_gradient_boosting_parameters_with_time_series_cv,
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:10:  tune_hist_gradient_boosting,
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:36:def test_evaluate_hist_gradient_boosting_parameters_returns_metrics():
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:40:    evaluate_hist_gradient_boosting_parameters_with_time_series_cv(
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:68:def test_tune_hist_gradient_boosting_prioritizes_pr_auc_then_f1(
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:99:    "hist_gradient_boosting.hist_gradient_boosting_tuning."
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:100:    "HIST_GRADIENT_BOOSTING_CANDIDATES",
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:144:    "hist_gradient_boosting.hist_gradient_boosting_tuning."
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:145:    "evaluate_hist_gradient_boosting_parameters_with_time_series_cv",
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:149:  best_result = tune_hist_gradient_boosting(
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:159:def test_build_tuned_hist_gradient_boosting_result_uses_schema():
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:160:  result = build_tuned_hist_gradient_boosting_result(
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:182:    decision_threshold=0.60,
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:186:    "hist_gradient_boosting_classifier_tuned"
+tests/modeling/classification/test_hist_gradient_boosting_tuning.py:190:  assert "decision_threshold=0.6000" in (
+tests/modeling/classification/test_decision_threshold.py:4:from electricity_predictor.modeling.classification.decision_threshold import (
+tests/modeling/classification/test_decision_threshold.py:5:  apply_decision_threshold,
+tests/modeling/classification/test_decision_threshold.py:7:  select_f1_decision_threshold,
+tests/modeling/classification/test_decision_threshold.py:13:def test_select_f1_decision_threshold_selects_best_validation_cutoff():
+tests/modeling/classification/test_decision_threshold.py:14:  result = select_f1_decision_threshold(
+tests/modeling/classification/test_decision_threshold.py:20:  assert result["decision_threshold"] == pytest.approx(0.30)
+tests/modeling/classification/test_decision_threshold.py:24:def test_select_f1_decision_threshold_prefers_larger_cutoff_on_tie():
+tests/modeling/classification/test_decision_threshold.py:25:  result = select_f1_decision_threshold(
+tests/modeling/classification/test_decision_threshold.py:32:  assert result["decision_threshold"] == pytest.approx(0.70)
+tests/modeling/classification/test_decision_threshold.py:35:def test_select_f1_decision_threshold_rejects_mismatched_lengths():
+tests/modeling/classification/test_decision_threshold.py:40:    select_f1_decision_threshold(
+tests/modeling/classification/test_decision_threshold.py:46:def test_select_f1_decision_threshold_rejects_empty_data():
+tests/modeling/classification/test_decision_threshold.py:51:    select_f1_decision_threshold(
+tests/modeling/classification/test_decision_threshold.py:89:def test_apply_decision_threshold_returns_binary_predictions():
+tests/modeling/classification/test_decision_threshold.py:90:  prediction = apply_decision_threshold(
+tests/modeling/classification/test_decision_threshold.py:98:def test_apply_decision_threshold_rejects_invalid_cutoff():
+tests/modeling/classification/test_decision_threshold.py:103:    apply_decision_threshold(
+
+audit_exit_code=0

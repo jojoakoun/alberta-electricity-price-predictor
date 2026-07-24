@@ -2,15 +2,11 @@
 
 from pathlib import Path
 
-import joblib
 import pandas as pd
 
 from electricity_predictor.config import load_configuration
 from electricity_predictor.features.feature_engineering import (
   build_target_column_name,
-)
-from electricity_predictor.features.feature_columns import (
-  parse_model_feature_columns,
 )
 from electricity_predictor.modeling.decision.price_policy import classify_price
 from electricity_predictor.modeling.decision.thresholds import (
@@ -20,6 +16,12 @@ from electricity_predictor.modeling.decision.thresholds import (
 from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
+)
+from electricity_predictor.modeling.regression.selected_model import (
+  BEST_MODEL_PATH,
+  load_selected_regression_models,
+  predict_selected_regression_model,
+  train_selected_regression_model,
 )
 
 
@@ -39,39 +41,33 @@ AVOID_IQR_MULTIPLIERS = [
   3.0,
 ]
 
-REGRESSION_METADATA_PATH = Path(
-  "models/regression/selected_regression_model_metadata.csv"
-)
+REGRESSION_SELECTION_PATH = BEST_MODEL_PATH
 OUTPUT_PATH = Path(
   "reports/decision_policy_calibration_grid.csv"
 )
 
 
 def generate_predictions(
+  train_data: pd.DataFrame,
   data: pd.DataFrame,
-  metadata_row: dict,
+  selected_model: dict,
 ) -> pd.Series:
-  """Generate predictions from one saved regression artifact."""
-  artifact = joblib.load(
-    Path(str(metadata_row["artifact_path"]))
-  )
+  """Train on train data and predict the untouched validation rows."""
+  horizon_hours = int(selected_model["horizon_hours"])
+  target_column = build_target_column_name(horizon_hours)
+  model = None
 
-  feature_columns = parse_model_feature_columns(
-    metadata_row["feature_columns"]
-  )
-
-  if isinstance(artifact, dict):
-    prediction_column = artifact["prediction_column"]
-
-    return pd.to_numeric(
-      data[prediction_column],
-      errors="coerce",
+  if selected_model["model_name"] != "naive_baseline":
+    model = train_selected_regression_model(
+      selected_model=selected_model,
+      train_data=train_data,
+      target_column=target_column,
     )
 
-  return pd.Series(
-    artifact.predict(data[feature_columns]),
-    index=data.index,
-    dtype=float,
+  return predict_selected_regression_model(
+    selected_model=selected_model,
+    model=model,
+    data=data,
   )
 
 
@@ -89,26 +85,29 @@ def build_thresholds(
   )
 
 
+def split_calibration_data(
+  data: pd.DataFrame,
+  modeling_config: dict,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+  """Return train and validation data without exposing protected test data."""
+  train_data, validation_data, _ = split_time_series_data_from_config(
+    data=data,
+    modeling_config=modeling_config,
+  )
+
+  return train_data, validation_data
+
+
 def evaluate_candidate(
   data: pd.DataFrame,
   predicted_price: pd.Series,
   actual_price: pd.Series,
   thresholds: pd.DataFrame,
-  period: str,
   horizon_hours: int,
   recommended_quantile: float,
   avoid_iqr_multiplier: float,
 ) -> dict:
-  """Evaluate one policy candidate in one time period."""
-  if period == "calibration_2025":
-    mask = data[
-      "datetime_universal_time"
-    ].dt.year.eq(2025)
-  else:
-    mask = data[
-      "datetime_universal_time"
-    ].dt.year.eq(2026)
-
+  """Evaluate one policy candidate on validation data."""
   evaluation = pd.DataFrame(
     {
       "predicted_price": predicted_price,
@@ -120,7 +119,7 @@ def evaluate_candidate(
         "avoid_threshold"
       ],
     }
-  ).loc[mask].dropna()
+  ).dropna()
 
   predicted_label = pd.Series(
     [
@@ -157,7 +156,7 @@ def evaluate_candidate(
   )
 
   return {
-    "period": period,
+    "period": "validation",
     "horizon_hours": horizon_hours,
     "recommended_quantile": recommended_quantile,
     "avoid_iqr_multiplier": avoid_iqr_multiplier,
@@ -182,47 +181,34 @@ def evaluate_candidate(
 
 
 def main() -> None:
-  """Generate calibration-grid results for 2025 and 2026."""
+  """Generate decision-policy calibration results from validation data."""
   configuration = load_configuration()
   full_data = load_training_dataset().reset_index(
     drop=True
   )
 
-  _, _, test_data = split_time_series_data_from_config(
+  train_data, evaluation_data = split_calibration_data(
     data=full_data,
     modeling_config=configuration["modeling"],
   )
 
-  start = test_data[
-    "datetime_universal_time"
-  ].min()
-  end = test_data[
-    "datetime_universal_time"
-  ].max()
-
-  evaluation_data = full_data[
-    full_data["datetime_universal_time"].between(
-      start,
-      end,
-    )
-  ].copy()
-
-  metadata = pd.read_csv(
-    REGRESSION_METADATA_PATH
-  ).sort_values("horizon_hours")
+  selected_models = load_selected_regression_models(
+    REGRESSION_SELECTION_PATH
+  )
 
   results = []
 
-  for metadata_row in metadata.to_dict(
+  for selected_model in selected_models.to_dict(
     orient="records"
   ):
     horizon_hours = int(
-      metadata_row["horizon_hours"]
+      selected_model["horizon_hours"]
     )
 
     predicted_price = generate_predictions(
+      train_data=train_data,
       data=evaluation_data,
-      metadata_row=metadata_row,
+      selected_model=selected_model,
     )
 
     actual_price = pd.to_numeric(
@@ -250,26 +236,21 @@ def main() -> None:
           ),
         )
 
-        for period in [
-          "calibration_2025",
-          "holdout_2026",
-        ]:
-          results.append(
-            evaluate_candidate(
-              data=evaluation_data,
-              predicted_price=predicted_price,
-              actual_price=actual_price,
-              thresholds=thresholds,
-              period=period,
-              horizon_hours=horizon_hours,
-              recommended_quantile=(
-                recommended_quantile
-              ),
-              avoid_iqr_multiplier=(
-                avoid_multiplier
-              ),
-            )
+        results.append(
+          evaluate_candidate(
+            data=evaluation_data,
+            predicted_price=predicted_price,
+            actual_price=actual_price,
+            thresholds=thresholds,
+            horizon_hours=horizon_hours,
+            recommended_quantile=(
+              recommended_quantile
+            ),
+            avoid_iqr_multiplier=(
+              avoid_multiplier
+            ),
           )
+        )
 
   report = pd.DataFrame(results)
 
@@ -284,9 +265,7 @@ def main() -> None:
     float_format="%.4f",
   )
 
-  calibration = report[
-    report["period"].eq("calibration_2025")
-  ].sort_values(
+  calibration = report.sort_values(
     [
       "horizon_hours",
       "false_recommended_rate",

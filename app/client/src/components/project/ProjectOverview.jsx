@@ -9,28 +9,27 @@ import { Reveal } from "../motion/Reveal";
 import { Card } from "../Card";
 import { copy } from "../../copy";
 
-const highlights = [
-  {
-    Icon: Database,
-    ...copy.projectPage.highlights.records,
-  },
-  {
-    Icon: Route,
-    ...copy.projectPage.highlights.horizons,
-  },
-  {
-    Icon: Clock3,
-    ...copy.projectPage.highlights.window,
-  },
-  {
-    Icon: Layers3,
-    ...copy.projectPage.highlights.system,
-  },
-];
-
 export function ProjectOverview() {
   const story = copy.projectPage.story;
   const highlightCopy = copy.projectPage.highlights;
+  const highlights = [
+    {
+      Icon: Database,
+      ...highlightCopy.records,
+    },
+    {
+      Icon: Route,
+      ...highlightCopy.horizons,
+    },
+    {
+      Icon: Clock3,
+      ...highlightCopy.window,
+    },
+    {
+      Icon: Layers3,
+      ...highlightCopy.system,
+    },
+  ];
 
   const storySteps = [
     story.introduction,

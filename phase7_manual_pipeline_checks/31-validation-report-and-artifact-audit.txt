@@ -1,0 +1,33 @@
+===== VALIDATION REPORT CONTRACTS =====
+Traceback (most recent call last):
+  File "<string>", line 55, in <module>
+    print(f"--- {specification[name]} ---")
+                               ^^^^
+NameError: name 'name' is not defined
+
+
+===== GENERATED FILE INVENTORY =====
+--- reports ---
+reports/best_classification_model.csv
+reports/best_regression_model.csv
+reports/classification_validation_results.csv
+reports/decision_policy_backtest.csv
+reports/decision_policy_backtest_summary.csv
+reports/decision_policy_calibration_grid.csv
+reports/decision_window_analysis.csv
+reports/decision_window_regime_summary.csv
+reports/decision_window_summary.csv
+reports/regression_validation_results.csv
+reports/spike_definition_analysis.csv
+reports/spike_regime_analysis.csv
+
+--- models ---
+
+--- releases ---
+
+===== ARTIFACT COUNTS =====
+model_file_count=0
+release_file_count=0
+
+===== ACTIVE REGISTRY =====
+No active model registry.

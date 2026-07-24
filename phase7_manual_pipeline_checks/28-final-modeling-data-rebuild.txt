@@ -1,0 +1,156 @@
+===== FINAL MODELING DATA REBUILD =====
+/Library/Developer/CommandLineTools/usr/bin/make -f Makefile.useful historical-data \
+		PYTHON=.venv/bin/python \
+		PYTEST=.venv/bin/pytest
+/Library/Developer/CommandLineTools/usr/bin/make -f Makefile refresh-data \
+		PYTHON=.venv/bin/python
+# Rebuild canonical research history from the configured CSV and normalized AESO data.
+# Writes interim CSV artifacts; does not touch PostgreSQL or train models.
+.venv/bin/python \
+		src/electricity_predictor/data/pipeline.py
+Current historical dataset written to: data/interim/current_historical_prices_clean.csv
+/Library/Developer/CommandLineTools/usr/bin/make -f Makefile data-quality \
+		PYTHON=.venv/bin/python
+# Inspect the refreshed historical dataset.
+.venv/bin/python \
+		src/electricity_predictor/data/data_quality.py
+
+DATA QUALITY SUMMARY
+--------------------------------------------------
+File: data/interim/current_historical_prices_clean.csv
+Rows: 57491
+Columns: 5
+Min UTC time: 2020-01-01 07:00:00
+Max UTC time: 2026-07-23 17:00:00
+Duplicate UTC timestamps: 0
+
+Missing values:
+  - datetime_universal_time: 0
+  - datetime_local_time: 0
+  - actual_price: 3
+  - forecast_price: 0
+  - alberta_internal_load: 8556
+
+Zero actual price count: 1901
+Zero forecast price count: 2523
+
+Missing hourly UTC timestamps:
+  - Count: 0
+
+Rows with missing actual_price:
+      datetime_universal_time  ... alberta_internal_load
+57488     2026-07-23 15:00:00  ...                   NaN
+57489     2026-07-23 16:00:00  ...                   NaN
+57490     2026-07-23 17:00:00  ...                   NaN
+
+[3 rows x 5 columns]
+
+Recent incomplete actual_price rows:
+  - Count: 3
+/Library/Developer/CommandLineTools/usr/bin/make -f Makefile features \
+		PYTHON=.venv/bin/python
+# Build the feature-engineered modeling dataset.
+.venv/bin/python \
+		src/electricity_predictor/features/feature_engineering.py
+Modeling dataset written to: data/processed/modeling_dataset.csv
+Rows: 57,488
+Columns: 19
+['datetime_universal_time', 'datetime_local_time', 'actual_price', 'forecast_price', 'hour', 'day_of_week', 'month', 'is_weekend', 'actual_price_lag_1h', 'actual_price_lag_24h', 'forecast_price_lag_1h', 'actual_price_rolling_24h_mean', 'actual_price_rolling_24h_max', 'actual_price_rolling_7d_mean', 'actual_price_target_1h', 'actual_price_target_3h', 'actual_price_target_6h', 'actual_price_target_12h', 'actual_price_target_24h']
+/Library/Developer/CommandLineTools/usr/bin/make -f Makefile feature-quality \
+		PYTHON=.venv/bin/python
+# Inspect feature-engineering output quality.
+.venv/bin/python \
+		src/electricity_predictor/features/feature_quality.py
+Feature quality report
+======================
+File: data/processed/modeling_dataset.csv
+Rows: 57,488
+Columns: 19
+
+Missing values by column
+------------------------
+datetime_universal_time            0
+datetime_local_time                0
+actual_price                       0
+forecast_price                     0
+hour                               0
+day_of_week                        0
+month                              0
+is_weekend                         0
+actual_price_lag_1h                1
+actual_price_lag_24h              24
+forecast_price_lag_1h              1
+actual_price_rolling_24h_mean     24
+actual_price_rolling_24h_max      24
+actual_price_rolling_7d_mean     168
+actual_price_target_1h             1
+actual_price_target_3h             3
+actual_price_target_6h             6
+actual_price_target_12h           12
+actual_price_target_24h           24
+
+Missing values in engineered features
+-------------------------------------
+actual_price_lag_1h                1
+actual_price_lag_24h              24
+forecast_price_lag_1h              1
+actual_price_rolling_24h_mean     24
+actual_price_rolling_24h_max      24
+actual_price_rolling_7d_mean     168
+
+Rows after dropping missing engineered features
+-----------------------------------------------
+Rows remaining: 57,320
+Rows removed: 168
+/Library/Developer/CommandLineTools/usr/bin/make -f Makefile training-data \
+		PYTHON=.venv/bin/python
+# Build the chronological model-ready training dataset.
+.venv/bin/python \
+		src/electricity_predictor/features/training_data.py
+Training dataset written to: data/processed/training_dataset.csv
+Rows: 57,296
+Columns: 19
+
+===== OUTPUT FILES =====
+-rw-r--r--@ 1 joelakoun  staff   3.2M Jul 23 09:46 data/interim/current_historical_prices_clean.csv
+-rw-r--r--@ 1 joelakoun  staff   8.2M Jul 23 09:46 data/processed/modeling_dataset.csv
+-rw-r--r--@ 1 joelakoun  staff   8.2M Jul 23 09:46 data/processed/training_dataset.csv
+
+===== GIT STATUS =====
+ M Makefile
+ M src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+ M src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+ M src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+ M src/electricity_predictor/modeling/classification/final_test_evaluation.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+ M src/electricity_predictor/modeling/classification/save_selected_models.py
+ M src/electricity_predictor/modeling/classification/target_builder.py
+ M src/electricity_predictor/modeling/decision/calibrate_decision_policy.py
+ M src/electricity_predictor/modeling/lifecycle/release_bundle.py
+ M src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
+ M src/electricity_predictor/modeling/regression/elastic_net/elastic_net_regression.py
+ M src/electricity_predictor/modeling/regression/elastic_net/elastic_net_tuning.py
+ M src/electricity_predictor/modeling/regression/lasso/lasso_regression.py
+ M src/electricity_predictor/modeling/regression/lasso/lasso_tuning.py
+ M src/electricity_predictor/modeling/regression/linear/linear_regression.py
+ M src/electricity_predictor/modeling/regression/random_forest/random_forest.py
+ M src/electricity_predictor/modeling/regression/random_forest/random_forest_tuning.py
+ M src/electricity_predictor/modeling/regression/ridge/ridge_regression.py
+ M src/electricity_predictor/modeling/regression/ridge/ridge_tuning.py
+ M src/electricity_predictor/modeling/regression/run_regression_models.py
+ M src/electricity_predictor/modeling/split.py
+ M src/electricity_predictor/worker/persistence.py
+ M tests/deployment/test_railway_worker_config.py
+ M tests/modeling/classification/test_analyze_spike_regime.py
+ M tests/modeling/classification/test_best_model_selection.py
+ M tests/modeling/classification/test_save_selected_models.py
+ M tests/modeling/classification/test_spike_definition.py
+ M tests/modeling/decision/test_decision_threshold_consumers.py
+?? Makefile.useful
+?? architecture_et_comprehension.md
+?? phase7_manual_pipeline_checks/

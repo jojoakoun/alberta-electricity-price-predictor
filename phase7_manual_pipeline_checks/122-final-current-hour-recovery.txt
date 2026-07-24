@@ -1,0 +1,13 @@
+===== PURPOSE =====
+Resume the stopped non-future source-hour correction.
+Repair the persistence test without relying on a fragile insertion anchor.
+Remove invalid future runs, publish a corrected run, and verify the complete app.
+
+===== PRECONDITIONS =====
+worker_non_future_query_present=PASS
+api_future_run_guards_present=PASS
+
+===== REPAIR PERSISTENCE TEST =====
+Traceback (most recent call last):
+  File "<stdin>", line 65, in <module>
+RuntimeError: Persistence test repair is incomplete: ['assert "MAX(datetime_utc)" in query', 'assert "FILTER" in query', 'assert "DATE_TRUNC(\'hour\', CURRENT_TIMESTAMP)" in query', 'assert "AS candidate_utc" in query']

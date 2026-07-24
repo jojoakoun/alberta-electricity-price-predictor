@@ -130,89 +130,20 @@ def upsert_hourly_prices(data: pd.DataFrame, source: str = "pipeline") -> int:
   return len(records)
 
 
-def load_hourly_prices(limit: int = 200) -> pd.DataFrame:
-  """Load recent hourly prices in chronological order."""
-  query = """
-    SELECT
-      datetime_utc,
-      actual_price,
-      forecast_price,
-      alberta_internal_load,
-      source
-    FROM (
-      SELECT
-        datetime_utc,
-        actual_price,
-        forecast_price,
-        alberta_internal_load,
-        source
-      FROM hourly_prices
-      ORDER BY datetime_utc DESC
-      LIMIT %s
-    ) recent
-    ORDER BY datetime_utc;
-  """
-
-  with get_database_connection() as connection:
-    with connection.cursor() as cursor:
-      cursor.execute(query, (limit,))
-      rows = cursor.fetchall()
-
-  columns = [
-    "datetime_universal_time",
-    "actual_price",
-    "forecast_price",
-    "alberta_internal_load",
-    "source",
-  ]
-
-  data = pd.DataFrame(rows, columns=columns)
-
-  if not data.empty:
-    data["datetime_universal_time"] = pd.to_datetime(
-      data["datetime_universal_time"],
-      utc=True,
-    )
-
-  return data
-
-
 def load_inference_hourly_prices(
   lookback_hours: int,
 ) -> pd.DataFrame:
-  """Load the inclusive support window for the next inference source hour.
-
-  The candidate is no later than one hour after the newest finalized actual and
-  never later than the newest forecast row. The result contains at most the
-  requested lookback plus the candidate row itself.
-  """
+  """Load support ending at the latest available market hour."""
   if lookback_hours <= 0:
     raise ValueError(
       "Inference lookback hours must be greater than zero."
     )
 
   query = """
-    WITH source_bounds AS (
+    WITH inference_bounds AS (
       SELECT
-        MAX(datetime_utc) AS latest_utc,
-        MAX(datetime_utc) FILTER (
-          WHERE actual_price IS NOT NULL
-        ) AS latest_finalized_utc
+        MAX(datetime_utc) FILTER (WHERE datetime_utc <= DATE_TRUNC('hour', CURRENT_TIMESTAMP)) AS candidate_utc
       FROM hourly_prices
-    ),
-    inference_bounds AS (
-      SELECT
-        -- A forecast-only candidate may immediately follow finalized history,
-        -- but serving must never skip beyond a missing observed-price hour.
-        CASE
-          WHEN latest_finalized_utc IS NULL
-          THEN latest_utc
-          ELSE LEAST(
-            latest_utc,
-            latest_finalized_utc + INTERVAL '1 hour'
-          )
-        END AS candidate_utc
-      FROM source_bounds
     )
     SELECT
       hourly_prices.datetime_utc,
@@ -233,7 +164,10 @@ def load_inference_hourly_prices(
 
   with get_database_connection() as connection:
     with connection.cursor() as cursor:
-      cursor.execute(query, (lookback_hours,))
+      cursor.execute(
+        query,
+        (lookback_hours,),
+      )
       rows = cursor.fetchall()
 
   columns = [
@@ -244,21 +178,44 @@ def load_inference_hourly_prices(
     "source",
     "inference_candidate_utc",
   ]
-  data = pd.DataFrame(rows, columns=columns)
+
+  data = pd.DataFrame(
+    rows,
+    columns=columns,
+  )
 
   if data.empty:
-    return data.drop(columns=["inference_candidate_utc"])
+    return data.drop(
+      columns=[
+        "inference_candidate_utc"
+      ]
+    )
 
-  data["datetime_universal_time"] = pd.to_datetime(
-    data["datetime_universal_time"],
+  data[
+    "datetime_universal_time"
+  ] = pd.to_datetime(
+    data[
+      "datetime_universal_time"
+    ],
     utc=True,
   )
+
   candidate_timestamp = pd.to_datetime(
-    data["inference_candidate_utc"].iloc[0],
+    data[
+      "inference_candidate_utc"
+    ].iloc[0],
     utc=True,
   )
-  data = data.drop(columns=["inference_candidate_utc"])
-  data.attrs["inference_candidate_utc"] = candidate_timestamp
+
+  data = data.drop(
+    columns=[
+      "inference_candidate_utc"
+    ]
+  )
+
+  data.attrs[
+    "inference_candidate_utc"
+  ] = candidate_timestamp
 
   return data
 

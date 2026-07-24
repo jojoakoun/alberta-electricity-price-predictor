@@ -1,0 +1,207 @@
+===== PURPOSE =====
+Improve the Project hero action panel in French and English.
+Shorten the copy, widen the desktop panel, and prevent CTA compression.
+
+===== PRECONDITIONS =====
+required_inputs=PASS
+
+===== UPDATE HERO COPY =====
+project_hero_copy_updated=PASS
+
+===== UPDATE HERO LAYOUT =====
+project_hero_component_layout=PASS
+project_hero_styles=PASS
+
+===== UPDATE PROJECT PAGE TEST =====
+project_page_tests_updated=PASS
+
+===== COPY CONTRACT =====
+        "Comparez le prix actuel aux cinq horizons de prévision et obtenez une recommandation claire.",
+      ctaLabel: "Voir les prévisions",
+        "Compare the current price with five forecast horizons and get a clear recommendation.",
+      ctaLabel: "View forecasts",
+copy_contract=PASS
+
+===== TARGETED PROJECT TEST =====
+
+> client@0.0.0 test
+> vitest run --run src/pages/ProjectPage.test.jsx
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/Users/joelakoun/Desktop/alberta-electricity-price-predictor/app/client[39m
+
+ [32m✓[39m src/pages/ProjectPage.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[32m 141[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m   Start at [22m 10:40:08
+[2m   Duration [22m 809ms[2m (transform 73ms, setup 77ms, import 137ms, tests 141ms, environment 384ms)[22m
+
+
+===== COMPLETE FRONTEND TESTS =====
+
+> client@0.0.0 test
+> vitest run --run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/Users/joelakoun/Desktop/alberta-electricity-price-predictor/app/client[39m
+
+ [32m✓[39m src/components/StatusBadge.test.jsx [2m([22m[2m4 tests[22m[2m)[22m[32m 65[2mms[22m[39m
+ [32m✓[39m src/components/today/FreshnessLine.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[32m 96[2mms[22m[39m
+ [32m✓[39m src/components/now/RecommendationCard.test.jsx [2m([22m[2m3 tests[22m[2m)[22m[32m 112[2mms[22m[39m
+ [32m✓[39m src/layout/AppLayout.test.jsx [2m([22m[2m1 test[22m[2m)[22m[32m 181[2mms[22m[39m
+ [32m✓[39m src/components/today/TimelineOverview.test.jsx [2m([22m[2m5 tests[22m[2m)[22m[32m 153[2mms[22m[39m
+ [32m✓[39m src/pages/NowPage.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[32m 151[2mms[22m[39m
+ [32m✓[39m src/pages/LearnPage.test.jsx [2m([22m[2m1 test[22m[2m)[22m[33m 363[2mms[22m[39m
+     [33m[2m✓[22m[39m supports an understandable and honest learning flow [33m 361[2mms[22m[39m
+ [32m✓[39m src/pages/ProjectPage.test.jsx [2m([22m[2m2 tests[22m[2m)[22m[33m 369[2mms[22m[39m
+ [32m✓[39m src/pages/TodayPage.test.jsx [2m([22m[2m7 tests[22m[2m)[22m[33m 826[2mms[22m[39m
+     [33m[2m✓[22m[39m renders a genuine lower-price opportunity and reveals all forecast details [33m 310[2mms[22m[39m
+ [32m✓[39m src/api/today.test.js [2m([22m[2m12 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m src/api/now.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/i18n/parity.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/components/today/timeline-geometry.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/domain/today.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/i18n/language.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 2[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m15 passed[39m[22m[90m (15)[39m
+[2m      Tests [22m [1m[32m53 passed[39m[22m[90m (53)[39m
+[2m   Start at [22m 10:40:09
+[2m   Duration [22m 2.73s[2m (transform 1.10s, setup 2.21s, import 2.34s, tests 2.37s, environment 13.47s)[22m
+
+
+===== FRONTEND LINT =====
+
+> client@0.0.0 lint
+> oxlint
+
+Found 0 warnings and 0 errors.
+Finished in 30ms on 71 files with 91 rules using 10 threads.
+
+===== FRONTEND BUILD =====
+
+> client@0.0.0 build
+> vite build
+
+vite v8.1.5 building client environment for production...
+[2Ktransforming...✓ 1953 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.54 kB │ gzip:   0.34 kB
+dist/assets/index-4sQm9HlX.css   56.47 kB │ gzip:   9.78 kB
+dist/assets/index-7VcNw_mF.js   436.05 kB │ gzip: 130.75 kB
+
+✓ built in 160ms
+
+===== DIFF CHECK =====
+
+===== STATUS =====
+ M Makefile
+ M app/client/public/joel.png
+ M app/client/src/api/now-contract.js
+ M app/client/src/api/now.test.js
+ M app/client/src/api/queryClient.js
+ M app/client/src/components/learn/ConfidenceLevels.jsx
+ M app/client/src/components/learn/LimitationsCard.jsx
+ M app/client/src/components/now/RecommendationCard.jsx
+ M app/client/src/components/now/RecommendationCard.test.jsx
+ M app/client/src/components/project/DeveloperProfile.jsx
+ M app/client/src/components/project/ProjectHero.jsx
+ M app/client/src/components/project/ProjectOverview.jsx
+ M app/client/src/components/today/BestTimeCard.jsx
+ M app/client/src/components/today/FreshnessLine.jsx
+ M app/client/src/components/today/FreshnessLine.test.jsx
+ M app/client/src/components/today/TimelineOverview.jsx
+ M app/client/src/components/today/TimelineOverview.test.jsx
+ M app/client/src/domain/today.js
+ M app/client/src/i18n/en.js
+ M app/client/src/i18n/formatters.js
+ M app/client/src/i18n/fr.js
+ M app/client/src/pages/LearnPage.jsx
+ M app/client/src/pages/LearnPage.test.jsx
+ M app/client/src/pages/NowPage.test.jsx
+ M app/client/src/pages/ProjectPage.test.jsx
+ M app/client/src/pages/TodayPage.jsx
+ M app/client/src/pages/TodayPage.test.jsx
+ M app/client/src/styles/learn.css
+ M app/client/src/styles/now.css
+ M app/client/src/styles/project.css
+ M app/client/src/test/setup.js
+ M app/server/src/repositories/hourly-price-repository.js
+ M app/server/src/repositories/prediction-repository.js
+ M app/server/src/repositories/prediction-run-repository.js
+ M app/server/src/routes/now.js
+ M app/server/src/services/now-service.js
+ M app/server/src/services/today-service.js
+ M app/server/test/hourly-price-repository.test.js
+ M app/server/test/now-route.test.js
+ M app/server/test/now-service.test.js
+ M app/server/test/today-route.test.js
+ M app/server/test/today-service.test.js
+ M src/electricity_predictor/modeling/classification/analyze_spike_definition.py
+ M src/electricity_predictor/modeling/classification/analyze_spike_regime.py
+ M src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
+ M src/electricity_predictor/modeling/classification/best_model_selection.py
+ M src/electricity_predictor/modeling/classification/decision_threshold.py
+ M src/electricity_predictor/modeling/classification/final_test_evaluation.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
+ M src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
+ M src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
+ M src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
+ M src/electricity_predictor/modeling/classification/run_classification_models.py
+ M src/electricity_predictor/modeling/classification/save_selected_models.py
+ M src/electricity_predictor/modeling/classification/target_builder.py
+ M src/electricity_predictor/modeling/decision/calibrate_decision_policy.py
+ M src/electricity_predictor/modeling/lifecycle/release_bundle.py
+ M src/electricity_predictor/modeling/split.py
+ M src/electricity_predictor/worker/feature_preparation.py
+ M src/electricity_predictor/worker/persistence.py
+ M tests/deployment/test_railway_worker_config.py
+ M tests/modeling/classification/test_analyze_spike_regime.py
+ M tests/modeling/classification/test_best_model_selection.py
+ M tests/modeling/classification/test_decision_threshold.py
+ M tests/modeling/classification/test_final_test_evaluation.py
+ M tests/modeling/classification/test_gradient_boosting_tuning.py
+ M tests/modeling/classification/test_logistic_tuning.py
+ M tests/modeling/classification/test_random_forest_tuning.py
+ M tests/modeling/classification/test_run_classification_models.py
+ M tests/modeling/classification/test_save_selected_models.py
+ M tests/modeling/classification/test_spike_definition.py
+ M tests/modeling/decision/test_decision_threshold_consumers.py
+ M tests/worker/test_feature_preparation.py
+ M tests/worker/test_persistence.py
+?? Makefile.useful
+?? app/client/src/components/learn/LearnCallToAction.jsx
+?? app/client/src/domain/today.test.js
+?? apply-wattwise-ui-polish.sh
+?? architecture_et_comprehension.md
+?? phase7_manual_pipeline_checks/
+?? src/electricity_predictor/features/live_feature_contract.py
+?? src/electricity_predictor/modeling/classification/baseline/rule_spike_baseline.py
+?? src/electricity_predictor/modeling/classification/extra_trees/
+?? src/electricity_predictor/modeling/classification/hist_gradient_boosting/
+?? src/electricity_predictor/modeling/classification/validation_evaluation.py
+?? src/electricity_predictor/modeling/live_contract/
+?? tests/features/test_live_feature_contract.py
+?? tests/modeling/classification/test_extra_trees_classifier.py
+?? tests/modeling/classification/test_extra_trees_tuning.py
+?? tests/modeling/classification/test_hist_gradient_boosting_classifier.py
+?? tests/modeling/classification/test_hist_gradient_boosting_tuning.py
+?? tests/modeling/classification/test_rule_spike_baseline.py
+?? tests/modeling/classification/test_validation_evaluation.py
+?? tests/modeling/live_contract/
+?? wattwise-current-working-tree.zip
+
+===== COMPLETION =====
+project_hero_french_layout=PASS
+project_hero_english_layout=PASS
+cta_full_width=True
+cta_wrapping_allowed=True
+desktop_action_panel_min_width=20rem
+frontend_tests=PASS
+frontend_lint=PASS
+frontend_build=PASS
+commit_performed=False
+push_performed=False

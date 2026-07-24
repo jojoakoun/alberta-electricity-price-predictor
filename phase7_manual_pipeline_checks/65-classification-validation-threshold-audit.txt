@@ -1,0 +1,58 @@
+Classification validation threshold audit
+========================================
+train_rows=34865
+validation_rows=8760
+spike_threshold=170.770000
+protected_test_used=False
+
+All candidates after validation-only threshold optimization
+-----------------------------------------------------------
+ horizon_hours                         model_name  decision_threshold  original_f1  optimized_f1  f1_delta  precision   recall  accuracy   pr_auc
+             1 gradient_boosting_classifier_tuned            0.700000     0.579935      0.615630  0.035695   0.588415 0.645485  0.944977 0.661591
+             1     random_forest_classifier_tuned            0.450000     0.600922      0.612766  0.011844   0.623917 0.602007  0.948059 0.644837
+             1       gradient_boosting_classifier            0.700000     0.568911      0.612529  0.043618   0.569784 0.662207  0.942808 0.663063
+             1           random_forest_classifier            0.450000     0.589104      0.604730  0.015625   0.610922 0.598662  0.946575 0.638761
+             1                logistic_regression            0.600000     0.572496      0.576828  0.004332   0.567044 0.586957  0.941210 0.610700
+             1          logistic_regression_tuned            0.600000     0.572496      0.576828  0.004332   0.567044 0.586957  0.941210 0.610700
+             1               naive_spike_baseline                 NaN     0.541806      0.541806  0.000000   0.541806 0.541806  0.937443      NaN
+             3     random_forest_classifier_tuned            0.450000     0.502496      0.505712  0.003216   0.464336 0.555184  0.925913 0.491901
+             3 gradient_boosting_classifier_tuned            0.600000     0.480218      0.498072  0.017854   0.462089 0.540134  0.925685 0.460475
+             3           random_forest_classifier            0.400000     0.448276      0.497793  0.049518   0.527103 0.471572  0.935046 0.452038
+             3       gradient_boosting_classifier            0.600000     0.483546      0.491499  0.007953   0.456897 0.531773  0.924886 0.455742
+             3          logistic_regression_tuned            0.550000     0.403141      0.411411  0.008270   0.373297 0.458194  0.910502 0.385189
+             3                logistic_regression            0.550000     0.400262      0.410142  0.009880   0.370121 0.459866  0.909703 0.384318
+             3               naive_spike_baseline                 NaN     0.382943      0.382943  0.000000   0.382943 0.382943  0.915753      NaN
+             6     random_forest_classifier_tuned            0.450000     0.397138      0.426646  0.029508   0.405732 0.449833  0.917466 0.358207
+             6       gradient_boosting_classifier            0.550000     0.392741      0.397959  0.005218   0.352713 0.456522  0.905708 0.338031
+             6 gradient_boosting_classifier_tuned            0.600000     0.372679      0.384486  0.011807   0.387755 0.381271  0.916667 0.324077
+             6           random_forest_classifier            0.300000     0.244949      0.381844  0.136895   0.335443 0.443144  0.902055 0.323691
+             6          logistic_regression_tuned            0.600000     0.348411      0.362940  0.014530   0.334746 0.396321  0.905023 0.314977
+             6                logistic_regression            0.600000     0.348198      0.360456  0.012258   0.330544 0.396321  0.903995 0.314336
+             6               naive_spike_baseline                 NaN     0.269231      0.269231  0.000000   0.269231 0.269231  0.900228      NaN
+            12     random_forest_classifier_tuned            0.450000     0.365169      0.367347  0.002178   0.286517 0.511706  0.879680 0.286042
+            12 gradient_boosting_classifier_tuned            0.600000     0.326506      0.341541  0.015035   0.325265 0.359532  0.905365 0.288761
+            12          logistic_regression_tuned            0.600000     0.339488      0.340491  0.001003   0.314448 0.371237  0.901826 0.277591
+            12           random_forest_classifier            0.250000     0.187902      0.340033  0.152130   0.251810 0.523411  0.861301 0.257370
+            12                logistic_regression            0.600000     0.337894      0.339450  0.001555   0.312676 0.371237  0.901370 0.277494
+            12       gradient_boosting_classifier            0.650000     0.320766      0.338156  0.017390   0.368110 0.312709  0.916438 0.287974
+            12               naive_spike_baseline                 NaN     0.245819      0.245819  0.000000   0.245819 0.245819  0.897032      NaN
+            24     random_forest_classifier_tuned            0.500000     0.352423      0.352423  0.000000   0.372439 0.334448  0.916096 0.286274
+            24 gradient_boosting_classifier_tuned            0.600000     0.338766      0.350076  0.011310   0.321229 0.384615  0.902511 0.291291
+            24          logistic_regression_tuned            0.550000     0.338462      0.348485  0.010023   0.318560 0.384615  0.901826 0.284048
+            24       gradient_boosting_classifier            0.550000     0.341818      0.347586  0.005768   0.295775 0.421405  0.892009 0.290948
+            24                logistic_regression            0.550000     0.336634      0.347107  0.010474   0.315143 0.386288  0.900799 0.282643
+            24               naive_spike_baseline                 NaN     0.332776      0.332776  0.000000   0.332776 0.332776  0.908904      NaN
+            24           random_forest_classifier            0.350000     0.206452      0.303734  0.097283   0.301483 0.306020  0.904224 0.243764
+
+Validation winners after threshold optimization
+-----------------------------------------------
+ horizon_hours                         model_name  decision_threshold  original_f1  optimized_f1  f1_delta  precision   recall  accuracy   pr_auc
+             1 gradient_boosting_classifier_tuned            0.700000     0.579935      0.615630  0.035695   0.588415 0.645485  0.944977 0.661591
+             3     random_forest_classifier_tuned            0.450000     0.502496      0.505712  0.003216   0.464336 0.555184  0.925913 0.491901
+             6     random_forest_classifier_tuned            0.450000     0.397138      0.426646  0.029508   0.405732 0.449833  0.917466 0.358207
+            12     random_forest_classifier_tuned            0.450000     0.365169      0.367347  0.002178   0.286517 0.511706  0.879680 0.286042
+            24     random_forest_classifier_tuned            0.500000     0.352423      0.352423  0.000000   0.372439 0.334448  0.916096 0.286274
+
+status=PASS
+
+audit_exit_code=0

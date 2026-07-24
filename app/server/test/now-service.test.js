@@ -34,15 +34,20 @@ const {
 );
 
 describe("Now service", () => {
+  const viewedAt = new Date(
+    "2026-07-24T04:13:00.000Z",
+  );
+
   beforeEach(() => {
     jest.clearAllMocks();
 
     repository
-      .getLatestFinalizedPrice
+      .getCurrentMarketPrice
       .mockResolvedValue({
         datetime_utc:
-          "2026-07-21T00:00:00.000Z",
-        actual_price: "23.09",
+          "2026-07-24T04:00:00.000Z",
+        price: "38.71",
+        price_kind: "forecast",
       });
 
     repository
@@ -56,7 +61,7 @@ describe("Now service", () => {
 
     price
       .dollarsPerMwhToCentsPerKwh
-      .mockReturnValue(2.31);
+      .mockReturnValue(3.87);
 
     freshness
       .getObservedPriceFreshness
@@ -83,21 +88,22 @@ describe("Now service", () => {
   });
 
   test(
-    "builds Now from the observed price instead of a forecast",
+    "builds Now from the current-hour AESO value",
     async () => {
       await expect(
-        getNow(),
+        getNow(viewedAt),
       ).resolves.toEqual({
         generatedAt:
-          "2026-07-21T00:00:00.000Z",
+          "2026-07-24T04:00:00.000Z",
         confidence: "high",
         stale: false,
 
         price: {
-          value: 2.31,
+          value: 3.87,
           unit: "¢/kWh",
-          observedAtUtc:
-            "2026-07-21T00:00:00.000Z",
+          kind: "forecast",
+          sourceAtUtc:
+            "2026-07-24T04:00:00.000Z",
         },
 
         recommendation: {
@@ -113,38 +119,62 @@ describe("Now service", () => {
       });
 
       expect(
-        repository.getLatestFinalizedPrice,
-      ).toHaveBeenCalledTimes(1);
-
-      expect(
-        repository.getRecentFinalizedPrices,
-      ).toHaveBeenCalledTimes(1);
+        repository.getCurrentMarketPrice,
+      ).toHaveBeenCalledWith(
+        viewedAt,
+      );
 
       expect(
         marketContext
           .getCurrentMarketDecision,
       ).toHaveBeenCalledWith(
-        "23.09",
+        "38.71",
         expect.any(Array),
       );
 
       expect(
         freshness.getObservedPriceFreshness,
       ).toHaveBeenCalledWith(
-        "2026-07-21T00:00:00.000Z",
+        "2026-07-24T04:00:00.000Z",
+        viewedAt,
       );
     },
   );
 
   test(
-    "returns null when no observed price exists",
+    "preserves an explicit finalized fallback kind",
     async () => {
       repository
-        .getLatestFinalizedPrice
+        .getCurrentMarketPrice
+        .mockResolvedValue({
+          datetime_utc:
+            "2026-07-24T02:00:00.000Z",
+          price: "47.18",
+          price_kind:
+            "fallback_actual",
+        });
+
+      const result = await getNow(
+        viewedAt,
+      );
+
+      expect(
+        result.price.kind,
+      ).toBe(
+        "fallback_actual",
+      );
+    },
+  );
+
+  test(
+    "returns null when no market price exists",
+    async () => {
+      repository
+        .getCurrentMarketPrice
         .mockResolvedValue(null);
 
       await expect(
-        getNow(),
+        getNow(viewedAt),
       ).resolves.toBeNull();
     },
   );

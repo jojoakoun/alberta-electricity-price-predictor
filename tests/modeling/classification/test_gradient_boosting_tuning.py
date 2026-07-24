@@ -98,6 +98,7 @@ def test_build_tuned_gradient_boosting_result_uses_shared_schema():
       "cv_precision": 0.75,
       "cv_recall": 0.70,
       "cv_f1": 0.72,
+      "cv_pr_auc": 0.74,
     },
   )
 
@@ -108,3 +109,61 @@ def test_build_tuned_gradient_boosting_result_uses_shared_schema():
   assert result["mae"] is None
   assert "n_estimators=200" in result["model_parameters"]
   assert "learning_rate=0.05" in result["model_parameters"]
+
+
+def test_tune_gradient_boosting_prioritizes_pr_auc_then_f1(monkeypatch):
+  data = make_time_series_classification_data()
+
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification.gradient_boosting."
+    "gradient_boosting_tuning.GRADIENT_BOOSTING_N_ESTIMATORS",
+    [100, 200, 300],
+  )
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification.gradient_boosting."
+    "gradient_boosting_tuning.GRADIENT_BOOSTING_LEARNING_RATES",
+    [0.1],
+  )
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification.gradient_boosting."
+    "gradient_boosting_tuning.GRADIENT_BOOSTING_MAX_DEPTHS",
+    [3],
+  )
+
+  scores_by_estimators = {
+    100: {
+      "cv_accuracy": 0.80,
+      "cv_precision": 0.70,
+      "cv_recall": 0.80,
+      "cv_f1": 0.90,
+      "cv_pr_auc": 0.60,
+    },
+    200: {
+      "cv_accuracy": 0.82,
+      "cv_precision": 0.72,
+      "cv_recall": 0.75,
+      "cv_f1": 0.70,
+      "cv_pr_auc": 0.75,
+    },
+    300: {
+      "cv_accuracy": 0.83,
+      "cv_precision": 0.73,
+      "cv_recall": 0.78,
+      "cv_f1": 0.74,
+      "cv_pr_auc": 0.75,
+    },
+  }
+
+  monkeypatch.setattr(
+    "electricity_predictor.modeling.classification.gradient_boosting."
+    "gradient_boosting_tuning."
+    "evaluate_gradient_boosting_parameters_with_time_series_cv",
+    lambda **kwargs: scores_by_estimators[kwargs["n_estimators"]],
+  )
+
+  best_result = tune_gradient_boosting(
+    train_data=data,
+    target_column="is_spike_target_1h",
+  )
+
+  assert best_result["n_estimators"] == 300

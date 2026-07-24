@@ -1,0 +1,15 @@
+===== TARGETED SPIKE ANALYSIS TESTS =====
+................                                                         [100%]
+16 passed in 0.29s
+
+===== RESEARCH REPORT SPLITS =====
+src/electricity_predictor/modeling/classification/analyze_spike_regime.py:139:    "train": train_data,
+src/electricity_predictor/modeling/classification/analyze_spike_regime.py:140:    "validation": validation_data,
+src/electricity_predictor/modeling/classification/analyze_spike_definition.py:54:    "train": train_data,
+src/electricity_predictor/modeling/classification/analyze_spike_definition.py:55:    "validation": validation_data,
+src/electricity_predictor/modeling/classification/analyze_spike_definition.py:143:  for split_name in ["train", "validation"]:
+
+===== FORBIDDEN TEST SPLIT REFERENCES =====
+Protected test is absent from exploratory spike analyses.
+
+===== DIFF CHECK =====

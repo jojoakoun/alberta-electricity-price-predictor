@@ -1,0 +1,8 @@
+===== TARGET BUILDER AND SAVE TESTS =====
+.........                                                                [100%]
+9 passed in 1.38s
+
+===== SAVE PATH PROTECTED-TEST REFERENCES =====
+Save path does not prepare protected-test data.
+
+===== DIFF CHECK =====

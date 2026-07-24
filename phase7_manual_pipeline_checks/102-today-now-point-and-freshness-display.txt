@@ -1,0 +1,135 @@
+===== PURPOSE =====
+Add the current AESO market price as the first Today graph point.
+Keep five model horizons unchanged and eligible for bestTime selection.
+Use a compact freshness note for moderate age and a banner only for low confidence.
+No database, worker, model, protected test, commit, or push is modified.
+
+===== TARGETED BACKEND CONTRACT TESTS =====
+
+> wattwise-server@1.0.0 test
+> jest --runInBand --runInBand test/today-service.test.js test/today-route.test.js
+
+PASS test/today-service.test.js
+PASS test/today-route.test.js
+
+Test Suites: 2 passed, 2 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        0.402 s, estimated 1 s
+Ran all test suites matching test/today-service.test.js|test/today-route.test.js.
+
+===== TARGETED FRONTEND TESTS =====
+
+> client@0.0.0 test
+> vitest run src/components/today/TimelineOverview.test.jsx src/components/today/timeline-geometry.test.js src/components/today/FreshnessLine.test.jsx src/pages/TodayPage.test.jsx src/api/today.test.js src/i18n/parity.test.js
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/Users/joelakoun/Desktop/alberta-electricity-price-predictor/app/client[39m
+
+ [32m✓[39m src/components/today/timeline-geometry.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/i18n/parity.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/api/today.test.js [2m([22m[2m12 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [31m❯[39m src/components/today/FreshnessLine.test.jsx [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 61[2mms[22m[39m
+[31m     [31m×[31m shows a compact notice for moderately old forecasts[39m[32m 56[2mms[22m[39m
+     [32m✓[39m does not show the compact warning for fresh forecasts[32m 4[2mms[22m[39m
+ [32m✓[39m src/components/today/TimelineOverview.test.jsx [2m([22m[2m5 tests[22m[2m)[22m[32m 126[2mms[22m[39m
+ [32m✓[39m src/pages/TodayPage.test.jsx [2m([22m[2m7 tests[22m[2m)[22m[33m 438[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/components/today/FreshnessLine.test.jsx[2m > [22mFreshnessLine[2m > [22mshows a compact notice for moderately old forecasts
+[31m[1mTestingLibraryElementError[22m: Unable to find an element with the text: /Forecasts calculated from market data through/i. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[31m
+  [36m<div>[31m
+    [36m<div[31m
+      [33mclass[31m=[32m"grid gap-[var(--space-2)]"[31m
+    [36m>[31m
+      [36m<p[31m
+        [33mclass[31m=[32m"flex items-start gap-[var(--space-2)] rounded-[var(--radius)] bg-[var(--color-okay-surface)] px-[var(--space-3)] py-[var(--space-2)] text-sm text-[var(--color-text-muted)]"[31m
+        [33mdata-testid[31m=[32m"moderate-forecast-notice"[31m
+      [36m>[31m
+        [36m<svg[31m
+          [33maria-hidden[31m=[32m"true"[31m
+          [33mclass[31m=[32m"lucide lucide-info mt-0.5 shrink-0 text-[var(--color-okay)]"[31m
+          [33mfill[31m=[32m"none"[31m
+          [33mheight[31m=[32m"16"[31m
+          [33mstroke[31m=[32m"currentColor"[31m
+          [33mstroke-linecap[31m=[32m"round"[31m
+          [33mstroke-linejoin[31m=[32m"round"[31m
+          [33mstroke-width[31m=[32m"2"[31m
+          [33mviewBox[31m=[32m"0 0 24 24"[31m
+          [33mwidth[31m=[32m"16"[31m
+          [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+        [36m>[31m
+          [36m<circle[31m
+            [33mcx[31m=[32m"12"[31m
+            [33mcy[31m=[32m"12"[31m
+            [33mr[31m=[32m"10"[31m
+          [36m/>[31m
+          [36m<path[31m
+            [33md[31m=[32m"M12 16v-4"[31m
+          [36m/>[31m
+          [36m<path[31m
+            [33md[31m=[32m"M12 8h.01"[31m
+          [36m/>[31m
+        [36m</svg>[31m
+        [36m<span>[31m
+          [0mThese forecasts use an older market-data hour than usual.[0m
+        [36m</span>[31m
+      [36m</p>[31m
+      [36m<p[31m
+        [33mclass[31m=[32m"flex items-center gap-[var(--space-2)] text-[var(--font-size-caption)] text-[var(--color-text-muted)]"[31m
+      [36m>[31m
+        [36m<svg[31m
+          [33maria-hidden[31m=[32m"true"[31m
+          [33mclass[31m=[32m"lucide lucide-clock3 lucide-clock-3"[31m
+          [33mfill[31m=[32m"none"[31m
+          [33mheight[31m=[32m"15"[31m
+          [33mstroke[31m=[32m"currentColor"[31m
+          [33mstroke-linecap[31m=[32m"round"[31m
+          [33mstroke-linejoin[31m=[32m"round"[31m
+          [33mstroke-width[31m=[32m"2"[31m
+          [33mviewBox[31m=[32m"0 0 24 24"[31m
+          [33mwidth[31m=[32m"15"[31m
+          [33mxmlns[31m=[32m"http://www.w3.org/2000/svg"[31m
+        [36m>[31m
+          [36m<circle[31m
+            [33mcx[31m=[32m"12"[31m
+            [33mcy[31m=[32m"12"[31m
+            [33mr[31m=[32m"10"[31m
+          [36m/>[31m
+          [36m<path[31m
+            [33md[31m=[32m"M12 6v6h4"[31m
+          [36m/>[31m
+        [36m</svg>[31m
+        [36m<span>[31m
+          [0mForecasts calculated from market data up to[0m
+          [0m [0m
+          [0m9:00 a.m.[0m
+        [36m</span>[31m
+      [36m</p>[31m
+    [36m</div>[31m
+  [36m</div>[31m
+[36m</body>[31m[39m
+[90m [2m❯[22m Object.getElementError node_modules/@testing-library/dom/dist/config.js:[2m37:19[22m[39m
+[90m [2m❯[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m76:38[22m[39m
+[90m [2m❯[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m52:17[22m[39m
+[90m [2m❯[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m95:19[22m[39m
+[36m [2m❯[22m src/components/today/FreshnessLine.test.jsx:[2m54:16[22m[39m
+    [90m 52|[39m
+    [90m 53|[39m       [34mexpect[39m(
+    [90m 54|[39m         screen[33m.[39m[34mgetByText[39m(
+    [90m   |[39m                [31m^[39m
+    [90m 55|[39m           [36m/Forecasts calculated from market data through/i[39m[33m,[39m
+    [90m 56|[39m         )[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m5 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m31 passed[39m[22m[90m (32)[39m
+[2m   Start at [22m 22:59:44
+[2m   Duration [22m 1.96s[2m (transform 474ms, setup 639ms, import 945ms, tests 651ms, environment 5.52s)[22m
+

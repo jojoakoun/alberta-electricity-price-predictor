@@ -48,7 +48,7 @@ export const en = {
     acceptable: {
       label: "Okay time",
       defaultExplanation:
-        "Prices are reasonable, but a better time may be coming.",
+        "Electricity use is acceptable, but this is not the best time.",
     },
     avoid: {
       label: "Better to wait",
@@ -99,7 +99,7 @@ export const en = {
         "See how official Alberta electricity data becomes a simple recommendation you can use.",
       chips: {
         data: "Official data",
-        forecasts: "Five forecasts",
+        forecasts: "Five horizons",
         recommendations: "Clear recommendations",
       },
     },
@@ -124,9 +124,9 @@ export const en = {
             "The system compares current conditions with patterns found in several years of historical data.",
         },
         forecasts: {
-          title: "Five genuine forecasts",
+          title: "Five forecast horizons",
           description:
-            "Prices are estimated for 1, 3, 6, 12, and 24 hours ahead. WattWise does not invent points between those forecasts.",
+            "Models estimate prices 1, 3, 6, 12, and 24 hours ahead. The interface displays only these five forecast horizons.",
         },
         recommendation: {
           title: "A clear recommendation",
@@ -177,9 +177,9 @@ export const en = {
     },
 
     confidence: {
-      title: "Why forecast confidence changes",
+      title: "How to use each forecast horizon",
       description:
-        "Near-term forecasts usually have more recent information available. Forecasts become less certain as the time horizon increases.",
+        "Each horizon supports a different planning decision. Near-term forecasts are best for immediate choices, while longer horizons provide broader planning context.",
 
       horizons: {
         one: {
@@ -196,11 +196,11 @@ export const en = {
         },
         twelve: {
           label: "12 hours ahead",
-          detail: "More uncertainty is expected",
+          detail: "Use as a broader guide with more uncertainty",
         },
         twentyFour: {
           label: "24 hours ahead",
-          detail: "Use as a planning guide",
+          detail: "Use as a reference for next-day planning",
         },
       },
     },
@@ -210,6 +210,7 @@ export const en = {
       title: "Important limits",
       introduction:
         "WattWise supports planning, but it cannot guarantee a future electricity price.",
+      detailsLabel: "What can change a forecast?",
 
       items: {
         prediction:
@@ -222,6 +223,14 @@ export const en = {
           "Use WattWise as a planning aid rather than a financial guarantee.",
       },
     },
+
+    cta: {
+      eyebrow: "Next step",
+      title: "Use the forecast in context",
+      description:
+        "Open Today to compare the current market price with WattWise’s five future forecast horizons.",
+      label: "View today’s outlook",
+    },
   },
 
   projectPage: {
@@ -230,11 +239,11 @@ export const en = {
       title: "WattWise",
       description:
         "An end-to-end machine learning application that turns Alberta electricity market data into clear, practical recommendations.",
-      byline: "Designed and developed by",
-      developer: "Joël-Hervé Akoun",
-      linkedInLabel: "Connect on LinkedIn",
-      linkedInUrl:
-        "https://www.linkedin.com/in/joelakoun/",
+      byline: "Built in Alberta",
+      ctaTitle: "See WattWise in action",
+      ctaDescription:
+        "Compare the current price with five forecast horizons and get a clear recommendation.",
+      ctaLabel: "View forecasts",
       disciplines: {
         data: "Data engineering",
         machineLearning: "Machine learning",
@@ -327,32 +336,32 @@ export const en = {
         {
           title: "Chronological validation",
           description:
-            "Training, validation, and testing follow time order rather than random sampling.",
+            "Models are trained on earlier data and then evaluated on more recent periods.",
         },
         {
           title: "Leakage-aware evaluation",
           description:
-            "Purged boundaries and chronological cross-validation protect future information.",
+            "Temporal boundaries prevent models from using information that would not yet be available when a forecast is produced.",
         },
         {
-          title: "Train-derived thresholds",
+          title: "Leakage-safe threshold selection",
           description:
-            "Decision and spike thresholds are estimated without using protected test information.",
+            "Thresholds were selected from training and validation data before the final model refit.",
         },
         {
           title: "Explainable recommendations",
           description:
-            "Users receive clear guidance instead of unexplained raw model outputs.",
+            "Users receive clear guidance with understandable context instead of unexplained raw model outputs.",
         },
         {
           title: "Modular architecture",
           description:
-            "Data, modeling, worker, API, and frontend responsibilities remain separated.",
+            "Data, models, the worker, the API, and the interface are organized as separate responsibilities.",
         },
         {
           title: "Automated verification",
           description:
-            "Python, API, and frontend tests protect the application as it evolves.",
+            "Python, API, and frontend tests protect the application through every change.",
         },
       ],
     },
@@ -367,6 +376,7 @@ export const en = {
         "Pandas",
         "scikit-learn",
         "PostgreSQL",
+        "Node.js",
         "Express",
         "React",
         "JavaScript",
@@ -392,13 +402,15 @@ export const en = {
       linkedInUrl:
         "https://www.linkedin.com/in/joelakoun/",
       photoPath: "/joel.png",
+      initials: "JHA",
+      photoFallbackLabel: "Joël-Hervé Akoun initials",
     },
 
     reflection: {
       eyebrow: "Reflection",
-      title: "What I learned",
+      title: "What this project taught me",
       description:
-        "Building WattWise reinforced that a successful machine learning product depends on much more than model performance. Reliable data, careful evaluation, testing, software architecture, and user experience all determine whether a prediction becomes genuinely useful.",
+        "Building WattWise taught me how to turn a predictive model into a product people can actually use. The work did not stop at model training: I had to organize the data, prevent temporal leakage, automate predictions, build a reliable API, and make the results understandable to users.",
     },
 
     signature: {
@@ -472,7 +484,9 @@ export const en = {
     bestOpportunity: "Best opportunity",
     futurePriceLabel: "Lowest comparable forecast",
     currentObservedPriceLabel:
-      "Current observed market price",
+      "Current AESO market price",
+    currentPriceSourceHour:
+      "Market price hour",
 
     futureStatus: {
       available:
@@ -498,20 +512,20 @@ export const en = {
       lowerTitle: "A lower price is forecast",
       lowerBefore: "The lowest forecast is",
       lowerAfter:
-        "¢/kWh below the current observed price.",
+        "¢/kWh below the current AESO market price.",
 
       sameEyebrow: "No expected saving",
       sameTitle:
         "Waiting is not expected to lower the price",
       sameDescription:
-        "The lowest future forecast matches the current observed market price.",
+        "The lowest future forecast matches the current AESO market price.",
       sameBadge: "Same as now",
 
       currentEyebrow: "Current price is better",
       currentTitle:
         "The current price is already lower",
       currentBefore:
-        "The current observed price is",
+        "The current AESO market price is",
       currentAfter:
         "¢/kWh below the lowest future forecast.",
       currentBadge: "Now is lower",
@@ -521,12 +535,13 @@ export const en = {
       unavailableTitle:
         "A lower price cannot be confirmed",
       unavailableDescription:
-        "The current observed price is unavailable, so WattWise cannot determine whether waiting would lower the price.",
+        "The current AESO market price is unavailable, so WattWise cannot determine whether waiting would lower the price.",
       unavailableBadge:
         "Current price unavailable",
     },
 
     currentPriceReference: "Current price",
+    nowLabel: "Now",
     observedPriceAt: "Observed price at",
     sameAsObservedPrice: "Same as observed price",
     todayLabel: "Today",
@@ -548,7 +563,7 @@ export const en = {
     hideDetails: "Hide details",
     priceTrendTitle: "Price trend",
     priceTrendDescription:
-      "The smooth line is only a visual guide connecting five distinct forecasts. Values between the dots are not model predictions.",
+      "The first point is the current AESO market price. The next five points are model forecasts. The smooth line is only a visual guide.",
   },
 
   explanations: {
@@ -571,7 +586,17 @@ export const en = {
   },
 
   price: {
-    label: "Latest observed market price",
+    label: "Price now",
+    currentTime: "Current Alberta time",
+    marketHour: "Market hour",
+    kinds: {
+      actual:
+        "Finalized AESO price for the current market hour.",
+      forecast:
+        "AESO estimate for the current market hour.",
+      fallback_actual:
+        "Latest finalized AESO price because current-hour data is unavailable.",
+    },
   },
 
   confidence: {

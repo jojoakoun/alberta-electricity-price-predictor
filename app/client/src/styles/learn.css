@@ -164,67 +164,50 @@
   color: var(--color-brand);
 }
 
-.confidence-card {
+.horizon-guide-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.horizon-guide-list {
   display: grid;
-  gap: var(--space-5);
 }
 
-.confidence-row {
+.horizon-guide-row {
   display: grid;
-  gap: var(--space-2);
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-4);
 }
 
-.confidence-label {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+.horizon-guide-row + .horizon-guide-row {
+  border-top: 1px solid var(--color-border);
 }
 
-.confidence-label > div {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-weight: 600;
-}
-
-.confidence-label svg {
+.horizon-guide-icon {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--color-brand-surface);
   color: var(--color-brand);
 }
 
-.confidence-label small {
+.horizon-guide-copy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.horizon-guide-copy p {
   color: var(--color-text-muted);
   font-size: var(--font-size-caption);
 }
 
-.confidence-track {
-  height: 0.65rem;
-  overflow: hidden;
-  border-radius: 9999px;
-  background: var(--color-border);
-}
-
-.confidence-fill {
-  width: var(--confidence-width);
-  height: 100%;
-  border-radius: 9999px;
-  background:
-    linear-gradient(
-      90deg,
-      var(--color-brand),
-      #14b8a6
-    );
-  transform-origin: left;
-}
-
-.app-reveal.is-visible .confidence-fill {
-  animation:
-    confidence-grow 720ms
-    cubic-bezier(0.22, 1, 0.36, 1)
-    var(--confidence-delay, 0ms)
-    both;
-}
-
-.learn-limits-details {
+.learn-limits-card {
+  display: grid;
+  gap: var(--space-4);
   overflow: hidden;
   border: 1px solid var(--color-okay);
   border-radius: var(--radius);
@@ -234,18 +217,44 @@
       var(--color-okay-surface),
       var(--color-surface)
     );
+  padding: var(--space-4);
   box-shadow: var(--shadow-card);
+}
+
+.learn-limit-highlights {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.learn-limit-highlights li,
+.learn-limit-detail {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.learn-limit-highlights svg,
+.learn-limit-detail svg {
+  margin-top: 0.2rem;
+  flex: 0 0 auto;
+  color: var(--color-okay);
+}
+
+.learn-limits-details {
+  border-top: 1px solid var(--color-okay);
+  padding-top: var(--space-3);
 }
 
 .learn-limits-details summary {
   display: flex;
-  min-height: 5rem;
   cursor: pointer;
   list-style: none;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4);
+  gap: var(--space-3);
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .learn-limits-details summary svg {
@@ -258,25 +267,41 @@
   transform: rotate(180deg);
 }
 
-.learn-limit-list {
-  display: grid;
-  gap: var(--space-3);
-  border-top: 1px solid var(--color-okay);
-  padding: var(--space-4);
+.learn-limit-detail {
+  margin-top: var(--space-3);
   animation: learn-panel-enter 300ms ease both;
 }
 
-.learn-limit-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  color: var(--color-text-muted);
+.learn-cta {
+  display: grid;
+  gap: var(--space-4);
+  align-items: center;
+  border: 1px solid var(--color-brand);
+  border-radius: var(--radius);
+  background: var(--color-brand-surface);
+  padding: clamp(1.25rem, 4vw, 2rem);
+  box-shadow: var(--shadow-card);
 }
 
-.learn-limit-list svg {
-  margin-top: 0.2rem;
-  flex: 0 0 auto;
-  color: var(--color-okay);
+.learn-cta-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius);
+  background: var(--color-brand);
+  padding: var(--space-2) var(--space-3);
+  color: white;
+  font-weight: 600;
+  transition: opacity 180ms ease;
+}
+
+@media (hover: hover) {
+  .learn-cta-link:hover {
+    opacity: 0.9;
+  }
 }
 
 @media (hover: hover) {
@@ -297,10 +322,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .confidence-label {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+  .learn-cta {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 
@@ -326,20 +349,9 @@
   }
 }
 
-@keyframes confidence-grow {
-  from {
-    transform: scaleX(0.12);
-  }
-
-  to {
-    transform: scaleX(1);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .learn-timeline-step,
-.learn-tab-panel,
-.confidence-fill {
+.learn-tab-panel {
     opacity: 1;
     transform: none;
     animation: none;

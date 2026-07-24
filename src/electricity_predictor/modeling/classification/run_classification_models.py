@@ -3,11 +3,27 @@ from pathlib import Path
 from electricity_predictor.modeling.classification.baseline.naive_spike_baseline import (
   run_classification_baseline,
 )
+from electricity_predictor.modeling.classification.baseline.rule_spike_baseline import (
+  run_aeso_forecast_spike_baseline,
+  run_previous_day_spike_baseline,
+)
 from electricity_predictor.modeling.classification.gradient_boosting.gradient_boosting_classifier import (
   run_gradient_boosting_classifier,
 )
 from electricity_predictor.modeling.classification.gradient_boosting.gradient_boosting_tuning import (
   run_tuned_gradient_boosting,
+)
+from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_classifier import (
+  run_hist_gradient_boosting_classifier,
+)
+from electricity_predictor.modeling.classification.hist_gradient_boosting.hist_gradient_boosting_tuning import (
+  run_tuned_hist_gradient_boosting,
+)
+from electricity_predictor.modeling.classification.extra_trees.extra_trees_classifier import (
+  run_extra_trees_classifier,
+)
+from electricity_predictor.modeling.classification.extra_trees.extra_trees_tuning import (
+  run_tuned_extra_trees,
 )
 from electricity_predictor.modeling.classification.logistic.logistic_regression import (
   run_logistic_regression,
@@ -40,6 +56,22 @@ def run_classification_models(
   print("Running naive spike baseline")
   print("============================")
   run_classification_baseline(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running AESO forecast spike baseline")
+  print("====================================")
+  run_aeso_forecast_spike_baseline(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running previous-day spike baseline")
+  print("===================================")
+  run_previous_day_spike_baseline(
     training_dataset_path=training_dataset_path,
     results_path=results_path,
   )
@@ -88,6 +120,38 @@ def run_classification_models(
   print("Running tuned Gradient Boosting Classifier")
   print("==========================================")
   run_tuned_gradient_boosting(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running HistGradientBoosting Classifier")
+  print("=======================================")
+  run_hist_gradient_boosting_classifier(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running tuned HistGradientBoosting Classifier")
+  print("=============================================")
+  run_tuned_hist_gradient_boosting(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running ExtraTrees Classifier")
+  print("=============================")
+  run_extra_trees_classifier(
+    training_dataset_path=training_dataset_path,
+    results_path=results_path,
+  )
+
+  print("")
+  print("Running tuned ExtraTrees Classifier")
+  print("===================================")
+  run_tuned_extra_trees(
     training_dataset_path=training_dataset_path,
     results_path=results_path,
   )

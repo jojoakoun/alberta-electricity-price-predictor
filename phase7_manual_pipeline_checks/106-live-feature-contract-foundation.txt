@@ -1,0 +1,32 @@
+===== PURPOSE =====
+Create isolated forecast-only and conservative-hybrid live feature contracts.
+Verify current-hour availability and H-24 leakage protection.
+Do not switch active models or modify the worker yet.
+
+===== TARGETED LIVE FEATURE TESTS =====
+.....                                                                    [100%]
+5 passed in 0.48s
+
+===== EXISTING FEATURE TESTS =====
+......................                                                   [100%]
+22 passed in 0.38s
+
+===== CURRENT ACTIVE CONTRACT CHECK =====
+active_model_feature_count=11
+live_contract=forecast_only feature_count=10
+live_contract=conservative_hybrid feature_count=14
+active_model_contract_modified=False
+
+===== DIFF FORMAT CHECK =====
+
+forecast_only_contract_created=PASS
+conservative_hybrid_contract_created=PASS
+current_hour_availability_tested=PASS
+safe_actual_cutoff_h24_tested=PASS
+active_models_modified=False
+worker_modified=False
+dataset_modified=False
+training_performed=False
+protected_test_invoked=False
+commit_performed=False
+push_performed=False

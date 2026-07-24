@@ -1,0 +1,7 @@
+....                                                                     [100%]
+4 passed in 2.76s
+
+===== GIT DIFF CHECK =====
+
+pytest_exit_code=0
+git_diff_check_exit_code=0

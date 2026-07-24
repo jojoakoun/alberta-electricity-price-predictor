@@ -1,0 +1,13 @@
+===== PURPOSE =====
+Hyperparameters are selected using CV PR-AUC first.
+CV F1 is used only as the tie-break.
+Validation thresholds and protected test data are not used here.
+
+===== TUNING CONTRACT TESTS =====
+.....................................                                    [100%]
+37 passed in 3.81s
+
+===== GIT DIFF CHECK =====
+
+tuning_contract_tests_exit_code=0
+git_diff_check_exit_code=0

@@ -1,0 +1,667 @@
+===== FORECAST PROVENANCE REFERENCES =====
+app/server/test/today-selection.test.js-4-  getFutureForecasts,
+app/server/test/today-selection.test.js-5-  selectBestTime,
+app/server/test/today-selection.test.js-6-} = require("../src/domain/today-selection");
+app/server/test/today-selection.test.js-7-
+app/server/test/today-selection.test.js-8-function buildForecast({
+app/server/test/today-selection.test.js:9:  forecastKind = "model_forecast",
+app/server/test/today-selection.test.js-10-  horizonHours = 1,
+app/server/test/today-selection.test.js-11-  priceCents = 2,
+app/server/test/today-selection.test.js-12-  targetTimeUtc = "2026-07-18T21:00:00.000Z",
+app/server/test/today-selection.test.js-13-} = {}) {
+app/server/test/today-selection.test.js-14-  return {
+--
+app/server/test/today-selection.test.js-59-      horizonHours: 3,
+app/server/test/today-selection.test.js-60-      priceCents: 1.5,
+app/server/test/today-selection.test.js-61-    });
+app/server/test/today-selection.test.js-62-    const forecasts = [
+app/server/test/today-selection.test.js-63-      buildForecast({
+app/server/test/today-selection.test.js:64:        forecastKind: "persistence_reference",
+app/server/test/today-selection.test.js-65-        horizonHours: 24,
+app/server/test/today-selection.test.js-66-        priceCents: 0.5,
+app/server/test/today-selection.test.js-67-      }),
+app/server/test/today-selection.test.js-68-      firstLowest,
+app/server/test/today-selection.test.js-69-      buildForecast({
+--
+app/server/test/today-selection.test.js-82-
+app/server/test/today-selection.test.js-83-  test("returns null when no eligible model forecast exists", () => {
+app/server/test/today-selection.test.js-84-    expect(
+app/server/test/today-selection.test.js-85-      selectBestTime([
+app/server/test/today-selection.test.js-86-        buildForecast({
+app/server/test/today-selection.test.js:87:          forecastKind: "persistence_reference",
+app/server/test/today-selection.test.js-88-        }),
+app/server/test/today-selection.test.js-89-        buildForecast({
+app/server/test/today-selection.test.js-90-          forecastKind: "unknown",
+app/server/test/today-selection.test.js-91-        }),
+app/server/test/today-selection.test.js-92-      ]),
+--
+app/server/test/today-selection.test.js-96-  test.each([
+app/server/test/today-selection.test.js-97-    [[], null, "none_remaining"],
+app/server/test/today-selection.test.js-98-    [[buildForecast()], buildForecast(), "available"],
+app/server/test/today-selection.test.js-99-    [
+app/server/test/today-selection.test.js-100-      [buildForecast({
+app/server/test/today-selection.test.js:101:        forecastKind: "persistence_reference",
+app/server/test/today-selection.test.js-102-      })],
+app/server/test/today-selection.test.js-103-      null,
+app/server/test/today-selection.test.js-104-      "reference_only",
+app/server/test/today-selection.test.js-105-    ],
+app/server/test/today-selection.test.js-106-    [
+--
+app/server/test/forecast-provenance.test.js-2-  EXPECTED_HORIZONS,
+app/server/test/forecast-provenance.test.js-3-  parseForecastKinds,
+app/server/test/forecast-provenance.test.js-4-} = require("../src/domain/forecast-provenance");
+app/server/test/forecast-provenance.test.js-5-
+app/server/test/forecast-provenance.test.js-6-const VERSIONED_FORECAST_KINDS = {
+app/server/test/forecast-provenance.test.js:7:  1: "model_forecast",
+app/server/test/forecast-provenance.test.js:8:  3: "model_forecast",
+app/server/test/forecast-provenance.test.js:9:  6: "model_forecast",
+app/server/test/forecast-provenance.test.js:10:  12: "model_forecast",
+app/server/test/forecast-provenance.test.js:11:  24: "persistence_reference",
+app/server/test/forecast-provenance.test.js-12-};
+app/server/test/forecast-provenance.test.js-13-
+app/server/test/forecast-provenance.test.js-14-function buildPredictions(runDetail) {
+app/server/test/forecast-provenance.test.js-15-  return EXPECTED_HORIZONS.map(
+app/server/test/forecast-provenance.test.js-16-    (horizon) => ({
+--
+app/server/test/forecast-provenance.test.js-22-
+app/server/test/forecast-provenance.test.js-23-describe("Forecast provenance", () => {
+app/server/test/forecast-provenance.test.js-24-  test("parses the complete versioned forecast-kind contract", () => {
+app/server/test/forecast-provenance.test.js-25-    const runDetail = JSON.stringify({
+app/server/test/forecast-provenance.test.js-26-      schemaVersion: 1,
+app/server/test/forecast-provenance.test.js:27:      forecastKinds: VERSIONED_FORECAST_KINDS,
+app/server/test/forecast-provenance.test.js-28-    });
+app/server/test/forecast-provenance.test.js-29-
+app/server/test/forecast-provenance.test.js-30-    expect(
+app/server/test/forecast-provenance.test.js-31-      Array.from(
+app/server/test/forecast-provenance.test.js-32-        parseForecastKinds(
+app/server/test/forecast-provenance.test.js-33-          buildPredictions(runDetail),
+app/server/test/forecast-provenance.test.js-34-        ).entries(),
+app/server/test/forecast-provenance.test.js-35-      ),
+app/server/test/forecast-provenance.test.js-36-    ).toEqual([
+app/server/test/forecast-provenance.test.js:37:      [1, "model_forecast"],
+app/server/test/forecast-provenance.test.js:38:      [3, "model_forecast"],
+app/server/test/forecast-provenance.test.js:39:      [6, "model_forecast"],
+app/server/test/forecast-provenance.test.js:40:      [12, "model_forecast"],
+app/server/test/forecast-provenance.test.js:41:      [24, "persistence_reference"],
+app/server/test/forecast-provenance.test.js-42-    ]);
+app/server/test/forecast-provenance.test.js-43-  });
+app/server/test/forecast-provenance.test.js-44-
+app/server/test/forecast-provenance.test.js-45-  test("preserves the verified pre-metadata persistence lineage", () => {
+app/server/test/forecast-provenance.test.js:46:    const forecastKinds = parseForecastKinds(
+app/server/test/forecast-provenance.test.js-47-      buildPredictions(
+app/server/test/forecast-provenance.test.js-48-        "Application pipeline prediction cycle.",
+app/server/test/forecast-provenance.test.js-49-      ),
+app/server/test/forecast-provenance.test.js-50-    );
+app/server/test/forecast-provenance.test.js-51-
+app/server/test/forecast-provenance.test.js:52:    expect(forecastKinds.get(1)).toBe("model_forecast");
+app/server/test/forecast-provenance.test.js:53:    expect(forecastKinds.get(24)).toBe(
+app/server/test/forecast-provenance.test.js:54:      "persistence_reference",
+app/server/test/forecast-provenance.test.js-55-    );
+app/server/test/forecast-provenance.test.js-56-  });
+app/server/test/forecast-provenance.test.js-57-
+app/server/test/forecast-provenance.test.js-58-  test("fails closed for unverified legacy summaries", () => {
+app/server/test/forecast-provenance.test.js:59:    const forecastKinds = parseForecastKinds(
+app/server/test/forecast-provenance.test.js-60-      buildPredictions("Unrecognized legacy run."),
+app/server/test/forecast-provenance.test.js-61-    );
+app/server/test/forecast-provenance.test.js-62-
+app/server/test/forecast-provenance.test.js-63-    expect(
+app/server/test/forecast-provenance.test.js:64:      Array.from(forecastKinds.values()),
+app/server/test/forecast-provenance.test.js-65-    ).toEqual([
+app/server/test/forecast-provenance.test.js-66-      "unknown",
+app/server/test/forecast-provenance.test.js-67-      "unknown",
+app/server/test/forecast-provenance.test.js-68-      "unknown",
+app/server/test/forecast-provenance.test.js-69-      "unknown",
+--
+app/server/test/forecast-provenance.test.js-103-  });
+app/server/test/forecast-provenance.test.js-104-
+app/server/test/forecast-provenance.test.js-105-  test("rejects unsupported metadata schemas", () => {
+app/server/test/forecast-provenance.test.js-106-    const runDetail = JSON.stringify({
+app/server/test/forecast-provenance.test.js-107-      schemaVersion: 2,
+app/server/test/forecast-provenance.test.js:108:      forecastKinds: VERSIONED_FORECAST_KINDS,
+app/server/test/forecast-provenance.test.js-109-    });
+app/server/test/forecast-provenance.test.js-110-
+app/server/test/forecast-provenance.test.js-111-    expect(
+app/server/test/forecast-provenance.test.js-112-      () => parseForecastKinds(
+app/server/test/forecast-provenance.test.js-113-        buildPredictions(runDetail),
+--
+app/server/test/forecast-provenance.test.js-118-  });
+app/server/test/forecast-provenance.test.js-119-
+app/server/test/forecast-provenance.test.js-120-  test("rejects incomplete horizon metadata", () => {
+app/server/test/forecast-provenance.test.js-121-    const runDetail = JSON.stringify({
+app/server/test/forecast-provenance.test.js-122-      schemaVersion: 1,
+app/server/test/forecast-provenance.test.js:123:      forecastKinds: {
+app/server/test/forecast-provenance.test.js:124:        1: "model_forecast",
+app/server/test/forecast-provenance.test.js:125:        3: "model_forecast",
+app/server/test/forecast-provenance.test.js:126:        6: "model_forecast",
+app/server/test/forecast-provenance.test.js:127:        12: "model_forecast",
+app/server/test/forecast-provenance.test.js-128-      },
+app/server/test/forecast-provenance.test.js-129-    });
+app/server/test/forecast-provenance.test.js-130-
+app/server/test/forecast-provenance.test.js-131-    expect(
+app/server/test/forecast-provenance.test.js-132-      () => parseForecastKinds(
+--
+app/server/test/forecast-provenance.test.js-138-  });
+app/server/test/forecast-provenance.test.js-139-
+app/server/test/forecast-provenance.test.js-140-  test("rejects unsupported forecast kinds by horizon", () => {
+app/server/test/forecast-provenance.test.js-141-    const runDetail = JSON.stringify({
+app/server/test/forecast-provenance.test.js-142-      schemaVersion: 1,
+app/server/test/forecast-provenance.test.js:143:      forecastKinds: {
+app/server/test/forecast-provenance.test.js-144-        ...VERSIONED_FORECAST_KINDS,
+app/server/test/forecast-provenance.test.js-145-        24: "unverified_baseline",
+app/server/test/forecast-provenance.test.js-146-      },
+app/server/test/forecast-provenance.test.js-147-    });
+app/server/test/forecast-provenance.test.js-148-
+--
+app/server/test/today-service.test.js-20-
+app/server/test/today-service.test.js-21-const HORIZONS = [1, 3, 6, 12, 24];
+app/server/test/today-service.test.js-22-
+app/server/test/today-service.test.js-23-const RUN_DETAIL = JSON.stringify({
+app/server/test/today-service.test.js-24-  schemaVersion: 1,
+app/server/test/today-service.test.js:25:  forecastKinds: {
+app/server/test/today-service.test.js:26:    1: "model_forecast",
+app/server/test/today-service.test.js:27:    3: "model_forecast",
+app/server/test/today-service.test.js:28:    6: "model_forecast",
+app/server/test/today-service.test.js:29:    12: "model_forecast",
+app/server/test/today-service.test.js:30:    24: "persistence_reference",
+app/server/test/today-service.test.js-31-  },
+app/server/test/today-service.test.js-32-});
+app/server/test/today-service.test.js-33-
+app/server/test/today-service.test.js-34-function buildPredictions({
+app/server/test/today-service.test.js-35-  prices = [84.2, 61.4, 72, 90, 105],
+--
+app/server/test/today-service.test.js-120-      targetTimeLocal: "3:00 p.m.",
+app/server/test/today-service.test.js-121-      temporalWordingKey: "very_soon",
+app/server/test/today-service.test.js-122-      priceCents: 8.42,
+app/server/test/today-service.test.js-123-      recommendation: "acceptable",
+app/server/test/today-service.test.js-124-      explanationKey: "lower_than_usual",
+app/server/test/today-service.test.js:125:      forecastKind: "model_forecast",
+app/server/test/today-service.test.js-126-    });
+app/server/test/today-service.test.js-127-    expect(today.bestTime).toEqual({
+app/server/test/today-service.test.js-128-      horizonHours: 3,
+app/server/test/today-service.test.js-129-      targetTimeUtc: "2026-07-18T23:00:00.000Z",
+app/server/test/today-service.test.js-130-      targetTimeLocal: "3:00 p.m.",
+--
+app/server/test/today-service.test.js-182-
+app/server/test/today-service.test.js-183-    expect(today.bestTime.horizonHours).toBe(3);
+app/server/test/today-service.test.js-184-    expect(today.forecasts[4]).toMatchObject({
+app/server/test/today-service.test.js-185-      horizonHours: 24,
+app/server/test/today-service.test.js-186-      priceCents: 1,
+app/server/test/today-service.test.js:187:      forecastKind: "persistence_reference",
+app/server/test/today-service.test.js-188-    });
+app/server/test/today-service.test.js-189-  });
+app/server/test/today-service.test.js-190-
+app/server/test/today-service.test.js-191-  test("preserves truthful provenance for existing successful runs", async () => {
+app/server/test/today-service.test.js-192-    predictionRepository.getLatestPredictions.mockResolvedValue(
+--
+app/server/test/today-service.test.js-199-
+app/server/test/today-service.test.js-200-    const today = await getToday(viewedAt);
+app/server/test/today-service.test.js-201-
+app/server/test/today-service.test.js-202-    expect(today.bestTime.horizonHours).toBe(3);
+app/server/test/today-service.test.js-203-    expect(today.forecasts[4].forecastKind).toBe(
+app/server/test/today-service.test.js:204:      "persistence_reference",
+app/server/test/today-service.test.js-205-    );
+app/server/test/today-service.test.js-206-  });
+app/server/test/today-service.test.js-207-
+app/server/test/today-service.test.js-208-  test("does not create an opportunity when legacy provenance is unknown", async () => {
+app/server/test/today-service.test.js-209-    predictionRepository.getLatestPredictions.mockResolvedValue(
+--
+app/server/src/domain/today-selection.js-35-function selectBestTime(forecasts) {
+app/server/src/domain/today-selection.js-36-  return forecasts
+app/server/src/domain/today-selection.js-37-    .filter(
+app/server/src/domain/today-selection.js-38-      (forecast) =>
+app/server/src/domain/today-selection.js-39-        forecast.forecastKind
+app/server/src/domain/today-selection.js:40:        === "model_forecast",
+app/server/src/domain/today-selection.js-41-    )
+app/server/src/domain/today-selection.js-42-    .reduce(
+app/server/src/domain/today-selection.js-43-      (best, forecast) => {
+app/server/src/domain/today-selection.js-44-        if (
+app/server/src/domain/today-selection.js-45-          !best
+--
+app/server/src/domain/today-selection.js-69-
+app/server/src/domain/today-selection.js-70-  if (
+app/server/src/domain/today-selection.js-71-    futureForecasts.every(
+app/server/src/domain/today-selection.js-72-      (forecast) =>
+app/server/src/domain/today-selection.js-73-        forecast.forecastKind
+app/server/src/domain/today-selection.js:74:        === "persistence_reference",
+app/server/src/domain/today-selection.js-75-    )
+app/server/src/domain/today-selection.js-76-  ) {
+app/server/src/domain/today-selection.js-77-    return "reference_only";
+app/server/src/domain/today-selection.js-78-  }
+app/server/src/domain/today-selection.js-79-
+--
+app/server/src/domain/forecast-provenance.js-5-  12,
+app/server/src/domain/forecast-provenance.js-6-  24,
+app/server/src/domain/forecast-provenance.js-7-]);
+app/server/src/domain/forecast-provenance.js-8-
+app/server/src/domain/forecast-provenance.js-9-const SUPPORTED_VERSIONED_FORECAST_KINDS = new Set([
+app/server/src/domain/forecast-provenance.js:10:  "model_forecast",
+app/server/src/domain/forecast-provenance.js:11:  "persistence_reference",
+app/server/src/domain/forecast-provenance.js-12-]);
+app/server/src/domain/forecast-provenance.js-13-
+app/server/src/domain/forecast-provenance.js-14-const LEGACY_PERSISTENCE_RUN_DETAIL =
+app/server/src/domain/forecast-provenance.js-15-  "Application pipeline prediction cycle.";
+app/server/src/domain/forecast-provenance.js-16-
+--
+app/server/src/domain/forecast-provenance.js-18-  return new Map(
+app/server/src/domain/forecast-provenance.js-19-    EXPECTED_HORIZONS.map(
+app/server/src/domain/forecast-provenance.js-20-      (horizon) => [
+app/server/src/domain/forecast-provenance.js-21-        horizon,
+app/server/src/domain/forecast-provenance.js-22-        horizon === 24
+app/server/src/domain/forecast-provenance.js:23:          ? "persistence_reference"
+app/server/src/domain/forecast-provenance.js:24:          : "model_forecast",
+app/server/src/domain/forecast-provenance.js-25-      ],
+app/server/src/domain/forecast-provenance.js-26-    ),
+app/server/src/domain/forecast-provenance.js-27-  );
+app/server/src/domain/forecast-provenance.js-28-}
+app/server/src/domain/forecast-provenance.js-29-
+--
+app/server/src/domain/forecast-provenance.js-86-  }
+app/server/src/domain/forecast-provenance.js-87-
+app/server/src/domain/forecast-provenance.js-88-  if (
+app/server/src/domain/forecast-provenance.js-89-    metadata === null
+app/server/src/domain/forecast-provenance.js-90-    || metadata.schemaVersion !== 1
+app/server/src/domain/forecast-provenance.js:91:    || typeof metadata.forecastKinds !== "object"
+app/server/src/domain/forecast-provenance.js:92:    || metadata.forecastKinds === null
+app/server/src/domain/forecast-provenance.js-93-  ) {
+app/server/src/domain/forecast-provenance.js-94-    throw new Error(
+app/server/src/domain/forecast-provenance.js-95-      "The latest prediction run has unsupported forecast metadata.",
+app/server/src/domain/forecast-provenance.js-96-    );
+app/server/src/domain/forecast-provenance.js-97-  }
+app/server/src/domain/forecast-provenance.js-98-
+app/server/src/domain/forecast-provenance.js-99-  const metadataHorizons = Object.keys(
+app/server/src/domain/forecast-provenance.js:100:    metadata.forecastKinds,
+app/server/src/domain/forecast-provenance.js-101-  ).map(Number);
+app/server/src/domain/forecast-provenance.js-102-
+app/server/src/domain/forecast-provenance.js-103-  const hasExpectedHorizons =
+app/server/src/domain/forecast-provenance.js-104-    metadataHorizons.length
+app/server/src/domain/forecast-provenance.js-105-      === EXPECTED_HORIZONS.length
+--
+app/server/src/domain/forecast-provenance.js-115-  }
+app/server/src/domain/forecast-provenance.js-116-
+app/server/src/domain/forecast-provenance.js-117-  return new Map(
+app/server/src/domain/forecast-provenance.js-118-    EXPECTED_HORIZONS.map((horizon) => {
+app/server/src/domain/forecast-provenance.js-119-      const forecastKind =
+app/server/src/domain/forecast-provenance.js:120:        metadata.forecastKinds[horizon];
+app/server/src/domain/forecast-provenance.js-121-
+app/server/src/domain/forecast-provenance.js-122-      if (
+app/server/src/domain/forecast-provenance.js-123-        !SUPPORTED_VERSIONED_FORECAST_KINDS
+app/server/src/domain/forecast-provenance.js-124-          .has(forecastKind)
+app/server/src/domain/forecast-provenance.js-125-      ) {
+--
+app/server/src/services/today-service.js-133-    return null;
+app/server/src/services/today-service.js-134-  }
+app/server/src/services/today-service.js-135-
+app/server/src/services/today-service.js-136-  validateForecastSet(predictions);
+app/server/src/services/today-service.js-137-
+app/server/src/services/today-service.js:138:  const forecastKinds =
+app/server/src/services/today-service.js-139-    parseForecastKinds(predictions);
+app/server/src/services/today-service.js-140-
+app/server/src/services/today-service.js-141-  const forecasts = predictions.map(
+app/server/src/services/today-service.js-142-    (prediction) =>
+app/server/src/services/today-service.js-143-      buildPublicForecast(
+app/server/src/services/today-service.js-144-        prediction,
+app/server/src/services/today-service.js:145:        forecastKinds.get(
+app/server/src/services/today-service.js-146-          prediction.horizon_hours,
+app/server/src/services/today-service.js-147-        ),
+app/server/src/services/today-service.js-148-        viewedAt,
+app/server/src/services/today-service.js-149-      ),
+app/server/src/services/today-service.js-150-  );
+--
+app/client/src/components/today/ForecastList.jsx-51-            forecast.horizonHours
+app/client/src/components/today/ForecastList.jsx-52-            === bestHorizon;
+app/client/src/components/today/ForecastList.jsx-53-
+app/client/src/components/today/ForecastList.jsx-54-          const isPersistenceReference =
+app/client/src/components/today/ForecastList.jsx-55-            forecast.forecastKind
+app/client/src/components/today/ForecastList.jsx:56:            === "persistence_reference";
+app/client/src/components/today/ForecastList.jsx-57-
+app/client/src/components/today/ForecastList.jsx-58-          return (
+app/client/src/components/today/ForecastList.jsx-59-            <details
+app/client/src/components/today/ForecastList.jsx-60-              key={forecast.horizonHours}
+app/client/src/components/today/ForecastList.jsx-61-              className="group"
+--
+app/client/src/components/today/TimelineOverview.test.jsx-23-    targetTimeLocal: "2026-07-20T10:00:00",
+app/client/src/components/today/TimelineOverview.test.jsx-24-    temporalWordingKey: "very_soon",
+app/client/src/components/today/TimelineOverview.test.jsx-25-    priceCents: 2.05,
+app/client/src/components/today/TimelineOverview.test.jsx-26-    recommendation: "acceptable",
+app/client/src/components/today/TimelineOverview.test.jsx-27-    explanationKey: "acceptable_market_risk",
+app/client/src/components/today/TimelineOverview.test.jsx:28:    forecastKind: "model_forecast",
+app/client/src/components/today/TimelineOverview.test.jsx-29-  },
+app/client/src/components/today/TimelineOverview.test.jsx-30-  {
+app/client/src/components/today/TimelineOverview.test.jsx-31-    horizonHours: 3,
+app/client/src/components/today/TimelineOverview.test.jsx-32-    targetTimeUtc: "2026-07-20T18:00:00.000Z",
+app/client/src/components/today/TimelineOverview.test.jsx-33-    targetTimeLocal: "2026-07-20T12:00:00",
+app/client/src/components/today/TimelineOverview.test.jsx-34-    temporalWordingKey: "in_a_few_hours",
+app/client/src/components/today/TimelineOverview.test.jsx-35-    priceCents: 2.32,
+app/client/src/components/today/TimelineOverview.test.jsx-36-    recommendation: "acceptable",
+app/client/src/components/today/TimelineOverview.test.jsx-37-    explanationKey: "acceptable_market_risk",
+app/client/src/components/today/TimelineOverview.test.jsx:38:    forecastKind: "model_forecast",
+app/client/src/components/today/TimelineOverview.test.jsx-39-  },
+app/client/src/components/today/TimelineOverview.test.jsx-40-  {
+app/client/src/components/today/TimelineOverview.test.jsx-41-    horizonHours: 6,
+app/client/src/components/today/TimelineOverview.test.jsx-42-    targetTimeUtc: "2026-07-20T21:00:00.000Z",
+app/client/src/components/today/TimelineOverview.test.jsx-43-    targetTimeLocal: "2026-07-20T15:00:00",
+app/client/src/components/today/TimelineOverview.test.jsx-44-    temporalWordingKey: "this_afternoon",
+app/client/src/components/today/TimelineOverview.test.jsx-45-    priceCents: 4.54,
+app/client/src/components/today/TimelineOverview.test.jsx-46-    recommendation: "avoid",
+app/client/src/components/today/TimelineOverview.test.jsx-47-    explanationKey: "higher_than_usual",
+app/client/src/components/today/TimelineOverview.test.jsx:48:    forecastKind: "model_forecast",
+app/client/src/components/today/TimelineOverview.test.jsx-49-  },
+app/client/src/components/today/TimelineOverview.test.jsx-50-  {
+app/client/src/components/today/TimelineOverview.test.jsx-51-    horizonHours: 12,
+app/client/src/components/today/TimelineOverview.test.jsx-52-    targetTimeUtc: "2026-07-21T03:00:00.000Z",
+app/client/src/components/today/TimelineOverview.test.jsx-53-    targetTimeLocal: "2026-07-20T21:00:00",
+app/client/src/components/today/TimelineOverview.test.jsx-54-    temporalWordingKey: "this_evening",
+app/client/src/components/today/TimelineOverview.test.jsx-55-    priceCents: 5.2,
+app/client/src/components/today/TimelineOverview.test.jsx-56-    recommendation: "avoid",
+app/client/src/components/today/TimelineOverview.test.jsx-57-    explanationKey: "higher_than_usual",
+app/client/src/components/today/TimelineOverview.test.jsx:58:    forecastKind: "model_forecast",
+app/client/src/components/today/TimelineOverview.test.jsx-59-  },
+app/client/src/components/today/TimelineOverview.test.jsx-60-  {
+app/client/src/components/today/TimelineOverview.test.jsx-61-    horizonHours: 24,
+app/client/src/components/today/TimelineOverview.test.jsx-62-    targetTimeUtc: "2026-07-21T15:00:00.000Z",
+app/client/src/components/today/TimelineOverview.test.jsx-63-    targetTimeLocal: "2026-07-21T09:00:00",
+app/client/src/components/today/TimelineOverview.test.jsx-64-    temporalWordingKey:
+app/client/src/components/today/TimelineOverview.test.jsx-65-      "tomorrow_around_this_time",
+app/client/src/components/today/TimelineOverview.test.jsx-66-    priceCents: 1.3,
+app/client/src/components/today/TimelineOverview.test.jsx-67-    recommendation: "recommended",
+app/client/src/components/today/TimelineOverview.test.jsx-68-    explanationKey: "lower_than_usual",
+app/client/src/components/today/TimelineOverview.test.jsx:69:    forecastKind: "persistence_reference",
+app/client/src/components/today/TimelineOverview.test.jsx-70-  },
+app/client/src/components/today/TimelineOverview.test.jsx-71-];
+app/client/src/components/today/TimelineOverview.test.jsx-72-
+app/client/src/components/today/TimelineOverview.test.jsx-73-const bestTime = {
+app/client/src/components/today/TimelineOverview.test.jsx-74-  horizonHours: 1,
+--
+app/client/src/components/today/TimelineOverview.jsx-88-
+app/client/src/components/today/TimelineOverview.jsx-89-  const persistenceReference =
+app/client/src/components/today/TimelineOverview.jsx-90-    forecasts.find(
+app/client/src/components/today/TimelineOverview.jsx-91-      (forecast) =>
+app/client/src/components/today/TimelineOverview.jsx-92-        forecast.forecastKind
+app/client/src/components/today/TimelineOverview.jsx:93:        === "persistence_reference",
+app/client/src/components/today/TimelineOverview.jsx-94-    );
+app/client/src/components/today/TimelineOverview.jsx-95-
+app/client/src/components/today/TimelineOverview.jsx-96-  return (
+app/client/src/components/today/TimelineOverview.jsx-97-    <section
+app/client/src/components/today/TimelineOverview.jsx-98-      aria-labelledby="price-trend-title"
+--
+app/client/src/components/today/TimelineOverview.jsx-395-            {formatNumber(
+app/client/src/components/today/TimelineOverview.jsx-396-              forecast.priceCents,
+app/client/src/components/today/TimelineOverview.jsx-397-            )}
+app/client/src/components/today/TimelineOverview.jsx-398-            {" ¢/kWh"}
+app/client/src/components/today/TimelineOverview.jsx-399-            {forecast.forecastKind
+app/client/src/components/today/TimelineOverview.jsx:400:              === "persistence_reference"
+app/client/src/components/today/TimelineOverview.jsx-401-              ? `, ${copy.forecast.persistenceReferenceTitle}`
+app/client/src/components/today/TimelineOverview.jsx-402-              : ""}
+app/client/src/components/today/TimelineOverview.jsx-403-          </li>
+app/client/src/components/today/TimelineOverview.jsx-404-        ))}
+app/client/src/components/today/TimelineOverview.jsx-405-      </ol>
+--
+app/client/src/api/today.test.js-7-} from "vitest";
+app/client/src/api/today.test.js-8-
+app/client/src/api/today.test.js-9-import { fetchToday } from "./today";
+app/client/src/api/today.test.js-10-
+app/client/src/api/today.test.js-11-const forecasts = [
+app/client/src/api/today.test.js:12:  [1, "2026-07-20T01:00:00.000Z", 2.36, "model_forecast"],
+app/client/src/api/today.test.js:13:  [3, "2026-07-20T03:00:00.000Z", 2.8, "model_forecast"],
+app/client/src/api/today.test.js:14:  [6, "2026-07-20T06:00:00.000Z", 1.32, "model_forecast"],
+app/client/src/api/today.test.js:15:  [12, "2026-07-20T12:00:00.000Z", 1.42, "model_forecast"],
+app/client/src/api/today.test.js:16:  [24, "2026-07-21T00:00:00.000Z", 1.91, "persistence_reference"],
+app/client/src/api/today.test.js-17-].map(([
+app/client/src/api/today.test.js-18-  horizonHours,
+app/client/src/api/today.test.js-19-  targetTimeUtc,
+app/client/src/api/today.test.js-20-  priceCents,
+app/client/src/api/today.test.js-21-  forecastKind,
+--
+app/client/src/api/today.test.js-106-      },
+app/client/src/api/today.test.js-107-    });
+app/client/src/api/today.test.js-108-    mockTodayPayload(payload);
+app/client/src/api/today.test.js-109-
+app/client/src/api/today.test.js-110-    await expect(fetchToday()).rejects.toThrow(
+app/client/src/api/today.test.js:111:      "bestTime must reference a model_forecast",
+app/client/src/api/today.test.js-112-    );
+app/client/src/api/today.test.js-113-  });
+app/client/src/api/today.test.js-114-
+app/client/src/api/today.test.js-115-  test("rejects a malformed nullable observation timestamp", async () => {
+app/client/src/api/today.test.js-116-    const payload = buildTodayPayload({
+--
+app/client/src/api/today-contract.js-31-  "later_today",
+app/client/src/api/today-contract.js-32-  "tomorrow_around_this_time",
+app/client/src/api/today-contract.js-33-]);
+app/client/src/api/today-contract.js-34-
+app/client/src/api/today-contract.js-35-const FORECAST_KINDS = new Set([
+app/client/src/api/today-contract.js:36:  "model_forecast",
+app/client/src/api/today-contract.js:37:  "persistence_reference",
+app/client/src/api/today-contract.js-38-  "unknown",
+app/client/src/api/today-contract.js-39-]);
+app/client/src/api/today-contract.js-40-
+app/client/src/api/today-contract.js-41-const TODAY_COMPARISON_STATES = new Set([
+app/client/src/api/today-contract.js-42-  "forecast_lower",
+--
+app/client/src/api/today-contract.js-162-    );
+app/client/src/api/today-contract.js-163-  }
+app/client/src/api/today-contract.js-164-
+app/client/src/api/today-contract.js-165-  // Provenance is server-owned. The browser may display a persistence point,
+app/client/src/api/today-contract.js-166-  // but it must reject a payload that promotes one as a savings opportunity.
+app/client/src/api/today-contract.js:167:  if (matchingForecast.forecastKind !== "model_forecast") {
+app/client/src/api/today-contract.js-168-    failContract(
+app/client/src/api/today-contract.js-169-      "Today",
+app/client/src/api/today-contract.js-170-      "bestTime",
+app/client/src/api/today-contract.js:171:      "must reference a model_forecast",
+app/client/src/api/today-contract.js-172-    );
+app/client/src/api/today-contract.js-173-  }
+app/client/src/api/today-contract.js-174-}
+app/client/src/api/today-contract.js-175-
+app/client/src/api/today-contract.js-176-function validateTodayComparison(todayResponse) {
+--
+app/client/src/pages/TodayPage.test.jsx-43-    targetTimeLocal: "8:00 p.m.",
+app/client/src/pages/TodayPage.test.jsx-44-    temporalWordingKey: "in_a_few_hours",
+app/client/src/pages/TodayPage.test.jsx-45-    priceCents: 2.36,
+app/client/src/pages/TodayPage.test.jsx-46-    recommendation: "acceptable",
+app/client/src/pages/TodayPage.test.jsx-47-    explanationKey: "acceptable_market_risk",
+app/client/src/pages/TodayPage.test.jsx:48:    forecastKind: "model_forecast",
+app/client/src/pages/TodayPage.test.jsx-49-  },
+app/client/src/pages/TodayPage.test.jsx-50-  {
+app/client/src/pages/TodayPage.test.jsx-51-    horizonHours: 3,
+app/client/src/pages/TodayPage.test.jsx-52-    targetTimeUtc: "2026-07-20T04:00:00.000Z",
+app/client/src/pages/TodayPage.test.jsx-53-    targetTimeLocal: "10:00 p.m.",
+app/client/src/pages/TodayPage.test.jsx-54-    temporalWordingKey: "in_a_few_hours",
+app/client/src/pages/TodayPage.test.jsx-55-    priceCents: 2.8,
+app/client/src/pages/TodayPage.test.jsx-56-    recommendation: "acceptable",
+app/client/src/pages/TodayPage.test.jsx-57-    explanationKey: "acceptable_market_risk",
+app/client/src/pages/TodayPage.test.jsx:58:    forecastKind: "model_forecast",
+app/client/src/pages/TodayPage.test.jsx-59-  },
+app/client/src/pages/TodayPage.test.jsx-60-  {
+app/client/src/pages/TodayPage.test.jsx-61-    horizonHours: 6,
+app/client/src/pages/TodayPage.test.jsx-62-    targetTimeUtc: "2026-07-20T07:00:00.000Z",
+app/client/src/pages/TodayPage.test.jsx-63-    targetTimeLocal: "1:00 a.m.",
+app/client/src/pages/TodayPage.test.jsx-64-    temporalWordingKey: "in_a_few_hours",
+app/client/src/pages/TodayPage.test.jsx-65-    priceCents: 1.15,
+app/client/src/pages/TodayPage.test.jsx-66-    recommendation: "acceptable",
+app/client/src/pages/TodayPage.test.jsx-67-    explanationKey: "acceptable_market_risk",
+app/client/src/pages/TodayPage.test.jsx:68:    forecastKind: "model_forecast",
+app/client/src/pages/TodayPage.test.jsx-69-  },
+app/client/src/pages/TodayPage.test.jsx-70-  {
+app/client/src/pages/TodayPage.test.jsx-71-    horizonHours: 12,
+app/client/src/pages/TodayPage.test.jsx-72-    targetTimeUtc: "2026-07-20T13:00:00.000Z",
+app/client/src/pages/TodayPage.test.jsx-73-    targetTimeLocal: "7:00 a.m.",
+app/client/src/pages/TodayPage.test.jsx-74-    temporalWordingKey: "in_a_few_hours",
+app/client/src/pages/TodayPage.test.jsx-75-    priceCents: 1.42,
+app/client/src/pages/TodayPage.test.jsx-76-    recommendation: "acceptable",
+app/client/src/pages/TodayPage.test.jsx-77-    explanationKey: "acceptable_market_risk",
+app/client/src/pages/TodayPage.test.jsx:78:    forecastKind: "model_forecast",
+app/client/src/pages/TodayPage.test.jsx-79-  },
+app/client/src/pages/TodayPage.test.jsx-80-  {
+app/client/src/pages/TodayPage.test.jsx-81-    horizonHours: 24,
+app/client/src/pages/TodayPage.test.jsx-82-    targetTimeUtc: "2026-07-21T01:00:00.000Z",
+app/client/src/pages/TodayPage.test.jsx-83-    targetTimeLocal: "7:00 p.m.",
+app/client/src/pages/TodayPage.test.jsx-84-    temporalWordingKey: "tomorrow_around_this_time",
+app/client/src/pages/TodayPage.test.jsx-85-    priceCents: 1.91,
+app/client/src/pages/TodayPage.test.jsx-86-    recommendation: "acceptable",
+app/client/src/pages/TodayPage.test.jsx-87-    explanationKey: "acceptable_market_risk",
+app/client/src/pages/TodayPage.test.jsx:88:    forecastKind: "persistence_reference",
+app/client/src/pages/TodayPage.test.jsx-89-  },
+app/client/src/pages/TodayPage.test.jsx-90-];
+app/client/src/pages/TodayPage.test.jsx-91-
+app/client/src/pages/TodayPage.test.jsx-92-function buildTodayResponse(overrides = {}) {
+app/client/src/pages/TodayPage.test.jsx-93-  return {
+--
+src/electricity_predictor/serving/inference.py-134-  prediction = artifact.predict(feature_row)
+src/electricity_predictor/serving/inference.py-135-
+src/electricity_predictor/serving/inference.py-136-  return float(prediction[0])
+src/electricity_predictor/serving/inference.py-137-
+src/electricity_predictor/serving/inference.py-138-
+src/electricity_predictor/serving/inference.py:139:def get_forecast_kind(artifact) -> str:
+src/electricity_predictor/serving/inference.py-140-  """Return the provenance carried with one regression output.
+src/electricity_predictor/serving/inference.py-141-
+src/electricity_predictor/serving/inference.py-142-  A persistence rule remains visible as a reference forecast, but downstream
+src/electricity_predictor/serving/inference.py-143-  product logic can use this provenance to keep it out of savings claims.
+src/electricity_predictor/serving/inference.py-144-  """
+--
+src/electricity_predictor/serving/inference.py-146-    isinstance(artifact, dict)
+src/electricity_predictor/serving/inference.py-147-    and artifact.get("model_type") == "rule_baseline"
+src/electricity_predictor/serving/inference.py-148-    and artifact.get("prediction_column")
+src/electricity_predictor/serving/inference.py-149-    == "actual_price_lag_1h"
+src/electricity_predictor/serving/inference.py-150-  ):
+src/electricity_predictor/serving/inference.py:151:    return "persistence_reference"
+src/electricity_predictor/serving/inference.py-152-
+src/electricity_predictor/serving/inference.py:153:  return "model_forecast"
+src/electricity_predictor/serving/inference.py-154-
+src/electricity_predictor/serving/inference.py-155-
+src/electricity_predictor/serving/inference.py-156-def predict_classification_value(
+src/electricity_predictor/serving/inference.py-157-  artifact,
+src/electricity_predictor/serving/inference.py-158-  metadata_row: dict,
+--
+src/electricity_predictor/serving/inference.py-314-    "spike_threshold": float(
+src/electricity_predictor/serving/inference.py-315-      classification_row["spike_threshold"]
+src/electricity_predictor/serving/inference.py-316-    ),
+src/electricity_predictor/serving/inference.py-317-    "regression_model": regression_row["model_name"],
+src/electricity_predictor/serving/inference.py-318-    "classification_model": classification_row["model_name"],
+src/electricity_predictor/serving/inference.py:319:    "forecast_kind": get_forecast_kind(
+src/electricity_predictor/serving/inference.py-320-      regression_artifact
+src/electricity_predictor/serving/inference.py-321-    ),
+src/electricity_predictor/serving/inference.py-322-  }
+--
+src/electricity_predictor/worker/result_persistence.py-10-  get_database_connection,
+src/electricity_predictor/worker/result_persistence.py-11-)
+src/electricity_predictor/worker/result_persistence.py-12-
+src/electricity_predictor/worker/result_persistence.py-13-
+src/electricity_predictor/worker/result_persistence.py-14-FORECAST_KINDS = frozenset({
+src/electricity_predictor/worker/result_persistence.py:15:  "model_forecast",
+src/electricity_predictor/worker/result_persistence.py:16:  "persistence_reference",
+src/electricity_predictor/worker/result_persistence.py-17-})
+src/electricity_predictor/worker/result_persistence.py-18-
+src/electricity_predictor/worker/result_persistence.py-19-
+src/electricity_predictor/worker/result_persistence.py-20-def _validate_prediction_decisions(
+src/electricity_predictor/worker/result_persistence.py-21-  decisions: list[dict],
+--
+src/electricity_predictor/worker/result_persistence.py-54-def _build_prediction_run_detail(
+src/electricity_predictor/worker/result_persistence.py-55-  decisions: list[dict],
+src/electricity_predictor/worker/result_persistence.py-56-  summary: str | None,
+src/electricity_predictor/worker/result_persistence.py-57-) -> str:
+src/electricity_predictor/worker/result_persistence.py-58-  """Serialize per-horizon provenance for fail-closed API interpretation."""
+src/electricity_predictor/worker/result_persistence.py:59:  forecast_kinds: dict[str, str] = {}
+src/electricity_predictor/worker/result_persistence.py-60-
+src/electricity_predictor/worker/result_persistence.py-61-  for decision in decisions:
+src/electricity_predictor/worker/result_persistence.py:62:    forecast_kind = decision.get("forecast_kind")
+src/electricity_predictor/worker/result_persistence.py-63-
+src/electricity_predictor/worker/result_persistence.py:64:    if forecast_kind not in FORECAST_KINDS:
+src/electricity_predictor/worker/result_persistence.py-65-      raise ValueError(
+src/electricity_predictor/worker/result_persistence.py:66:        f"Unsupported forecast kind: {forecast_kind!r}."
+src/electricity_predictor/worker/result_persistence.py-67-      )
+src/electricity_predictor/worker/result_persistence.py-68-
+src/electricity_predictor/worker/result_persistence.py:69:    forecast_kinds[
+src/electricity_predictor/worker/result_persistence.py-70-      str(int(decision["horizon_hours"]))
+src/electricity_predictor/worker/result_persistence.py:71:    ] = forecast_kind
+src/electricity_predictor/worker/result_persistence.py-72-
+src/electricity_predictor/worker/result_persistence.py-73-  return json.dumps(
+src/electricity_predictor/worker/result_persistence.py-74-    {
+src/electricity_predictor/worker/result_persistence.py-75-      "schemaVersion": 1,
+src/electricity_predictor/worker/result_persistence.py-76-      "summary": summary,
+src/electricity_predictor/worker/result_persistence.py:77:      "forecastKinds": forecast_kinds,
+src/electricity_predictor/worker/result_persistence.py-78-    },
+src/electricity_predictor/worker/result_persistence.py-79-    separators=(",", ":"),
+src/electricity_predictor/worker/result_persistence.py-80-    sort_keys=True,
+src/electricity_predictor/worker/result_persistence.py-81-  )
+src/electricity_predictor/worker/result_persistence.py-82-
+--
+tests/serving/test_inference.py-109-  assert result["predicted_price"] == pytest.approx(55.0)
+tests/serving/test_inference.py-110-  assert result["spike_probability"] == pytest.approx(1.0)
+tests/serving/test_inference.py-111-  assert result["decision_threshold"] == pytest.approx(0.45)
+tests/serving/test_inference.py-112-  assert result["is_spike"] is True
+tests/serving/test_inference.py-113-  assert result["spike_threshold"] == pytest.approx(170.77)
+tests/serving/test_inference.py:114:  assert result["forecast_kind"] == "model_forecast"
+tests/serving/test_inference.py-115-
+tests/serving/test_inference.py-116-
+tests/serving/test_inference.py-117-def test_predict_horizon_supports_regression_rule_baseline(
+tests/serving/test_inference.py-118-  tmp_path: Path,
+tests/serving/test_inference.py-119-):
+--
+tests/serving/test_inference.py-172-    classification_metadata_path=classification_metadata_path,
+tests/serving/test_inference.py-173-  )
+tests/serving/test_inference.py-174-
+tests/serving/test_inference.py-175-  assert result["predicted_price"] == pytest.approx(72.5)
+tests/serving/test_inference.py-176-  assert result["regression_model"] == "naive_baseline"
+tests/serving/test_inference.py:177:  assert result["forecast_kind"] == "persistence_reference"
+tests/serving/test_inference.py-178-
+tests/serving/test_inference.py-179-
+tests/serving/test_inference.py-180-def test_predict_horizon_rejects_unknown_horizon(tmp_path: Path):
+tests/serving/test_inference.py-181-  regression_metadata_path, classification_metadata_path = (
+tests/serving/test_inference.py-182-    write_test_artifacts(tmp_path)
+--
+tests/worker/test_result_persistence.py-15-      "horizon_hours": horizon,
+tests/worker/test_result_persistence.py-16-      "predicted_price": 70.0 + horizon,
+tests/worker/test_result_persistence.py-17-      "spike_probability": 0.1,
+tests/worker/test_result_persistence.py-18-      "is_spike": False,
+tests/worker/test_result_persistence.py-19-      "spike_threshold": 170.77,
+tests/worker/test_result_persistence.py:20:      "forecast_kind": (
+tests/worker/test_result_persistence.py:21:        "persistence_reference"
+tests/worker/test_result_persistence.py-22-        if horizon == 24
+tests/worker/test_result_persistence.py:23:        else "model_forecast"
+tests/worker/test_result_persistence.py-24-      ),
+tests/worker/test_result_persistence.py-25-      "recommendation": "Recommended",
+tests/worker/test_result_persistence.py-26-      "explanation": "Low spike probability.",
+tests/worker/test_result_persistence.py-27-    }
+tests/worker/test_result_persistence.py-28-    for horizon in [
+--
+tests/worker/test_result_persistence.py-108-    .args[1]
+tests/worker/test_result_persistence.py-109-  )
+tests/worker/test_result_persistence.py-110-  run_detail = json.loads(run_values[3])
+tests/worker/test_result_persistence.py-111-
+tests/worker/test_result_persistence.py-112-  assert run_detail == {
+tests/worker/test_result_persistence.py:113:    "forecastKinds": {
+tests/worker/test_result_persistence.py:114:      "1": "model_forecast",
+tests/worker/test_result_persistence.py:115:      "3": "model_forecast",
+tests/worker/test_result_persistence.py:116:      "6": "model_forecast",
+tests/worker/test_result_persistence.py:117:      "12": "model_forecast",
+tests/worker/test_result_persistence.py:118:      "24": "persistence_reference",
+tests/worker/test_result_persistence.py-119-    },
+tests/worker/test_result_persistence.py-120-    "schemaVersion": 1,
+tests/worker/test_result_persistence.py-121-    "summary": None,
+tests/worker/test_result_persistence.py-122-  }
+tests/worker/test_result_persistence.py-123-
+--
+tests/worker/test_result_persistence.py-214-      ),
+tests/worker/test_result_persistence.py-215-      decisions=build_decisions()[:-1],
+tests/worker/test_result_persistence.py-216-    )
+tests/worker/test_result_persistence.py-217-
+tests/worker/test_result_persistence.py-218-
+tests/worker/test_result_persistence.py:219:def test_save_prediction_run_rejects_unknown_forecast_kind() -> None:
+tests/worker/test_result_persistence.py-220-  decisions = build_decisions()
+tests/worker/test_result_persistence.py:221:  decisions[0]["forecast_kind"] = "mystery"
+tests/worker/test_result_persistence.py-222-
+tests/worker/test_result_persistence.py-223-  with pytest.raises(
+tests/worker/test_result_persistence.py-224-    ValueError,
+tests/worker/test_result_persistence.py-225-    match="Unsupported forecast kind",
+tests/worker/test_result_persistence.py-226-  ):
+--
+tests/worker/test_runner.py-29-      "horizon_hours": 1,
+tests/worker/test_runner.py-30-      "predicted_price": 77.19,
+tests/worker/test_runner.py-31-      "spike_probability": 0.245,
+tests/worker/test_runner.py-32-      "is_spike": False,
+tests/worker/test_runner.py-33-      "spike_threshold": 170.77,
+tests/worker/test_runner.py:34:      "forecast_kind": "model_forecast",
+tests/worker/test_runner.py-35-    }
+tests/worker/test_runner.py-36-  ]
+tests/worker/test_runner.py-37-
+tests/worker/test_runner.py-38-  decisions = [
+tests/worker/test_runner.py-39-    {

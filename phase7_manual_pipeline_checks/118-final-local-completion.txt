@@ -1,0 +1,1148 @@
+===== PURPOSE =====
+Complete the remaining local WattWise migration in one controlled batch.
+Refit ten frozen model recipes on all available live training rows.
+Activate both model tasks atomically.
+Anchor worker inference to the latest current market hour.
+Add frontend refresh behavior and final Make workflows.
+Run non-protected verification, publish one live run, and inspect the API.
+
+===== PRECONDITIONS =====
+branch=feature/phase-7-modeling
+required_inputs=PASS
+
+===== BACK UP MODIFIED SOURCE BOUNDARIES =====
+query_client_file=app/client/src/api/queryClient.js
+source_backup=PASS
+
+===== CREATE FINAL MODEL FITTER =====
+final_fitter_created=PASS
+
+===== PATCH CURRENT-HOUR WORKER CONTRACT =====
+worker_candidate_source=latest_available_hour
+worker_live_feature_count=14
+worker_contract_patch=PASS
+
+===== PATCH REACT QUERY REFRESH DEFAULTS =====
+query_client_file=app/client/src/api/queryClient.js
+react_query_periodic_refresh=PASS
+react_query_focus_refresh=PASS
+
+===== ADD FINAL MAKE WORKFLOWS =====
+make_hourly_refresh=PASS
+make_retrain_if_due=PASS
+make_local_bootstrap=PASS
+make_local_reset=PASS
+makefile_useful_delegation=PASS
+
+===== PYTHON SYNTAX CHECK =====
+python_syntax_check=PASS
+
+===== FINAL FIT AND ATOMIC ACTIVATION =====
+LIVE FINAL MODEL FIT
+====================
+selected_live_contract=conservative_hybrid
+training_rows=57286
+training_start_utc=2020-01-09T06:00:00+00:00
+training_end_utc=2026-07-23T03:00:00+00:00
+regression_models=5
+classification_models=5
+artifacts=10
+active_registry=models/production/active_models.json
+protected_test_evaluated=False
+
+===== ACTIVE BUNDLE CONTRACT CHECK =====
+final_artifacts_loadable=PASS
+final_artifact_hashes=PASS
+active_registry_tasks=['classification', 'regression']
+active_inference_horizons=[1, 3, 6, 12, 24]
+active_inference_smoke=PASS
+
+===== TARGETED NON-PROTECTED TESTS =====
+............FFFFF..FF................................................... [ 94%]
+....                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_prepare_model_features_builds_complete_candidate_with_forecast_support __
+
+self = Index(['datetime_universal_time', 'actual_price', 'forecast_price',
+       'alberta_internal_load', 'source', 'datetim...4h', 'actual_price_safe_24h_mean',
+       'actual_price_safe_24h_max', 'actual_price_safe_7d_mean'],
+      dtype='str')
+key = 'actual_price_lag_1h'
+
+    def get_loc(self, key):
+        """
+        Get integer location, slice or boolean mask for requested label.
+    
+        Parameters
+        ----------
+        key : label
+            The key to check its location if it is present in the index.
+    
+        Returns
+        -------
+        int if unique index, slice if monotonic index, else mask
+            Integer location, slice or boolean mask.
+    
+        See Also
+        --------
+        Index.get_slice_bound : Calculate slice bound that corresponds to
+            given label.
+        Index.get_indexer : Computes indexer and mask for new index given
+            the current index.
+        Index.get_non_unique : Returns indexer and masks for new index given
+            the current index.
+        Index.get_indexer_for : Returns an indexer even when non-unique.
+    
+        Examples
+        --------
+        >>> unique_index = pd.Index(list("abc"))
+        >>> unique_index.get_loc("b")
+        1
+    
+        >>> monotonic_index = pd.Index(list("abbc"))
+        >>> monotonic_index.get_loc("b")
+        slice(1, 3, None)
+    
+        >>> non_monotonic_index = pd.Index(list("abcb"))
+        >>> non_monotonic_index.get_loc("b")
+        array([False,  True, False,  True])
+        """
+        casted_key = self._maybe_cast_indexer(key)
+        try:
+>           return self._engine.get_loc(casted_key)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.venv/lib/python3.14/site-packages/pandas/core/indexes/base.py:3641: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+pandas/_libs/index.pyx:168: in pandas._libs.index.IndexEngine.get_loc
+    ???
+pandas/_libs/index.pyx:197: in pandas._libs.index.IndexEngine.get_loc
+    ???
+pandas/_libs/hashtable_class_helper.pxi:7668: in pandas._libs.hashtable.PyObjectHashTable.get_item
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   KeyError: 'actual_price_lag_1h'
+
+pandas/_libs/hashtable_class_helper.pxi:7676: KeyError
+
+The above exception was the direct cause of the following exception:
+
+    def test_prepare_model_features_builds_complete_candidate_with_forecast_support() -> None:
+      result = prepare_from(build_hourly_prices())
+    
+      assert len(result) == 1
+      latest = result.iloc[-1]
+    
+      assert "datetime_local_time" in result.columns
+      assert "actual_price_target_1h" not in result.columns
+      assert latest[
+        "datetime_universal_time"
+      ] == pd.Timestamp(
+        "2026-01-09T07:00:00+00:00"
+      )
+      assert latest["forecast_price"] == 199.0
+>     assert latest["actual_price_lag_1h"] == 198.0
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/worker/test_feature_preparation.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.14/site-packages/pandas/core/series.py:959: in __getitem__
+    return self._get_value(key)
+           ^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.14/site-packages/pandas/core/series.py:1046: in _get_value
+    loc = self.index.get_loc(label)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Index(['datetime_universal_time', 'actual_price', 'forecast_price',
+       'alberta_internal_load', 'source', 'datetim...4h', 'actual_price_safe_24h_mean',
+       'actual_price_safe_24h_max', 'actual_price_safe_7d_mean'],
+      dtype='str')
+key = 'actual_price_lag_1h'
+
+    def get_loc(self, key):
+        """
+        Get integer location, slice or boolean mask for requested label.
+    
+        Parameters
+        ----------
+        key : label
+            The key to check its location if it is present in the index.
+    
+        Returns
+        -------
+        int if unique index, slice if monotonic index, else mask
+            Integer location, slice or boolean mask.
+    
+        See Also
+        --------
+        Index.get_slice_bound : Calculate slice bound that corresponds to
+            given label.
+        Index.get_indexer : Computes indexer and mask for new index given
+            the current index.
+        Index.get_non_unique : Returns indexer and masks for new index given
+            the current index.
+        Index.get_indexer_for : Returns an indexer even when non-unique.
+    
+        Examples
+        --------
+        >>> unique_index = pd.Index(list("abc"))
+        >>> unique_index.get_loc("b")
+        1
+    
+        >>> monotonic_index = pd.Index(list("abbc"))
+        >>> monotonic_index.get_loc("b")
+        slice(1, 3, None)
+    
+        >>> non_monotonic_index = pd.Index(list("abcb"))
+        >>> non_monotonic_index.get_loc("b")
+        array([False,  True, False,  True])
+        """
+        casted_key = self._maybe_cast_indexer(key)
+        try:
+            return self._engine.get_loc(casted_key)
+        except KeyError as err:
+            if isinstance(casted_key, slice) or (
+                isinstance(casted_key, abc.Iterable)
+                and any(isinstance(x, slice) for x in casted_key)
+            ):
+                raise InvalidIndexError(key) from err
+>           raise KeyError(key) from err
+E           KeyError: 'actual_price_lag_1h'
+
+.venv/lib/python3.14/site-packages/pandas/core/indexes/base.py:3648: KeyError
+_____ test_prepare_model_features_rejects_missing_candidate_forecast_price _____
+
+    def test_prepare_model_features_rejects_missing_candidate_forecast_price() -> None:
+      raw = build_hourly_prices()
+      raw.loc[199, "forecast_price"] = pd.NA
+    
+      with pytest.raises(
+        ValueError,
+        match=(
+          "missing forecast_price at "
+          "2026-01-09T07:00:00\\+00:00"
+        ),
+      ):
+>       prepare_from(raw)
+
+tests/worker/test_feature_preparation.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/worker/test_feature_preparation.py:39: in prepare_from
+    return prepare_model_features()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def prepare_model_features() -> pd.DataFrame:
+      """Build one selected-contract feature row for the latest market hour."""
+    
+      data = load_inference_hourly_prices(
+        lookback_hours=(
+          LIVE_INFERENCE_LOOKBACK_HOURS
+        )
+      )
+    
+      if data.empty:
+        raise ValueError(
+          "No hourly prices available."
+        )
+    
+      candidate_hint = data.attrs.get(
+        "inference_candidate_utc"
+      )
+    
+      data = data.copy()
+    
+      data["datetime_universal_time"] = (
+        pd.to_datetime(
+          data["datetime_universal_time"],
+          utc=True,
+          errors="raise",
+        )
+      )
+    
+      data = data.sort_values(
+        "datetime_universal_time"
+      ).reset_index(drop=True)
+    
+      latest_timestamp = data[
+        "datetime_universal_time"
+      ].iloc[-1]
+    
+      if candidate_hint is None:
+        candidate_timestamp = (
+          latest_timestamp
+        )
+      else:
+        candidate_timestamp = pd.Timestamp(
+          candidate_hint
+        )
+    
+        if candidate_timestamp.tzinfo is None:
+          candidate_timestamp = (
+            candidate_timestamp.tz_localize(
+              "UTC"
+            )
+          )
+        else:
+          candidate_timestamp = (
+            candidate_timestamp.tz_convert(
+              "UTC"
+            )
+          )
+    
+      if candidate_timestamp != latest_timestamp:
+        raise ValueError(
+          "Inference candidate must be the latest "
+          "available market hour. "
+          f"candidate={candidate_timestamp.isoformat()}, "
+          f"latest={latest_timestamp.isoformat()}."
+        )
+    
+      window_start = (
+        candidate_timestamp
+        - pd.Timedelta(
+          hours=(
+            LIVE_INFERENCE_LOOKBACK_HOURS
+          )
+        )
+      )
+    
+      expected_timestamps = pd.date_range(
+        start=window_start,
+        end=candidate_timestamp,
+        freq="h",
+        tz="UTC",
+      )
+    
+      window = data.loc[
+        data[
+          "datetime_universal_time"
+        ].between(
+          window_start,
+          candidate_timestamp,
+        )
+      ].copy()
+    
+      actual_timestamps = pd.DatetimeIndex(
+        window[
+          "datetime_universal_time"
+        ]
+      )
+    
+      if not actual_timestamps.equals(
+        expected_timestamps
+      ):
+        missing_timestamps = (
+          expected_timestamps.difference(
+            actual_timestamps
+          )
+        )
+    
+        missing_text = (
+          missing_timestamps[0].isoformat()
+          if len(missing_timestamps)
+          else "duplicate or unordered hour"
+        )
+    
+        raise ValueError(
+          "Inference feature window is not "
+          "continuous at "
+          f"{missing_text}."
+        )
+    
+      window["datetime_local_time"] = (
+        window[
+          "datetime_universal_time"
+        ]
+        .dt.tz_convert(
+          ALBERTA_TIMEZONE
+        )
+        .dt.tz_localize(None)
+      )
+    
+      featured_data = (
+        add_live_feature_candidates(
+          window
+        )
+      )
+    
+      candidate_row = featured_data.loc[
+        featured_data[
+          "datetime_universal_time"
+        ]
+        == candidate_timestamp
+      ].copy()
+    
+      if len(candidate_row) != 1:
+        raise ValueError(
+          "Expected exactly one current-hour "
+          "inference feature row."
+        )
+    
+      missing_features = [
+        column
+        for column in (
+          SELECTED_LIVE_FEATURE_COLUMNS
+        )
+        if pd.isna(
+          candidate_row.iloc[0][column]
+        )
+      ]
+    
+      if missing_features:
+>       raise ValueError(
+          "Current-hour inference features are "
+          "incomplete: "
+          f"{', '.join(missing_features)}."
+        )
+E       ValueError: Current-hour inference features are incomplete: forecast_price.
+
+src/electricity_predictor/worker/feature_preparation.py:334: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_prepare_model_features_rejects_missing_candidate_forecast_price() -> None:
+      raw = build_hourly_prices()
+      raw.loc[199, "forecast_price"] = pd.NA
+    
+>     with pytest.raises(
+        ValueError,
+        match=(
+          "missing forecast_price at "
+          "2026-01-09T07:00:00\\+00:00"
+        ),
+      ):
+E     AssertionError: Regex pattern did not match.
+E       Expected regex: 'missing forecast_price at 2026-01-09T07:00:00\\+00:00'
+E       Actual message: 'Current-hour inference features are incomplete: forecast_price.'
+
+tests/worker/test_feature_preparation.py:84: AssertionError
+_____ test_prepare_model_features_rejects_missing_previous_forecast_price ______
+
+    def test_prepare_model_features_rejects_missing_previous_forecast_price() -> None:
+      raw = build_hourly_prices()
+      raw.loc[198, "forecast_price"] = pd.NA
+    
+      with pytest.raises(
+        ValueError,
+        match=(
+          "missing forecast_price at "
+          "2026-01-09T06:00:00\\+00:00"
+        ),
+      ):
+>       prepare_from(raw)
+
+tests/worker/test_feature_preparation.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/worker/test_feature_preparation.py:39: in prepare_from
+    return prepare_model_features()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def prepare_model_features() -> pd.DataFrame:
+      """Build one selected-contract feature row for the latest market hour."""
+    
+      data = load_inference_hourly_prices(
+        lookback_hours=(
+          LIVE_INFERENCE_LOOKBACK_HOURS
+        )
+      )
+    
+      if data.empty:
+        raise ValueError(
+          "No hourly prices available."
+        )
+    
+      candidate_hint = data.attrs.get(
+        "inference_candidate_utc"
+      )
+    
+      data = data.copy()
+    
+      data["datetime_universal_time"] = (
+        pd.to_datetime(
+          data["datetime_universal_time"],
+          utc=True,
+          errors="raise",
+        )
+      )
+    
+      data = data.sort_values(
+        "datetime_universal_time"
+      ).reset_index(drop=True)
+    
+      latest_timestamp = data[
+        "datetime_universal_time"
+      ].iloc[-1]
+    
+      if candidate_hint is None:
+        candidate_timestamp = (
+          latest_timestamp
+        )
+      else:
+        candidate_timestamp = pd.Timestamp(
+          candidate_hint
+        )
+    
+        if candidate_timestamp.tzinfo is None:
+          candidate_timestamp = (
+            candidate_timestamp.tz_localize(
+              "UTC"
+            )
+          )
+        else:
+          candidate_timestamp = (
+            candidate_timestamp.tz_convert(
+              "UTC"
+            )
+          )
+    
+      if candidate_timestamp != latest_timestamp:
+        raise ValueError(
+          "Inference candidate must be the latest "
+          "available market hour. "
+          f"candidate={candidate_timestamp.isoformat()}, "
+          f"latest={latest_timestamp.isoformat()}."
+        )
+    
+      window_start = (
+        candidate_timestamp
+        - pd.Timedelta(
+          hours=(
+            LIVE_INFERENCE_LOOKBACK_HOURS
+          )
+        )
+      )
+    
+      expected_timestamps = pd.date_range(
+        start=window_start,
+        end=candidate_timestamp,
+        freq="h",
+        tz="UTC",
+      )
+    
+      window = data.loc[
+        data[
+          "datetime_universal_time"
+        ].between(
+          window_start,
+          candidate_timestamp,
+        )
+      ].copy()
+    
+      actual_timestamps = pd.DatetimeIndex(
+        window[
+          "datetime_universal_time"
+        ]
+      )
+    
+      if not actual_timestamps.equals(
+        expected_timestamps
+      ):
+        missing_timestamps = (
+          expected_timestamps.difference(
+            actual_timestamps
+          )
+        )
+    
+        missing_text = (
+          missing_timestamps[0].isoformat()
+          if len(missing_timestamps)
+          else "duplicate or unordered hour"
+        )
+    
+        raise ValueError(
+          "Inference feature window is not "
+          "continuous at "
+          f"{missing_text}."
+        )
+    
+      window["datetime_local_time"] = (
+        window[
+          "datetime_universal_time"
+        ]
+        .dt.tz_convert(
+          ALBERTA_TIMEZONE
+        )
+        .dt.tz_localize(None)
+      )
+    
+      featured_data = (
+        add_live_feature_candidates(
+          window
+        )
+      )
+    
+      candidate_row = featured_data.loc[
+        featured_data[
+          "datetime_universal_time"
+        ]
+        == candidate_timestamp
+      ].copy()
+    
+      if len(candidate_row) != 1:
+        raise ValueError(
+          "Expected exactly one current-hour "
+          "inference feature row."
+        )
+    
+      missing_features = [
+        column
+        for column in (
+          SELECTED_LIVE_FEATURE_COLUMNS
+        )
+        if pd.isna(
+          candidate_row.iloc[0][column]
+        )
+      ]
+    
+      if missing_features:
+>       raise ValueError(
+          "Current-hour inference features are "
+          "incomplete: "
+          f"{', '.join(missing_features)}."
+        )
+E       ValueError: Current-hour inference features are incomplete: forecast_price_lag_1h, forecast_price_rolling_24h_mean, forecast_price_rolling_24h_max, forecast_price_rolling_7d_mean.
+
+src/electricity_predictor/worker/feature_preparation.py:334: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_prepare_model_features_rejects_missing_previous_forecast_price() -> None:
+      raw = build_hourly_prices()
+      raw.loc[198, "forecast_price"] = pd.NA
+    
+>     with pytest.raises(
+        ValueError,
+        match=(
+          "missing forecast_price at "
+          "2026-01-09T06:00:00\\+00:00"
+        ),
+      ):
+E     AssertionError: Regex pattern did not match.
+E       Expected regex: 'missing forecast_price at 2026-01-09T06:00:00\\+00:00'
+E       Actual message: 'Current-hour inference features are incomplete: forecast_price_lag_1h, forecast_price_rolling_24h_mean, forecast_price_rolling_24h_max, forecast_price_rolling_7d_mean.'
+
+tests/worker/test_feature_preparation.py:98: AssertionError
+_____ test_prepare_model_features_ignores_gap_older_than_inference_window ______
+
+    def test_prepare_model_features_ignores_gap_older_than_inference_window() -> None:
+      raw = build_hourly_prices(periods=201).drop(
+        index=10
+      ).reset_index(drop=True)
+    
+>     result = prepare_from(raw)
+               ^^^^^^^^^^^^^^^^^
+
+tests/worker/test_feature_preparation.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/worker/test_feature_preparation.py:39: in prepare_from
+    return prepare_model_features()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def prepare_model_features() -> pd.DataFrame:
+      """Build one selected-contract feature row for the latest market hour."""
+    
+      data = load_inference_hourly_prices(
+        lookback_hours=(
+          LIVE_INFERENCE_LOOKBACK_HOURS
+        )
+      )
+    
+      if data.empty:
+        raise ValueError(
+          "No hourly prices available."
+        )
+    
+      candidate_hint = data.attrs.get(
+        "inference_candidate_utc"
+      )
+    
+      data = data.copy()
+    
+      data["datetime_universal_time"] = (
+        pd.to_datetime(
+          data["datetime_universal_time"],
+          utc=True,
+          errors="raise",
+        )
+      )
+    
+      data = data.sort_values(
+        "datetime_universal_time"
+      ).reset_index(drop=True)
+    
+      latest_timestamp = data[
+        "datetime_universal_time"
+      ].iloc[-1]
+    
+      if candidate_hint is None:
+        candidate_timestamp = (
+          latest_timestamp
+        )
+      else:
+        candidate_timestamp = pd.Timestamp(
+          candidate_hint
+        )
+    
+        if candidate_timestamp.tzinfo is None:
+          candidate_timestamp = (
+            candidate_timestamp.tz_localize(
+              "UTC"
+            )
+          )
+        else:
+          candidate_timestamp = (
+            candidate_timestamp.tz_convert(
+              "UTC"
+            )
+          )
+    
+      if candidate_timestamp != latest_timestamp:
+        raise ValueError(
+          "Inference candidate must be the latest "
+          "available market hour. "
+          f"candidate={candidate_timestamp.isoformat()}, "
+          f"latest={latest_timestamp.isoformat()}."
+        )
+    
+      window_start = (
+        candidate_timestamp
+        - pd.Timedelta(
+          hours=(
+            LIVE_INFERENCE_LOOKBACK_HOURS
+          )
+        )
+      )
+    
+      expected_timestamps = pd.date_range(
+        start=window_start,
+        end=candidate_timestamp,
+        freq="h",
+        tz="UTC",
+      )
+    
+      window = data.loc[
+        data[
+          "datetime_universal_time"
+        ].between(
+          window_start,
+          candidate_timestamp,
+        )
+      ].copy()
+    
+      actual_timestamps = pd.DatetimeIndex(
+        window[
+          "datetime_universal_time"
+        ]
+      )
+    
+      if not actual_timestamps.equals(
+        expected_timestamps
+      ):
+        missing_timestamps = (
+          expected_timestamps.difference(
+            actual_timestamps
+          )
+        )
+    
+        missing_text = (
+          missing_timestamps[0].isoformat()
+          if len(missing_timestamps)
+          else "duplicate or unordered hour"
+        )
+    
+>       raise ValueError(
+          "Inference feature window is not "
+          "continuous at "
+          f"{missing_text}."
+        )
+E       ValueError: Inference feature window is not continuous at 2026-01-01T10:00:00+00:00.
+
+src/electricity_predictor/worker/feature_preparation.py:288: ValueError
+__ test_prepare_model_features_ignores_duplicate_older_than_inference_window ___
+
+    def test_prepare_model_features_ignores_duplicate_older_than_inference_window() -> None:
+      raw = build_hourly_prices(periods=201)
+      raw = pd.concat(
+        [raw, raw.iloc[[10]]],
+        ignore_index=True,
+      )
+    
+>     result = prepare_from(raw)
+               ^^^^^^^^^^^^^^^^^
+
+tests/worker/test_feature_preparation.py:129: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/worker/test_feature_preparation.py:39: in prepare_from
+    return prepare_model_features()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def prepare_model_features() -> pd.DataFrame:
+      """Build one selected-contract feature row for the latest market hour."""
+    
+      data = load_inference_hourly_prices(
+        lookback_hours=(
+          LIVE_INFERENCE_LOOKBACK_HOURS
+        )
+      )
+    
+      if data.empty:
+        raise ValueError(
+          "No hourly prices available."
+        )
+    
+      candidate_hint = data.attrs.get(
+        "inference_candidate_utc"
+      )
+    
+      data = data.copy()
+    
+      data["datetime_universal_time"] = (
+        pd.to_datetime(
+          data["datetime_universal_time"],
+          utc=True,
+          errors="raise",
+        )
+      )
+    
+      data = data.sort_values(
+        "datetime_universal_time"
+      ).reset_index(drop=True)
+    
+      latest_timestamp = data[
+        "datetime_universal_time"
+      ].iloc[-1]
+    
+      if candidate_hint is None:
+        candidate_timestamp = (
+          latest_timestamp
+        )
+      else:
+        candidate_timestamp = pd.Timestamp(
+          candidate_hint
+        )
+    
+        if candidate_timestamp.tzinfo is None:
+          candidate_timestamp = (
+            candidate_timestamp.tz_localize(
+              "UTC"
+            )
+          )
+        else:
+          candidate_timestamp = (
+            candidate_timestamp.tz_convert(
+              "UTC"
+            )
+          )
+    
+      if candidate_timestamp != latest_timestamp:
+        raise ValueError(
+          "Inference candidate must be the latest "
+          "available market hour. "
+          f"candidate={candidate_timestamp.isoformat()}, "
+          f"latest={latest_timestamp.isoformat()}."
+        )
+    
+      window_start = (
+        candidate_timestamp
+        - pd.Timedelta(
+          hours=(
+            LIVE_INFERENCE_LOOKBACK_HOURS
+          )
+        )
+      )
+    
+      expected_timestamps = pd.date_range(
+        start=window_start,
+        end=candidate_timestamp,
+        freq="h",
+        tz="UTC",
+      )
+    
+      window = data.loc[
+        data[
+          "datetime_universal_time"
+        ].between(
+          window_start,
+          candidate_timestamp,
+        )
+      ].copy()
+    
+      actual_timestamps = pd.DatetimeIndex(
+        window[
+          "datetime_universal_time"
+        ]
+      )
+    
+      if not actual_timestamps.equals(
+        expected_timestamps
+      ):
+        missing_timestamps = (
+          expected_timestamps.difference(
+            actual_timestamps
+          )
+        )
+    
+        missing_text = (
+          missing_timestamps[0].isoformat()
+          if len(missing_timestamps)
+          else "duplicate or unordered hour"
+        )
+    
+>       raise ValueError(
+          "Inference feature window is not "
+          "continuous at "
+          f"{missing_text}."
+        )
+E       ValueError: Inference feature window is not continuous at duplicate or unordered hour.
+
+src/electricity_predictor/worker/feature_preparation.py:288: ValueError
+_ test_prepare_model_features_rejects_missing_required_actual_without_imputation _
+
+    def test_prepare_model_features_rejects_missing_required_actual_without_imputation() -> None:
+      raw = build_hourly_prices()
+      raw.loc[100, "actual_price"] = pd.NA
+    
+      with pytest.raises(
+        ValueError,
+        match=(
+          "missing finalized actual price.*"
+          "2026-01-05T04:00:00\\+00:00"
+        ),
+      ):
+>       prepare_from(raw)
+
+tests/worker/test_feature_preparation.py:173: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/worker/test_feature_preparation.py:39: in prepare_from
+    return prepare_model_features()
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def prepare_model_features() -> pd.DataFrame:
+      """Build one selected-contract feature row for the latest market hour."""
+    
+      data = load_inference_hourly_prices(
+        lookback_hours=(
+          LIVE_INFERENCE_LOOKBACK_HOURS
+        )
+      )
+    
+      if data.empty:
+        raise ValueError(
+          "No hourly prices available."
+        )
+    
+      candidate_hint = data.attrs.get(
+        "inference_candidate_utc"
+      )
+    
+      data = data.copy()
+    
+      data["datetime_universal_time"] = (
+        pd.to_datetime(
+          data["datetime_universal_time"],
+          utc=True,
+          errors="raise",
+        )
+      )
+    
+      data = data.sort_values(
+        "datetime_universal_time"
+      ).reset_index(drop=True)
+    
+      latest_timestamp = data[
+        "datetime_universal_time"
+      ].iloc[-1]
+    
+      if candidate_hint is None:
+        candidate_timestamp = (
+          latest_timestamp
+        )
+      else:
+        candidate_timestamp = pd.Timestamp(
+          candidate_hint
+        )
+    
+        if candidate_timestamp.tzinfo is None:
+          candidate_timestamp = (
+            candidate_timestamp.tz_localize(
+              "UTC"
+            )
+          )
+        else:
+          candidate_timestamp = (
+            candidate_timestamp.tz_convert(
+              "UTC"
+            )
+          )
+    
+      if candidate_timestamp != latest_timestamp:
+        raise ValueError(
+          "Inference candidate must be the latest "
+          "available market hour. "
+          f"candidate={candidate_timestamp.isoformat()}, "
+          f"latest={latest_timestamp.isoformat()}."
+        )
+    
+      window_start = (
+        candidate_timestamp
+        - pd.Timedelta(
+          hours=(
+            LIVE_INFERENCE_LOOKBACK_HOURS
+          )
+        )
+      )
+    
+      expected_timestamps = pd.date_range(
+        start=window_start,
+        end=candidate_timestamp,
+        freq="h",
+        tz="UTC",
+      )
+    
+      window = data.loc[
+        data[
+          "datetime_universal_time"
+        ].between(
+          window_start,
+          candidate_timestamp,
+        )
+      ].copy()
+    
+      actual_timestamps = pd.DatetimeIndex(
+        window[
+          "datetime_universal_time"
+        ]
+      )
+    
+      if not actual_timestamps.equals(
+        expected_timestamps
+      ):
+        missing_timestamps = (
+          expected_timestamps.difference(
+            actual_timestamps
+          )
+        )
+    
+        missing_text = (
+          missing_timestamps[0].isoformat()
+          if len(missing_timestamps)
+          else "duplicate or unordered hour"
+        )
+    
+        raise ValueError(
+          "Inference feature window is not "
+          "continuous at "
+          f"{missing_text}."
+        )
+    
+      window["datetime_local_time"] = (
+        window[
+          "datetime_universal_time"
+        ]
+        .dt.tz_convert(
+          ALBERTA_TIMEZONE
+        )
+        .dt.tz_localize(None)
+      )
+    
+      featured_data = (
+        add_live_feature_candidates(
+          window
+        )
+      )
+    
+      candidate_row = featured_data.loc[
+        featured_data[
+          "datetime_universal_time"
+        ]
+        == candidate_timestamp
+      ].copy()
+    
+      if len(candidate_row) != 1:
+        raise ValueError(
+          "Expected exactly one current-hour "
+          "inference feature row."
+        )
+    
+      missing_features = [
+        column
+        for column in (
+          SELECTED_LIVE_FEATURE_COLUMNS
+        )
+        if pd.isna(
+          candidate_row.iloc[0][column]
+        )
+      ]
+    
+      if missing_features:
+>       raise ValueError(
+          "Current-hour inference features are "
+          "incomplete: "
+          f"{', '.join(missing_features)}."
+        )
+E       ValueError: Current-hour inference features are incomplete: actual_price_safe_7d_mean.
+
+src/electricity_predictor/worker/feature_preparation.py:334: ValueError
+
+During handling of the above exception, another exception occurred:
+
+    def test_prepare_model_features_rejects_missing_required_actual_without_imputation() -> None:
+      raw = build_hourly_prices()
+      raw.loc[100, "actual_price"] = pd.NA
+    
+>     with pytest.raises(
+        ValueError,
+        match=(
+          "missing finalized actual price.*"
+          "2026-01-05T04:00:00\\+00:00"
+        ),
+      ):
+E     AssertionError: Regex pattern did not match.
+E       Expected regex: 'missing finalized actual price.*2026-01-05T04:00:00\\+00:00'
+E       Actual message: 'Current-hour inference features are incomplete: actual_price_safe_7d_mean.'
+
+tests/worker/test_feature_preparation.py:166: AssertionError
+______ test_prepare_model_features_anchors_after_latest_finalized_actual _______
+
+    def test_prepare_model_features_anchors_after_latest_finalized_actual() -> None:
+      raw = build_hourly_prices()
+      raw.loc[195:, "actual_price"] = pd.NA
+    
+      result = prepare_from(raw)
+    
+>     assert result.iloc[-1][
+        "datetime_universal_time"
+      ] == pd.Timestamp(
+        "2026-01-09T03:00:00+00:00"
+      )
+E     AssertionError: assert Timestamp('2026-01-09 07:00:00+0000', tz='UTC') == Timestamp('2026-01-09 03:00:00+0000', tz='UTC')
+E      +  where Timestamp('2026-01-09 03:00:00+0000', tz='UTC') = <class 'pandas.Timestamp'>('2026-01-09T03:00:00+00:00')
+E      +    where <class 'pandas.Timestamp'> = pd.Timestamp
+
+tests/worker/test_feature_preparation.py:182: AssertionError
+=========================== short test summary info ============================
+FAILED tests/worker/test_feature_preparation.py::test_prepare_model_features_builds_complete_candidate_with_forecast_support
+FAILED tests/worker/test_feature_preparation.py::test_prepare_model_features_rejects_missing_candidate_forecast_price
+FAILED tests/worker/test_feature_preparation.py::test_prepare_model_features_rejects_missing_previous_forecast_price
+FAILED tests/worker/test_feature_preparation.py::test_prepare_model_features_ignores_gap_older_than_inference_window
+FAILED tests/worker/test_feature_preparation.py::test_prepare_model_features_ignores_duplicate_older_than_inference_window
+FAILED tests/worker/test_feature_preparation.py::test_prepare_model_features_rejects_missing_required_actual_without_imputation
+FAILED tests/worker/test_feature_preparation.py::test_prepare_model_features_anchors_after_latest_finalized_actual
+7 failed, 69 passed in 3.45s
+
+===== FINAL BATCH STATUS =====
+exit_code=1
+protected_regression_evaluation_invoked=False
+protected_classification_evaluation_invoked=False
+commit_performed=False
+push_performed=False
+deployment_performed=False
+final_local_completion=FAIL
