@@ -666,7 +666,7 @@ dans ses propres features. Le worker refuse les valeurs manquantes et ne remplac
 jamais silencieusement la candidate par une heure plus ancienne.
 
 L'ordre des colonnes est enregistré dans les métadonnées de chaque artefact puis
-reconstruit par `prepare_feature_row`. Une feature absente provoque un échec au
+reconstruit par `build_ordered_model_feature_row`. Une feature absente provoque un échec au
 lieu d'une prédiction avec un contrat différent de l'entraînement.
 
 ## Règle de mise à jour

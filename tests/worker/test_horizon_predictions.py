@@ -3,7 +3,7 @@ from unittest.mock import call, patch
 import pandas as pd
 import pytest
 
-from electricity_predictor.worker.prediction import (
+from electricity_predictor.worker.horizon_predictions import (
   generate_horizon_predictions,
 )
 
@@ -17,7 +17,7 @@ def test_generate_horizon_predictions_calls_each_model_horizon() -> None:
   )
 
   with patch(
-    "electricity_predictor.worker.prediction.predict_horizon",
+    "electricity_predictor.worker.horizon_predictions.predict_price_and_spike_for_horizon",
     side_effect=lambda horizon_hours, features: {
       "horizon_hours": horizon_hours,
       "predicted_price": float(horizon_hours * 10),

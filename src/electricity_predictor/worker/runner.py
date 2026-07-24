@@ -16,7 +16,7 @@ from electricity_predictor.worker.feature_preparation import (
 from electricity_predictor.worker.persistence import (
   get_database_time,
 )
-from electricity_predictor.worker.prediction import (
+from electricity_predictor.worker.horizon_predictions import (
   generate_horizon_predictions,
 )
 from electricity_predictor.worker.result_persistence import (

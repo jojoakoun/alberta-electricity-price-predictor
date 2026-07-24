@@ -5,10 +5,10 @@ import pandas as pd
 import pytest
 from sklearn.dummy import DummyClassifier, DummyRegressor
 
-from electricity_predictor.serving.inference import (
+from electricity_predictor.serving.active_model_predictions import (
   parse_feature_columns,
-  predict_horizon,
-  prepare_feature_row,
+  predict_price_and_spike_for_horizon,
+  build_ordered_model_feature_row,
 )
 
 
@@ -80,22 +80,22 @@ def test_parse_feature_columns_preserves_order():
   assert columns == FEATURE_COLUMNS
 
 
-def test_prepare_feature_row_rejects_missing_features():
+def test_build_ordered_model_feature_row_rejects_missing_features():
   with pytest.raises(ValueError, match="missing columns"):
-    prepare_feature_row(
+    build_ordered_model_feature_row(
       features={"forecast_price": 50.0},
       feature_columns=FEATURE_COLUMNS,
     )
 
 
-def test_predict_horizon_loads_artifacts_and_returns_prediction(
+def test_predict_price_and_spike_for_horizon_loads_artifacts_and_returns_prediction(
   tmp_path: Path,
 ):
   regression_metadata_path, classification_metadata_path = (
     write_test_artifacts(tmp_path)
   )
 
-  result = predict_horizon(
+  result = predict_price_and_spike_for_horizon(
     horizon_hours=1,
     features={
       "forecast_price": 50.0,
@@ -114,7 +114,7 @@ def test_predict_horizon_loads_artifacts_and_returns_prediction(
   assert result["forecast_kind"] == "model_forecast"
 
 
-def test_predict_horizon_supports_regression_rule_baseline(
+def test_predict_price_and_spike_for_horizon_supports_regression_rule_baseline(
   tmp_path: Path,
 ):
   classification_training_features = pd.DataFrame({
@@ -162,7 +162,7 @@ def test_predict_horizon_supports_regression_rule_baseline(
     }
   ]).to_csv(classification_metadata_path, index=False)
 
-  result = predict_horizon(
+  result = predict_price_and_spike_for_horizon(
     horizon_hours=24,
     features={
       "forecast_price": 90.0,
@@ -177,13 +177,13 @@ def test_predict_horizon_supports_regression_rule_baseline(
   assert result["forecast_kind"] == "persistence_reference"
 
 
-def test_predict_horizon_rejects_unknown_horizon(tmp_path: Path):
+def test_predict_price_and_spike_for_horizon_rejects_unknown_horizon(tmp_path: Path):
   regression_metadata_path, classification_metadata_path = (
     write_test_artifacts(tmp_path)
   )
 
   with pytest.raises(ValueError, match="No selected model"):
-    predict_horizon(
+    predict_price_and_spike_for_horizon(
       horizon_hours=6,
       features={
         "forecast_price": 50.0,
@@ -194,7 +194,7 @@ def test_predict_horizon_rejects_unknown_horizon(tmp_path: Path):
     )
 
 
-def test_predict_horizon_supports_classification_rule_without_cutoff(
+def test_predict_price_and_spike_for_horizon_supports_classification_rule_without_cutoff(
   tmp_path: Path,
 ):
   regression_artifact_path = tmp_path / "regression_baseline.joblib"
@@ -241,7 +241,7 @@ def test_predict_horizon_supports_classification_rule_without_cutoff(
     }
   ]).to_csv(classification_metadata_path, index=False)
 
-  result = predict_horizon(
+  result = predict_price_and_spike_for_horizon(
     horizon_hours=24,
     features={
       "forecast_price": 190.0,
@@ -257,7 +257,7 @@ def test_predict_horizon_supports_classification_rule_without_cutoff(
   assert result["is_spike"] is True
 
 
-def test_predict_horizon_resolves_active_registry(
+def test_predict_price_and_spike_for_horizon_resolves_active_registry(
   tmp_path: Path,
 ):
   from electricity_predictor.serving.model_registry import (
@@ -303,7 +303,7 @@ def test_predict_horizon_resolves_active_registry(
     registry_path=registry_path,
   )
 
-  result = predict_horizon(
+  result = predict_price_and_spike_for_horizon(
     horizon_hours=1,
     features={
       "forecast_price": 50.0,

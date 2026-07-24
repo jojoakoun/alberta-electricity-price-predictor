@@ -1,4 +1,4 @@
-"""Load active artifacts and produce one provenance-aware horizon forecast."""
+"""Load active trained models and predict price and spike risk for one horizon."""
 
 from pathlib import Path
 
@@ -19,11 +19,11 @@ from electricity_predictor.serving.model_registry import (
 parse_feature_columns = parse_model_feature_columns
 
 
-def load_model_metadata(
+def load_prediction_model_metadata(
   metadata_path: Path,
   required_columns: set[str],
 ) -> pd.DataFrame:
-  """Load and validate one selected-model metadata file."""
+  """Load and validate metadata for one set of prediction models."""
   if not metadata_path.exists():
     raise FileNotFoundError(
       f"Model metadata file not found: {metadata_path}"
@@ -43,11 +43,11 @@ def load_model_metadata(
   return metadata
 
 
-def prepare_feature_row(
+def build_ordered_model_feature_row(
   features: dict,
   feature_columns: list[str],
 ) -> pd.DataFrame:
-  """Validate and order one inference feature row."""
+  """Build one complete feature row in the order required by a trained model."""
   missing_columns = [
     column
     for column in feature_columns
@@ -94,8 +94,8 @@ def select_horizon_metadata(
   return matching_rows.iloc[0].to_dict()
 
 
-def load_artifact(metadata_row: dict):
-  """Load the artifact referenced by one metadata row."""
+def load_trained_model(metadata_row: dict):
+  """Load the trained model referenced by one metadata row."""
   artifact_path = Path(str(metadata_row["artifact_path"]))
 
   if not artifact_path.exists():
@@ -106,12 +106,12 @@ def load_artifact(metadata_row: dict):
   return joblib.load(artifact_path)
 
 
-def predict_regression_value(
+def predict_hourly_price(
   artifact,
   metadata_row: dict,
   feature_row: pd.DataFrame,
 ) -> float:
-  """Generate one price forecast from an estimator or rule baseline."""
+  """Use one regression model or baseline rule to predict an hourly price."""
   if isinstance(artifact, dict):
     if artifact.get("model_type") != "rule_baseline":
       raise ValueError("Unsupported regression artifact dictionary.")
@@ -153,12 +153,12 @@ def get_forecast_kind(artifact) -> str:
   return "model_forecast"
 
 
-def predict_classification_value(
+def predict_spike_risk(
   artifact,
   metadata_row: dict,
   feature_row: pd.DataFrame,
 ) -> tuple[float, float, bool]:
-  """Generate spike probability and binary decision."""
+  """Use one classification model to predict spike probability and a binary decision."""
   decision_threshold = metadata_row.get("decision_threshold")
 
   if isinstance(artifact, dict):
@@ -208,7 +208,7 @@ def predict_classification_value(
   return spike_probability, decision_threshold, bool(is_spike)
 
 
-def predict_horizon(
+def predict_price_and_spike_for_horizon(
   horizon_hours: int,
   features: dict,
   regression_metadata_path: Path | None = None,
@@ -240,7 +240,7 @@ def predict_horizon(
         active_classification_path
       )
 
-  regression_metadata = load_model_metadata(
+  regression_metadata = load_prediction_model_metadata(
     metadata_path=regression_metadata_path,
     required_columns={
       "model_name",
@@ -249,7 +249,7 @@ def predict_horizon(
       "feature_columns",
     },
   )
-  classification_metadata = load_model_metadata(
+  classification_metadata = load_prediction_model_metadata(
     metadata_path=classification_metadata_path,
     required_columns={
       "model_name",
@@ -278,19 +278,19 @@ def predict_horizon(
   )
 
   # Each artifact receives features in the exact order recorded at training.
-  regression_feature_row = prepare_feature_row(
+  regression_feature_row = build_ordered_model_feature_row(
     features=features,
     feature_columns=regression_features,
   )
-  classification_feature_row = prepare_feature_row(
+  classification_feature_row = build_ordered_model_feature_row(
     features=features,
     feature_columns=classification_features,
   )
 
-  regression_artifact = load_artifact(regression_row)
-  classification_artifact = load_artifact(classification_row)
+  regression_artifact = load_trained_model(regression_row)
+  classification_artifact = load_trained_model(classification_row)
 
-  predicted_price = predict_regression_value(
+  predicted_price = predict_hourly_price(
     artifact=regression_artifact,
     metadata_row=regression_row,
     feature_row=regression_feature_row,
@@ -299,7 +299,7 @@ def predict_horizon(
     spike_probability,
     decision_threshold,
     is_spike,
-  ) = predict_classification_value(
+  ) = predict_spike_risk(
     artifact=classification_artifact,
     metadata_row=classification_row,
     feature_row=classification_feature_row,

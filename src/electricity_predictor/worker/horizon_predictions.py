@@ -1,8 +1,8 @@
-"""Run active regression and classification artifacts for every horizon."""
+"""Generate price and spike-risk predictions for every configured horizon."""
 
 import pandas as pd
 
-from electricity_predictor.serving.inference import predict_horizon
+from electricity_predictor.serving.active_model_predictions import predict_price_and_spike_for_horizon
 
 
 def generate_horizon_predictions(
@@ -16,7 +16,7 @@ def generate_horizon_predictions(
   features = feature_row.iloc[0].to_dict()
 
   return [
-    predict_horizon(
+    predict_price_and_spike_for_horizon(
       horizon_hours=horizon_hours,
       features=features,
     )
