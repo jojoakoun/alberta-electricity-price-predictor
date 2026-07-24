@@ -793,6 +793,45 @@ def build_promotion_summary(
   }
 
 
+def resolve_champion_model_versions(
+  candidate_manifest: dict,
+) -> tuple[str, str]:
+  """Resolve active task versions recorded when the candidate was prepared."""
+  current_champion = candidate_manifest.get(
+    "current_champion",
+    {},
+  )
+
+  regression_version = current_champion.get(
+    "regression_model_version"
+  )
+
+  classification_version = current_champion.get(
+    "classification_model_version"
+  )
+
+  # Preserve compatibility with candidate manifests created before registry
+  # versions were recorded. New manifests always contain the actual versions.
+  if not regression_version:
+    regression_version = (
+      "legacy-unversioned"
+    )
+
+  if not classification_version:
+    classification_version = (
+      "legacy-unversioned"
+    )
+
+  return (
+    str(
+      regression_version
+    ),
+    str(
+      classification_version
+    ),
+  )
+
+
 def prepare_first_activation_review(
   candidate_manifest_path: Path,
 ) -> tuple[Path, dict]:
@@ -1015,6 +1054,13 @@ def compare_challenger_with_active_models(
     )
 
   (
+    champion_regression_model_version,
+    champion_classification_model_version,
+  ) = resolve_champion_model_versions(
+    candidate_manifest
+  )
+
+  (
     _,
     _,
     test_data,
@@ -1107,7 +1153,7 @@ def compare_challenger_with_active_models(
       evaluation_data=test_data,
       source="champion",
       model_version=(
-        "legacy-unversioned"
+        champion_regression_model_version
       ),
     )
   )
@@ -1135,7 +1181,7 @@ def compare_challenger_with_active_models(
       evaluation_data=test_data,
       source="champion",
       model_version=(
-        "legacy-unversioned"
+        champion_classification_model_version
       ),
       reference_spike_threshold=(
         candidate_spike_threshold

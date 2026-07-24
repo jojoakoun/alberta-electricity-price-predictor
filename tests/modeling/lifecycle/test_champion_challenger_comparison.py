@@ -379,3 +379,46 @@ def test_prepare_first_activation_review(
   ][
     "reason"
   ] == "no_active_models"
+
+def test_resolve_champion_model_versions_uses_registry_versions():
+  from electricity_predictor.modeling.lifecycle.champion_challenger_comparison import (
+    resolve_champion_model_versions,
+  )
+
+  candidate_manifest = {
+    "current_champion": {
+      "status":
+        "active_models_available",
+      "regression_model_version":
+        "regression-active-v7",
+      "classification_model_version":
+        "classification-active-v4",
+    },
+  }
+
+  versions = resolve_champion_model_versions(
+    candidate_manifest
+  )
+
+  assert versions == (
+    "regression-active-v7",
+    "classification-active-v4",
+  )
+
+
+def test_resolve_champion_model_versions_preserves_old_manifest_compatibility():
+  from electricity_predictor.modeling.lifecycle.champion_challenger_comparison import (
+    resolve_champion_model_versions,
+  )
+
+  versions = resolve_champion_model_versions({
+    "current_champion": {
+      "status":
+        "active_models_available",
+    },
+  })
+
+  assert versions == (
+    "legacy-unversioned",
+    "legacy-unversioned",
+  )
