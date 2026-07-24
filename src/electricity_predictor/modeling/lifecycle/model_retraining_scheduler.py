@@ -18,6 +18,7 @@ from electricity_predictor.modeling.lifecycle.candidate_run import (
 )
 from electricity_predictor.modeling.lifecycle.champion_challenger_comparison import (
   compare_challenger_with_active_models,
+  prepare_first_activation_review,
 )
 from electricity_predictor.modeling.lifecycle.frozen_splits import (
   resolve_latest_candidate_manifest_path,
@@ -494,6 +495,45 @@ def prepare_lifecycle_training_data() -> None:
     )
 
 
+def review_trained_candidate(
+  candidate_manifest_path: Path,
+) -> None:
+  """Compare with active models or prepare the first activation."""
+  candidate_manifest = read_json_file(
+    candidate_manifest_path
+  )
+
+  champion_status = (
+    candidate_manifest.get(
+      "current_champion",
+      {},
+    ).get(
+      "status"
+    )
+  )
+
+  if champion_status == "no_active_models":
+    prepare_first_activation_review(
+      candidate_manifest_path=(
+        candidate_manifest_path
+      )
+    )
+
+    return
+
+  if champion_status != "active_models_available":
+    raise ValueError(
+      "Candidate has an unsupported active-model state: "
+      f"{champion_status}."
+    )
+
+  compare_challenger_with_active_models(
+    candidate_manifest_path=(
+      candidate_manifest_path
+    )
+  )
+
+
 def run_scheduled_model_retraining(
   force: bool = False,
   now_utc: datetime | None = None,
@@ -597,7 +637,7 @@ def run_scheduled_model_retraining(
   )
 
 
-  compare_challenger_with_active_models(
+  review_trained_candidate(
     candidate_manifest_path=(
       candidate_manifest_path
     )

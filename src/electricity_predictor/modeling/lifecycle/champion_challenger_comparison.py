@@ -793,6 +793,209 @@ def build_promotion_summary(
   }
 
 
+def prepare_first_activation_review(
+  candidate_manifest_path: Path,
+) -> tuple[Path, dict]:
+  """Prepare manual activation when no active models exist yet."""
+  candidate_manifest = read_json_file(
+    candidate_manifest_path
+  )
+
+  if candidate_manifest.get(
+    "status"
+  ) not in {
+    "trained",
+    "evaluated",
+  }:
+    raise ValueError(
+      "Candidate must be fully trained before "
+      "first-activation review."
+    )
+
+  current_champion = candidate_manifest.get(
+    "current_champion",
+    {},
+  )
+
+  if current_champion.get(
+    "status"
+  ) != "no_active_models":
+    raise ValueError(
+      "First-activation review requires an "
+      "initial state without active models."
+    )
+
+  task_metadata = {}
+
+  for task_name in (
+    "regression",
+    "classification",
+  ):
+    task = candidate_manifest[
+      "tasks"
+    ][task_name]
+
+    if task.get(
+      "status"
+    ) != "completed":
+      raise ValueError(
+        f"Candidate task {task_name} is not completed."
+      )
+
+    metadata_path = Path(
+      task[
+        "metadata_path"
+      ]
+    )
+
+    metadata = load_metadata(
+      metadata_path=metadata_path,
+      required_columns={
+        "horizon_hours",
+        "artifact_path",
+        "artifact_sha256",
+        "feature_columns",
+        "contract",
+      },
+    )
+
+    observed_horizons = sorted(
+      metadata[
+        "horizon_hours"
+      ]
+      .astype(int)
+      .tolist()
+    )
+
+    expected_horizons = [
+      1,
+      3,
+      6,
+      12,
+      24,
+    ]
+
+    if observed_horizons != expected_horizons:
+      raise ValueError(
+        f"{task_name} metadata horizons are "
+        f"{observed_horizons}; expected "
+        f"{expected_horizons}."
+      )
+
+    missing_artifacts = [
+      artifact_path
+      for artifact_path in (
+        Path(value)
+        for value in metadata[
+          "artifact_path"
+        ].tolist()
+      )
+      if not artifact_path.is_file()
+    ]
+
+    if missing_artifacts:
+      raise FileNotFoundError(
+        f"{task_name} metadata references missing "
+        f"artifacts: "
+        f"{[str(path) for path in missing_artifacts]}"
+      )
+
+    task_metadata[
+      task_name
+    ] = {
+      "metadata_path":
+        str(
+          metadata_path
+        ),
+      "model_count":
+        len(
+          metadata
+        ),
+    }
+
+  summary = {
+    "evaluated_at_utc":
+      datetime.now(
+        UTC
+      ).isoformat(),
+    "review_type":
+      "first_activation",
+    "comparison_required":
+      False,
+    "current_active_models":
+      False,
+    "regression_gate_pass":
+      True,
+    "classification_gate_pass":
+      True,
+    "promotion_ready":
+      True,
+    "automatic_promotion_performed":
+      False,
+    "manual_activation_required":
+      True,
+    "tasks":
+      task_metadata,
+  }
+
+  review_directory = (
+    Path(
+      candidate_manifest[
+        "candidate_directory"
+      ]
+    )
+    / "reports"
+    / "comparison"
+  )
+
+  review_directory.mkdir(
+    parents=True,
+    exist_ok=True,
+  )
+
+  summary_path = (
+    review_directory
+    / "first_activation_summary.json"
+  )
+
+  write_json_file(
+    content=summary,
+    file_path=summary_path,
+  )
+
+  candidate_manifest[
+    "comparison"
+  ] = {
+    "status":
+      "not_required",
+    "reason":
+      "no_active_models",
+    "regression_report_path":
+      None,
+    "classification_report_path":
+      None,
+    "promotion_summary_path":
+      str(
+        summary_path
+      ),
+    **summary,
+  }
+
+  candidate_manifest[
+    "status"
+  ] = "evaluated"
+
+  write_json_file(
+    content=candidate_manifest,
+    file_path=candidate_manifest_path,
+  )
+
+  return (
+    summary_path,
+    summary,
+  )
+
+
 def compare_challenger_with_active_models(
   candidate_manifest_path: Path,
 ) -> tuple[Path, Path, Path, dict]:

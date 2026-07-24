@@ -213,3 +213,169 @@ def test_promotion_summary_records_automatic_threshold_update():
   assert summary[
     "promotion_ready"
   ]
+
+def test_prepare_first_activation_review(
+  tmp_path,
+):
+  import json
+
+  import pandas as pd
+
+  from electricity_predictor.modeling.lifecycle.candidate_run import (
+    write_json_file,
+  )
+  from electricity_predictor.modeling.lifecycle.champion_challenger_comparison import (
+    prepare_first_activation_review,
+  )
+
+  candidate_directory = (
+    tmp_path
+    / "candidate-v1"
+  )
+
+  tasks = {}
+
+  for task_name in (
+    "regression",
+    "classification",
+  ):
+    task_directory = (
+      candidate_directory
+      / task_name
+    )
+
+    task_directory.mkdir(
+      parents=True,
+      exist_ok=True,
+    )
+
+    metadata_path = (
+      task_directory
+      / f"{task_name}_metadata.csv"
+    )
+
+    metadata_rows = []
+
+    for horizon in (
+      1,
+      3,
+      6,
+      12,
+      24,
+    ):
+      artifact_path = (
+        task_directory
+        / f"{task_name}_{horizon}h.joblib"
+      )
+
+      artifact_path.write_bytes(
+        b"test-model"
+      )
+
+      metadata_rows.append({
+        "horizon_hours":
+          horizon,
+        "artifact_path":
+          str(
+            artifact_path
+          ),
+        "artifact_sha256":
+          "test-sha256",
+        "feature_columns":
+          "feature_a|feature_b",
+        "contract":
+          "conservative_hybrid",
+      })
+
+    pd.DataFrame(
+      metadata_rows
+    ).to_csv(
+      metadata_path,
+      index=False,
+    )
+
+    tasks[
+      task_name
+    ] = {
+      "status":
+        "completed",
+      "metadata_path":
+        str(
+          metadata_path
+        ),
+    }
+
+  candidate_manifest = {
+    "status":
+      "trained",
+    "model_version":
+      "candidate-v1",
+    "candidate_directory":
+      str(
+        candidate_directory
+      ),
+    "tasks":
+      tasks,
+    "current_champion": {
+      "status":
+        "no_active_models",
+    },
+  }
+
+  candidate_manifest_path = (
+    candidate_directory
+    / "candidate_manifest.json"
+  )
+
+  write_json_file(
+    content=candidate_manifest,
+    file_path=candidate_manifest_path,
+  )
+
+  summary_path, summary = (
+    prepare_first_activation_review(
+      candidate_manifest_path=(
+        candidate_manifest_path
+      )
+    )
+  )
+
+  assert summary_path.is_file()
+
+  assert summary[
+    "review_type"
+  ] == "first_activation"
+
+  assert summary[
+    "comparison_required"
+  ] is False
+
+  assert summary[
+    "promotion_ready"
+  ] is True
+
+  assert summary[
+    "manual_activation_required"
+  ] is True
+
+  updated_manifest = json.loads(
+    candidate_manifest_path.read_text(
+      encoding="utf-8"
+    )
+  )
+
+  assert updated_manifest[
+    "status"
+  ] == "evaluated"
+
+  assert updated_manifest[
+    "comparison"
+  ][
+    "status"
+  ] == "not_required"
+
+  assert updated_manifest[
+    "comparison"
+  ][
+    "reason"
+  ] == "no_active_models"

@@ -283,7 +283,7 @@ def test_runner_executes_steps_without_promotion(
 
   monkeypatch.setattr(
     scheduler,
-    "compare_challenger_with_active_models",
+    "review_trained_candidate",
     lambda candidate_manifest_path: (
       calls.append(
         "compare_candidate"
@@ -396,3 +396,116 @@ def test_runner_rejects_automatic_promotion(
     model_retraining_scheduler.run_scheduled_model_retraining(
       force=True
     )
+
+def test_review_trained_candidate_routes_first_activation(
+  tmp_path,
+  monkeypatch,
+):
+  from electricity_predictor.modeling.lifecycle import (
+    model_retraining_scheduler as scheduler,
+  )
+
+  candidate_manifest_path = (
+    tmp_path
+    / "candidate_manifest.json"
+  )
+
+  calls = []
+
+  monkeypatch.setattr(
+    scheduler,
+    "read_json_file",
+    lambda path: {
+      "current_champion": {
+        "status":
+          "no_active_models",
+      },
+    },
+  )
+
+  monkeypatch.setattr(
+    scheduler,
+    "prepare_first_activation_review",
+    lambda candidate_manifest_path: (
+      calls.append(
+        "first_activation_review"
+      )
+    ),
+  )
+
+  monkeypatch.setattr(
+    scheduler,
+    "compare_challenger_with_active_models",
+    lambda candidate_manifest_path: (
+      calls.append(
+        "comparison"
+      )
+    ),
+  )
+
+  scheduler.review_trained_candidate(
+    candidate_manifest_path=(
+      candidate_manifest_path
+    )
+  )
+
+  assert calls == [
+    "first_activation_review",
+  ]
+
+
+def test_review_trained_candidate_routes_normal_comparison(
+  tmp_path,
+  monkeypatch,
+):
+  from electricity_predictor.modeling.lifecycle import (
+    model_retraining_scheduler as scheduler,
+  )
+
+  candidate_manifest_path = (
+    tmp_path
+    / "candidate_manifest.json"
+  )
+
+  calls = []
+
+  monkeypatch.setattr(
+    scheduler,
+    "read_json_file",
+    lambda path: {
+      "current_champion": {
+        "status":
+          "active_models_available",
+      },
+    },
+  )
+
+  monkeypatch.setattr(
+    scheduler,
+    "prepare_first_activation_review",
+    lambda candidate_manifest_path: (
+      calls.append(
+        "first_activation_review"
+      )
+    ),
+  )
+
+  monkeypatch.setattr(
+    scheduler,
+    "compare_challenger_with_active_models",
+    lambda candidate_manifest_path: (
+      calls.append(
+        "comparison"
+      )
+    ),
+  )
+
+  scheduler.review_trained_candidate(
+    candidate_manifest_path=(
+      candidate_manifest_path
+    )
+  )
+
+  assert calls == [
+    "comparison",
+  ]
