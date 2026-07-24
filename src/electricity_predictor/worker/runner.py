@@ -13,16 +13,16 @@ from electricity_predictor.worker.decision_layer import (
 from electricity_predictor.worker.feature_preparation import (
   prepare_model_features,
 )
-from electricity_predictor.worker.persistence import (
-  get_database_time,
+from electricity_predictor.worker.hourly_price_database import (
+  get_current_database_time,
 )
 from electricity_predictor.worker.horizon_predictions import (
   generate_horizon_predictions,
 )
-from electricity_predictor.worker.result_persistence import (
-  backfill_prediction_actual_prices,
+from electricity_predictor.worker.prediction_run_database import (
+  update_predictions_with_final_actual_prices,
   save_failed_prediction_run,
-  save_prediction_run,
+  save_successful_prediction_run,
 )
 
 
@@ -39,7 +39,7 @@ def run_worker_cycle() -> dict:
 
     # Refresh runs before this cycle, so backfill can attach newly finalized
     # observations without replacing any outcome already recorded.
-    backfilled_rows = backfill_prediction_actual_prices()
+    backfilled_rows = update_predictions_with_final_actual_prices()
 
     candidate_features = prepare_model_features()
 
@@ -61,7 +61,7 @@ def run_worker_cycle() -> dict:
       context=decision_context,
     )
 
-    run_id = save_prediction_run(
+    run_id = save_successful_prediction_run(
       generated_at=forecast_source_at,
       decisions=decisions,
       detail="Application pipeline prediction cycle.",
@@ -81,7 +81,7 @@ def run_worker_cycle() -> dict:
 
     if failure_time is None:
       try:
-        failure_time = get_database_time()
+        failure_time = get_current_database_time()
       except Exception:
         # A pre-candidate failure has no source hour. Preserve a useful failure
         # timestamp even when PostgreSQL itself is unavailable.

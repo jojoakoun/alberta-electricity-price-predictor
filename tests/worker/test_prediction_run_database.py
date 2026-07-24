@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from electricity_predictor.worker.result_persistence import (
-  save_prediction_run,
+from electricity_predictor.worker.prediction_run_database import (
+  save_successful_prediction_run,
 )
 
 
@@ -35,7 +35,7 @@ def build_decisions() -> list[dict]:
   ]
 
 
-def test_save_prediction_run_upserts_and_replaces_horizons() -> None:
+def test_save_successful_prediction_run_upserts_and_replaces_horizons() -> None:
   generated_at = datetime(
     2026,
     7,
@@ -52,12 +52,12 @@ def test_save_prediction_run_upserts_and_replaces_horizons() -> None:
   connection.cursor.return_value.__enter__.return_value = cursor
 
   with patch(
-    "electricity_predictor.worker.result_persistence."
+    "electricity_predictor.worker.prediction_run_database."
     "get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = connection
 
-    run_id = save_prediction_run(
+    run_id = save_successful_prediction_run(
       generated_at=generated_at,
       decisions=build_decisions(),
       confidence="medium",
@@ -144,16 +144,16 @@ def test_two_worker_writes_for_one_source_hour_reuse_one_five_horizon_run() -> N
   connection.cursor.return_value.__enter__.return_value = cursor
 
   with patch(
-    "electricity_predictor.worker.result_persistence."
+    "electricity_predictor.worker.prediction_run_database."
     "get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = connection
 
-    first_run_id = save_prediction_run(
+    first_run_id = save_successful_prediction_run(
       generated_at=generated_at,
       decisions=build_decisions(),
     )
-    second_run_id = save_prediction_run(
+    second_run_id = save_successful_prediction_run(
       generated_at=generated_at,
       decisions=build_decisions(),
     )
@@ -187,12 +187,12 @@ def test_two_worker_writes_for_one_source_hour_reuse_one_five_horizon_run() -> N
     ]
 
 
-def test_save_prediction_run_rejects_empty_decisions() -> None:
+def test_save_successful_prediction_run_rejects_empty_decisions() -> None:
   with pytest.raises(
     ValueError,
     match="At least one prediction decision is required",
   ):
-    save_prediction_run(
+    save_successful_prediction_run(
       generated_at=datetime.now(
         timezone.utc
       ),
@@ -200,7 +200,7 @@ def test_save_prediction_run_rejects_empty_decisions() -> None:
     )
 
 
-def test_save_prediction_run_rejects_incomplete_horizons() -> None:
+def test_save_successful_prediction_run_rejects_incomplete_horizons() -> None:
   with pytest.raises(
     ValueError,
     match=(
@@ -208,7 +208,7 @@ def test_save_prediction_run_rejects_incomplete_horizons() -> None:
       "1, 3, 6, 12, 24 hours"
     ),
   ):
-    save_prediction_run(
+    save_successful_prediction_run(
       generated_at=datetime.now(
         timezone.utc
       ),
@@ -216,7 +216,7 @@ def test_save_prediction_run_rejects_incomplete_horizons() -> None:
     )
 
 
-def test_save_prediction_run_rejects_unknown_forecast_kind() -> None:
+def test_save_successful_prediction_run_rejects_unknown_forecast_kind() -> None:
   decisions = build_decisions()
   decisions[0]["forecast_kind"] = "mystery"
 
@@ -224,7 +224,7 @@ def test_save_prediction_run_rejects_unknown_forecast_kind() -> None:
     ValueError,
     match="Unsupported forecast kind",
   ):
-    save_prediction_run(
+    save_successful_prediction_run(
       generated_at=datetime.now(
         timezone.utc
       ),
@@ -232,9 +232,9 @@ def test_save_prediction_run_rejects_unknown_forecast_kind() -> None:
     )
 
 
-def test_backfill_prediction_actual_prices() -> None:
-  from electricity_predictor.worker.result_persistence import (
-    backfill_prediction_actual_prices,
+def test_update_predictions_with_final_actual_prices() -> None:
+  from electricity_predictor.worker.prediction_run_database import (
+    update_predictions_with_final_actual_prices,
   )
 
   cursor = MagicMock()
@@ -244,13 +244,13 @@ def test_backfill_prediction_actual_prices() -> None:
   connection.cursor.return_value.__enter__.return_value = cursor
 
   with patch(
-    "electricity_predictor.worker.result_persistence."
+    "electricity_predictor.worker.prediction_run_database."
     "get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = connection
 
     updated_rows = (
-      backfill_prediction_actual_prices()
+      update_predictions_with_final_actual_prices()
     )
 
   cursor.execute.assert_called_once()
@@ -262,7 +262,7 @@ def test_backfill_prediction_actual_prices() -> None:
 def test_save_failed_prediction_run() -> None:
   from datetime import UTC
 
-  from electricity_predictor.worker.result_persistence import (
+  from electricity_predictor.worker.prediction_run_database import (
     save_failed_prediction_run,
   )
 
@@ -281,7 +281,7 @@ def test_save_failed_prediction_run() -> None:
   )
 
   with patch(
-    "electricity_predictor.worker.result_persistence."
+    "electricity_predictor.worker.prediction_run_database."
     "get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = connection

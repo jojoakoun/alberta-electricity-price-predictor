@@ -294,7 +294,7 @@ src/electricity_predictor/worker/research_history_sync.py
 ```text
 synchronize_current_history
   -> load_current_history
-  -> upsert_hourly_prices
+  -> insert_or_update_hourly_prices
      -> get_database_connection
      -> cursor.executemany
      -> connection.commit

@@ -5,7 +5,7 @@ from electricity_predictor.worker.decision_context import (
   DecisionContext,
   build_decision_context,
 )
-from electricity_predictor.worker.persistence import (
+from electricity_predictor.worker.hourly_price_database import (
   load_recent_finalized_prices,
 )
 

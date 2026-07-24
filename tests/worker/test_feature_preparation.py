@@ -49,7 +49,7 @@ def prepare_from(
   with patch(
     "electricity_predictor.worker."
     "feature_preparation."
-    "load_inference_hourly_prices",
+    "load_hourly_prices_for_prediction",
     return_value=data,
   ):
     return prepare_model_features()
@@ -59,7 +59,7 @@ def test_live_lookback_covers_safe_actual_window():
   with patch(
     "electricity_predictor.worker."
     "feature_preparation."
-    "load_inference_hourly_prices",
+    "load_hourly_prices_for_prediction",
     return_value=build_hourly_prices(),
   ) as loader:
     prepare_model_features()

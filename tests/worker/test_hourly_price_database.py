@@ -4,15 +4,15 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from electricity_predictor.worker.persistence import (
-  get_database_time,
+from electricity_predictor.worker.hourly_price_database import (
+  get_current_database_time,
   get_latest_hourly_price_timestamp,
-  load_inference_hourly_prices,
-  upsert_hourly_prices,
+  load_hourly_prices_for_prediction,
+  insert_or_update_hourly_prices,
 )
 
 
-def test_get_database_time_returns_timestamp() -> None:
+def test_get_current_database_time_returns_timestamp() -> None:
   expected = datetime(2026, 7, 17, tzinfo=timezone.utc)
 
   cursor = MagicMock()
@@ -22,11 +22,11 @@ def test_get_database_time_returns_timestamp() -> None:
   connection.cursor.return_value.__enter__.return_value = cursor
 
   with patch(
-    "electricity_predictor.worker.persistence.get_database_connection"
+    "electricity_predictor.worker.hourly_price_database.get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = connection
 
-    result = get_database_time()
+    result = get_current_database_time()
 
   assert result == expected
 
@@ -41,7 +41,7 @@ def test_get_latest_hourly_price_timestamp_reads_postgresql_maximum() -> None:
   connection.cursor.return_value.__enter__.return_value = cursor
 
   with patch(
-    "electricity_predictor.worker.persistence.get_database_connection"
+    "electricity_predictor.worker.hourly_price_database.get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = connection
 
@@ -51,7 +51,7 @@ def test_get_latest_hourly_price_timestamp_reads_postgresql_maximum() -> None:
   assert "MAX(datetime_utc)" in cursor.execute.call_args.args[0]
 
 
-def test_upsert_hourly_prices_synchronizes_rows() -> None:
+def test_insert_or_update_hourly_prices_synchronizes_rows() -> None:
   data = pd.DataFrame(
     {
       "datetime_universal_time": pd.to_datetime(
@@ -69,11 +69,11 @@ def test_upsert_hourly_prices_synchronizes_rows() -> None:
   connection.cursor.return_value.__enter__.return_value = cursor
 
   with patch(
-    "electricity_predictor.worker.persistence.get_database_connection"
+    "electricity_predictor.worker.hourly_price_database.get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = connection
 
-    synchronized_rows = upsert_hourly_prices(data)
+    synchronized_rows = insert_or_update_hourly_prices(data)
 
   assert synchronized_rows == 2
   cursor.executemany.assert_called_once()
@@ -108,7 +108,7 @@ def test_upsert_hourly_prices_synchronizes_rows() -> None:
 
 
 
-def test_load_inference_hourly_prices_uses_database_candidate_window() -> None:
+def test_load_hourly_prices_for_prediction_uses_database_candidate_window() -> None:
   candidate = datetime(
     2026,
     7,
@@ -152,14 +152,14 @@ def test_load_inference_hourly_prices_uses_database_candidate_window() -> None:
   )
 
   with patch(
-    "electricity_predictor.worker.persistence."
+    "electricity_predictor.worker.hourly_price_database."
     "get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = (
       connection
     )
 
-    result = load_inference_hourly_prices(
+    result = load_hourly_prices_for_prediction(
       lookback_hours=168
     )
 
@@ -218,12 +218,12 @@ def test_repeated_hourly_price_upsert_uses_the_same_conflict_records() -> None:
   connection.cursor.return_value.__enter__.return_value = cursor
 
   with patch(
-    "electricity_predictor.worker.persistence.get_database_connection"
+    "electricity_predictor.worker.hourly_price_database.get_database_connection"
   ) as get_connection:
     get_connection.return_value.__enter__.return_value = connection
 
-    first_count = upsert_hourly_prices(data)
-    second_count = upsert_hourly_prices(data)
+    first_count = insert_or_update_hourly_prices(data)
+    second_count = insert_or_update_hourly_prices(data)
 
   assert first_count == second_count == 1
   assert cursor.executemany.call_count == 2
@@ -237,12 +237,12 @@ def test_repeated_hourly_price_upsert_uses_the_same_conflict_records() -> None:
   )
 
 
-def test_upsert_hourly_prices_rejects_missing_columns() -> None:
+def test_insert_or_update_hourly_prices_rejects_missing_columns() -> None:
   with pytest.raises(ValueError, match="Missing hourly price columns"):
-    upsert_hourly_prices(pd.DataFrame({"actual_price": [40.0]}))
+    insert_or_update_hourly_prices(pd.DataFrame({"actual_price": [40.0]}))
 
 
-def test_upsert_hourly_prices_rejects_duplicate_timestamps() -> None:
+def test_insert_or_update_hourly_prices_rejects_duplicate_timestamps() -> None:
   timestamp = pd.Timestamp("2026-07-17 00:00:00", tz="UTC")
   data = pd.DataFrame(
     {
@@ -257,4 +257,4 @@ def test_upsert_hourly_prices_rejects_duplicate_timestamps() -> None:
     ValueError,
     match="duplicate UTC timestamps",
   ):
-    upsert_hourly_prices(data)
+    insert_or_update_hourly_prices(data)

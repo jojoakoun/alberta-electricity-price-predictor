@@ -1,4 +1,4 @@
-"""Read and synchronize operational hourly prices in PostgreSQL."""
+"""Read and update operational hourly prices in PostgreSQL."""
 
 from datetime import datetime
 
@@ -9,7 +9,7 @@ from electricity_predictor.storage.postgres import (
 )
 
 
-def get_database_time() -> datetime:
+def get_current_database_time() -> datetime:
   """Return the current PostgreSQL timestamp."""
   with get_database_connection() as connection:
     with connection.cursor() as cursor:
@@ -37,8 +37,8 @@ def get_latest_hourly_price_timestamp() -> datetime | None:
   return result[0]
 
 
-def upsert_hourly_prices(data: pd.DataFrame, source: str = "pipeline") -> int:
-  """Synchronize unique UTC hours under the approved source precedence.
+def insert_or_update_hourly_prices(data: pd.DataFrame, source: str = "pipeline") -> int:
+  """Insert new hourly prices and update allowed fields under source precedence.
 
   Incoming actuals only fill null observations; finalized actual prices are
   never replaced. AESO may revise forecasts, while research or seed imports may
@@ -130,10 +130,10 @@ def upsert_hourly_prices(data: pd.DataFrame, source: str = "pipeline") -> int:
   return len(records)
 
 
-def load_inference_hourly_prices(
+def load_hourly_prices_for_prediction(
   lookback_hours: int,
 ) -> pd.DataFrame:
-  """Load support ending at the latest available market hour."""
+  """Load the hourly price window required to build one prediction feature row."""
   if lookback_hours <= 0:
     raise ValueError(
       "Inference lookback hours must be greater than zero."

@@ -99,7 +99,7 @@ def test_operational_pipeline_runs_without_raw_or_interim_csvs(
     ) as fetch,
     patch(
       "electricity_predictor.worker.operational_refresh."
-      "upsert_hourly_prices",
+      "insert_or_update_hourly_prices",
       return_value=1,
     ) as upsert,
     patch(

@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from electricity_predictor.config import PROJECT_ROOT
-from electricity_predictor.worker.persistence import upsert_hourly_prices
+from electricity_predictor.worker.hourly_price_database import insert_or_update_hourly_prices
 
 
 DEFAULT_DATASET_PATH = (
@@ -58,7 +58,7 @@ def synchronize_current_history(
   """Synchronize the current research dataset with PostgreSQL."""
   data = load_current_history(dataset_path)
 
-  return upsert_hourly_prices(
+  return insert_or_update_hourly_prices(
     data=data,
     source="pipeline",
   )

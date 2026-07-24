@@ -9,9 +9,9 @@ from electricity_predictor.data.aeso_api import (
   fetch_pool_price_report,
   normalize_pool_price_report,
 )
-from electricity_predictor.worker.persistence import (
+from electricity_predictor.worker.hourly_price_database import (
   get_latest_hourly_price_timestamp,
-  upsert_hourly_prices,
+  insert_or_update_hourly_prices,
 )
 
 
@@ -131,7 +131,7 @@ def synchronize_operational_prices(
     api_data
   )
 
-  return upsert_hourly_prices(
+  return insert_or_update_hourly_prices(
     data=operational_data,
     source="aeso_api",
   )

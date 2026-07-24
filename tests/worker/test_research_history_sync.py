@@ -92,7 +92,7 @@ def test_synchronize_current_history_calls_bulk_upsert(
 
   with patch(
     "electricity_predictor.worker.research_history_sync."
-    "upsert_hourly_prices",
+    "insert_or_update_hourly_prices",
     return_value=1,
   ) as upsert:
     synchronized_rows = synchronize_current_history(dataset_path)

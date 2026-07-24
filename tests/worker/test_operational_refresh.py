@@ -94,7 +94,7 @@ def test_operational_refresh_uses_postgresql_without_local_csvs(
     ),
     patch(
       "electricity_predictor.worker.operational_refresh."
-      "upsert_hourly_prices",
+      "insert_or_update_hourly_prices",
       side_effect=fake_upsert,
     ),
   ):
@@ -152,7 +152,7 @@ def test_repeated_operational_refresh_sends_one_stable_row_per_timestamp() -> No
     ),
     patch(
       "electricity_predictor.worker.operational_refresh."
-      "upsert_hourly_prices",
+      "insert_or_update_hourly_prices",
       side_effect=fake_upsert,
     ),
   ):

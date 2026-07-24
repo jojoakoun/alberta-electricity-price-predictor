@@ -1,4 +1,4 @@
-"""Persist complete, idempotent prediction runs and observed outcomes."""
+"""Save complete prediction runs and finalized outcomes in PostgreSQL."""
 
 import json
 from datetime import datetime, timedelta
@@ -81,7 +81,7 @@ def _build_prediction_run_detail(
   )
 
 
-def save_prediction_run(
+def save_successful_prediction_run(
   generated_at: datetime,
   decisions: list[dict],
   confidence: str | None = None,
@@ -206,8 +206,8 @@ def save_prediction_run(
   return run_id
 
 
-def backfill_prediction_actual_prices() -> int:
-  """Fill null outcomes from matching finalized observations.
+def update_predictions_with_final_actual_prices() -> int:
+  """Update predictions that are missing their finalized actual prices.
 
   Existing prediction outcomes are immutable, and no forecast or synthetic
   value may stand in for a missing actual price.

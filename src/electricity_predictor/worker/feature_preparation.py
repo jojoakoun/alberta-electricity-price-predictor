@@ -6,8 +6,8 @@ from electricity_predictor.features.live_feature_contract import (
   SELECTED_LIVE_FEATURE_COLUMNS,
   add_live_feature_candidates,
 )
-from electricity_predictor.worker.persistence import (
-  load_inference_hourly_prices,
+from electricity_predictor.worker.hourly_price_database import (
+  load_hourly_prices_for_prediction,
 )
 
 
@@ -241,7 +241,7 @@ def validate_safe_actual_support(
 
 def prepare_model_features() -> pd.DataFrame:
   """Build one complete selected-contract row for the latest market hour."""
-  data = load_inference_hourly_prices(
+  data = load_hourly_prices_for_prediction(
     lookback_hours=(
       LIVE_INFERENCE_LOOKBACK_HOURS
     )

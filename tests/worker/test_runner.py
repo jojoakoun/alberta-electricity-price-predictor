@@ -68,7 +68,7 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
     ),
     patch(
       "electricity_predictor.worker.runner."
-      "backfill_prediction_actual_prices",
+      "update_predictions_with_final_actual_prices",
       return_value=0,
     ),
     patch(
@@ -84,7 +84,7 @@ def test_run_worker_cycle_saves_predictions_and_decisions() -> None:
       return_value=decisions,
     ) as apply_decisions,
     patch(
-      "electricity_predictor.worker.runner.save_prediction_run",
+      "electricity_predictor.worker.runner.save_successful_prediction_run",
       return_value=21,
     ) as save_run,
   ):
@@ -124,7 +124,7 @@ def test_run_worker_cycle_records_failure() -> None:
     ),
     patch(
       "electricity_predictor.worker.runner."
-      "backfill_prediction_actual_prices",
+      "update_predictions_with_final_actual_prices",
       return_value=0,
     ),
     patch(
@@ -135,7 +135,7 @@ def test_run_worker_cycle_records_failure() -> None:
       "electricity_predictor.worker.runner.generate_horizon_predictions",
     ) as generate_predictions,
     patch(
-      "electricity_predictor.worker.runner.get_database_time",
+      "electricity_predictor.worker.runner.get_current_database_time",
       return_value=pd.Timestamp(
         "2026-07-17 18:00:00",
         tz="UTC",
@@ -174,7 +174,7 @@ def test_run_worker_cycle_preserves_primary_error_when_failure_recording_fails(
     ),
     patch(
       "electricity_predictor.worker.runner."
-      "backfill_prediction_actual_prices",
+      "update_predictions_with_final_actual_prices",
       return_value=0,
     ),
     patch(
@@ -182,7 +182,7 @@ def test_run_worker_cycle_preserves_primary_error_when_failure_recording_fails(
       side_effect=primary_error,
     ),
     patch(
-      "electricity_predictor.worker.runner.get_database_time",
+      "electricity_predictor.worker.runner.get_current_database_time",
       return_value=pd.Timestamp(
         "2026-07-17 18:00:00",
         tz="UTC",
