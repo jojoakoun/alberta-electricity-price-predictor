@@ -1,6 +1,0 @@
-feature_timestamp_utc,horizon_hours,predicted_price,spike_probability,decision_threshold,is_spike,spike_threshold,regression_model,classification_model,forecast_kind
-2024-12-30 23:00:00,1,39.305437376035215,0.088846090762482,0.7,False,170.76999999999998,hist_gradient_boosting_regressor_tuned,hist_gradient_boosting_classifier,model_forecast
-2024-12-30 23:00:00,3,36.37205630148035,0.06615771667227001,0.65,False,170.76999999999998,hist_gradient_boosting_regressor_tuned,hist_gradient_boosting_classifier_tuned,model_forecast
-2024-12-30 23:00:00,6,31.900545434363092,0.04990535183253954,0.6,False,170.76999999999998,hist_gradient_boosting_regressor_tuned,hist_gradient_boosting_classifier_tuned,model_forecast
-2024-12-30 23:00:00,12,30.970638079394618,0.033154366841559604,0.6,False,170.76999999999998,hist_gradient_boosting_regressor_tuned,hist_gradient_boosting_classifier_tuned,model_forecast
-2024-12-30 23:00:00,24,38.97119044499277,0.1576682805017239,0.6,False,170.76999999999998,hist_gradient_boosting_regressor_tuned,gradient_boosting_classifier_tuned,model_forecast

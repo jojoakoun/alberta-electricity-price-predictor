@@ -1,6 +1,7 @@
 """Tests for the isolated live candidate model bundle."""
 
 import json
+from pathlib import Path
 
 import pytest
 from sklearn.ensemble import (
@@ -9,10 +10,32 @@ from sklearn.ensemble import (
 )
 
 from electricity_predictor.modeling.live_contract.save_candidate_models import (
+  CLASSIFICATION_RESULTS_PATH,
+  REGRESSION_RESULTS_PATH,
   build_classification_model,
   build_regression_model,
   parse_classification_parameters,
 )
+
+
+def test_candidate_validation_results_use_generated_report_paths():
+  assert REGRESSION_RESULTS_PATH == Path(
+    "reports/live_regression_validation_results.csv"
+  )
+
+  assert CLASSIFICATION_RESULTS_PATH == Path(
+    "reports/live_classification_validation_results.csv"
+  )
+
+  assert (
+    "phase7_manual_pipeline_checks"
+    not in REGRESSION_RESULTS_PATH.parts
+  )
+
+  assert (
+    "phase7_manual_pipeline_checks"
+    not in CLASSIFICATION_RESULTS_PATH.parts
+  )
 
 
 def test_build_regression_model_uses_selected_parameters():

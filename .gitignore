@@ -67,6 +67,8 @@ reports/model_lifecycle/
 codex-*
 claude-*
 audit-*
+phase7_manual_pipeline_checks/
+project_cleanup_reports/
 # Local project documentation
 docs/
 

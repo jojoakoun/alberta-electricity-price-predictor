@@ -1,7 +1,0 @@
-===== TARGETED DECISION POLICY TESTS =====
-....                                                                     [100%]
-4 passed in 0.57s
-
-===== PROTECTED TEST REFERENCES =====
-
-===== DIFF CHECK =====

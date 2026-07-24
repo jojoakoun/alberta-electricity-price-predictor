@@ -39,13 +39,11 @@ from electricity_predictor.modeling.live_contract.validation_comparison import (
 
 
 REGRESSION_RESULTS_PATH = Path(
-  "phase7_manual_pipeline_checks/"
-  "113-live-regression-validation-results.csv"
+  "reports/live_regression_validation_results.csv"
 )
 
 CLASSIFICATION_RESULTS_PATH = Path(
-  "phase7_manual_pipeline_checks/"
-  "114-live-classification-validation-results.csv"
+  "reports/live_classification_validation_results.csv"
 )
 
 CANDIDATE_ROOT = Path(

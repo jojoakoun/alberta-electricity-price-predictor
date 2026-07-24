@@ -1,8 +1,0 @@
-===== VALIDATION EVALUATION TESTS =====
-..................                                                       [100%]
-18 passed in 2.35s
-
-===== GIT DIFF CHECK =====
-
-validation_evaluation_tests_exit_code=0
-git_diff_check_exit_code=0

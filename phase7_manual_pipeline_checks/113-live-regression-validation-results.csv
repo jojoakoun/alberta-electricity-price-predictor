@@ -1,6 +1,0 @@
-contract,model_name,horizon_hours,target_column,feature_count,train_rows,validation_rows,cv_splits,cv_gap_hours,learning_rate,max_iter,max_leaf_nodes,min_samples_leaf,l2_regularization,cv_mae,cv_rmse,validation_mae,validation_rmse
-conservative_hybrid,hist_gradient_boosting_regressor_tuned,1,actual_price_target_1h,14,34842,8760,3,24,0.1,100,31,20,1.0,53.289258134714366,115.39458316676155,28.551518865553057,79.76199546941993
-conservative_hybrid,hist_gradient_boosting_regressor_tuned,3,actual_price_target_3h,14,34842,8760,3,24,0.05,200,15,20,0.0,71.23144511694105,145.56857539477414,36.79525116601581,100.18337780192559
-conservative_hybrid,hist_gradient_boosting_regressor_tuned,6,actual_price_target_6h,14,34842,8760,3,24,0.05,200,15,20,0.0,81.27733736277908,164.2688418288449,41.17444455177614,109.39206769509099
-conservative_hybrid,hist_gradient_boosting_regressor_tuned,12,actual_price_target_12h,14,34842,8760,3,24,0.05,200,15,20,0.0,85.10143439676209,172.06337289861713,42.93768599332055,114.23955492256894
-conservative_hybrid,hist_gradient_boosting_regressor_tuned,24,actual_price_target_24h,14,34842,8760,3,24,0.05,200,15,20,0.0,84.66724257980839,174.880465307758,44.283689047419124,117.61704824480688

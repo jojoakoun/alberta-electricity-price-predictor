@@ -29,6 +29,8 @@ EXCLUDED_DIRECTORIES = {
   "models",
   "local",
   "logs",
+  "phase7_manual_pipeline_checks",
+  "project_cleanup_reports",
 }
 
 EXCLUDED_FILENAMES = {

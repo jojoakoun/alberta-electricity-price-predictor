@@ -1,8 +1,0 @@
-===== THRESHOLD FOUNDATION TESTS =====
-...........                                                              [100%]
-11 passed in 1.74s
-
-===== GIT DIFF CHECK =====
-
-threshold_tests_exit_code=0
-git_diff_check_exit_code=0

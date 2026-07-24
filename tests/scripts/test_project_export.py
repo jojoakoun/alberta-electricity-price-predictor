@@ -28,6 +28,8 @@ from scripts.project_export.writers import (
     "reports/results.csv",
     "models/model.joblib",
     "context_exports/archive.zip",
+    "phase7_manual_pipeline_checks/report.txt",
+    "project_cleanup_reports/baseline/report.txt",
     "codex-review.txt",
     "claude-review.md",
     "audit-final.txt",
