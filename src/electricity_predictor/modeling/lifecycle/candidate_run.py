@@ -12,16 +12,13 @@ from electricity_predictor.modeling.lifecycle.paths import (
   LATEST_SPLIT_MANIFEST_PATH,
 )
 
-
-REGRESSION_CHAMPION_METADATA_PATH = Path(
-  "models/regression/"
-  "selected_regression_model_metadata.csv"
+from electricity_predictor.serving.model_registry import (
+  ACTIVE_MODEL_REGISTRY_PATH,
+  resolve_active_metadata_paths,
 )
 
-CLASSIFICATION_CHAMPION_METADATA_PATH = Path(
-  "models/classification/"
-  "selected_classification_model_metadata.csv"
-)
+
+
 
 
 def read_json_file(
@@ -150,12 +147,77 @@ def build_candidate_model_version(
   )
 
 
+def resolve_current_champion(
+  registry_path: Path = (
+    ACTIVE_MODEL_REGISTRY_PATH
+  ),
+) -> dict:
+  """Describe the active models or the initial state before activation."""
+  if not registry_path.exists():
+    return {
+      "status":
+        "no_active_models",
+      "active_registry_path":
+        str(registry_path),
+      "regression_metadata_path":
+        None,
+      "classification_metadata_path":
+        None,
+      "regression_model_version":
+        None,
+      "classification_model_version":
+        None,
+    }
+
+  (
+    regression_metadata_path,
+    classification_metadata_path,
+    registry,
+  ) = resolve_active_metadata_paths(
+    registry_path=registry_path
+  )
+
+  return {
+    "status":
+      "active_models_available",
+    "active_registry_path":
+      str(registry_path),
+    "regression_metadata_path":
+      str(
+        regression_metadata_path
+      ),
+    "classification_metadata_path":
+      str(
+        classification_metadata_path
+      ),
+    "regression_model_version":
+      registry[
+        "tasks"
+      ][
+        "regression"
+      ][
+        "model_version"
+      ],
+    "classification_model_version":
+      registry[
+        "tasks"
+      ][
+        "classification"
+      ][
+        "model_version"
+      ],
+  }
+
+
 def build_candidate_manifest(
   split_manifest: dict,
   source_split_manifest_path: Path,
   candidate_root: Path,
   promotion_mode: str,
   created_at_utc: str | None = None,
+  active_registry_path: Path = (
+    ACTIVE_MODEL_REGISTRY_PATH
+  ),
 ) -> dict:
   """Build metadata for an isolated candidate run."""
   validate_split_manifest(
@@ -242,15 +304,11 @@ def build_candidate_manifest(
         ),
       },
     },
-    "current_champion": {
-      "status": "legacy_unversioned",
-      "regression_metadata_path": str(
-        REGRESSION_CHAMPION_METADATA_PATH
-      ),
-      "classification_metadata_path": str(
-        CLASSIFICATION_CHAMPION_METADATA_PATH
-      ),
-    },
+    "current_champion": (
+      resolve_current_champion(
+        registry_path=active_registry_path
+      )
+    ),
   }
 
 
@@ -263,6 +321,9 @@ def prepare_candidate_run(
   ),
   promotion_mode: str | None = None,
   created_at_utc: str | None = None,
+  active_registry_path: Path = (
+    ACTIVE_MODEL_REGISTRY_PATH
+  ),
 ) -> tuple[Path, Path, dict]:
   """Prepare one isolated candidate directory."""
   split_manifest = read_json_file(
@@ -297,6 +358,9 @@ def prepare_candidate_run(
         resolved_promotion_mode
       ),
       created_at_utc=created_at_utc,
+      active_registry_path=(
+        active_registry_path
+      ),
     )
   )
 

@@ -108,7 +108,14 @@ def test_build_candidate_model_version():
   )
 
 
-def test_build_candidate_manifest_is_pending():
+def test_build_candidate_manifest_is_pending(
+  tmp_path,
+):
+  registry_path = (
+    tmp_path
+    / "active_models.json"
+  )
+
   manifest = build_candidate_manifest(
     split_manifest=(
       build_test_split_manifest()
@@ -123,6 +130,7 @@ def test_build_candidate_manifest_is_pending():
     created_at_utc=(
       "2026-07-20T17:00:00+00:00"
     ),
+    active_registry_path=registry_path,
   )
 
   assert manifest["status"] == "prepared"
@@ -145,8 +153,44 @@ def test_build_candidate_manifest_is_pending():
     manifest["current_champion"][
       "status"
     ]
-    == "legacy_unversioned"
+    == "no_active_models"
   )
+
+  assert (
+    manifest["current_champion"][
+      "active_registry_path"
+    ]
+    == str(registry_path)
+  )
+
+  assert (
+    manifest["current_champion"][
+      "regression_metadata_path"
+    ]
+    is None
+  )
+
+  assert (
+    manifest["current_champion"][
+      "classification_metadata_path"
+    ]
+    is None
+  )
+
+  assert (
+    manifest["current_champion"][
+      "regression_model_version"
+    ]
+    is None
+  )
+
+  assert (
+    manifest["current_champion"][
+      "classification_model_version"
+    ]
+    is None
+  )
+
 
 
 def test_prepare_candidate_run_creates_isolated_directories(
@@ -267,3 +311,122 @@ def test_build_candidate_manifest_rejects_incomplete_split():
       ),
       promotion_mode="manual",
     )
+
+def test_resolve_current_champion_reports_no_active_models(
+  tmp_path,
+) -> None:
+  from electricity_predictor.modeling.lifecycle.candidate_run import (
+    resolve_current_champion,
+  )
+
+  registry_path = (
+    tmp_path
+    / "active_models.json"
+  )
+
+  champion = resolve_current_champion(
+    registry_path=registry_path
+  )
+
+  assert champion == {
+    "status":
+      "no_active_models",
+    "active_registry_path":
+      str(registry_path),
+    "regression_metadata_path":
+      None,
+    "classification_metadata_path":
+      None,
+    "regression_model_version":
+      None,
+    "classification_model_version":
+      None,
+  }
+
+
+def test_resolve_current_champion_reads_active_models(
+  tmp_path,
+  monkeypatch,
+) -> None:
+  from electricity_predictor.modeling.lifecycle import (
+    candidate_run,
+  )
+
+  registry_path = (
+    tmp_path
+    / "active_models.json"
+  )
+
+  registry_path.write_text(
+    "{}\n",
+    encoding="utf-8",
+  )
+
+  regression_metadata_path = (
+    tmp_path
+    / "regression_metadata.csv"
+  )
+
+  classification_metadata_path = (
+    tmp_path
+    / "classification_metadata.csv"
+  )
+
+  registry = {
+    "tasks": {
+      "regression": {
+        "model_version":
+          "regression-v1",
+      },
+      "classification": {
+        "model_version":
+          "classification-v1",
+      },
+    },
+  }
+
+  def fake_resolve_active_metadata_paths(
+    registry_path,
+  ):
+    assert registry_path == (
+      tmp_path
+      / "active_models.json"
+    )
+
+    return (
+      regression_metadata_path,
+      classification_metadata_path,
+      registry,
+    )
+
+  monkeypatch.setattr(
+    candidate_run,
+    "resolve_active_metadata_paths",
+    fake_resolve_active_metadata_paths,
+  )
+
+  champion = (
+    candidate_run
+    .resolve_current_champion(
+      registry_path=registry_path
+    )
+  )
+
+  assert champion == {
+    "status":
+      "active_models_available",
+    "active_registry_path":
+      str(registry_path),
+    "regression_metadata_path":
+      str(
+        regression_metadata_path
+      ),
+    "classification_metadata_path":
+      str(
+        classification_metadata_path
+      ),
+    "regression_model_version":
+      "regression-v1",
+    "classification_model_version":
+      "classification-v1",
+  }
