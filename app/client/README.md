@@ -1,27 +1,42 @@
-# WattWise client
+# WattWise Client
 
-The WattWise browser application is a React frontend written in JavaScript and
-JSX. Vite provides the development server, production build, and Vitest test
-environment; Oxlint checks the source.
+The client is a React application built with Vite.
 
 ## Commands
 
-Run these commands from the repository root:
+Run from the repository root:
 
 ```bash
-npm --prefix app/client run dev
-npm --prefix app/client test
+npm --prefix app/client test -- --run
 npm --prefix app/client run lint
 npm --prefix app/client run build
 ```
 
-The development server forwards `/api` requests to the local Express service
-at `http://127.0.0.1:8000`. The production build targets ECMAScript 2016 and is
-served by Express from `app/client/dist`.
+Start the complete local application with:
 
-## Runtime contracts
+```bash
+make dev
+```
 
-Responses from the Now and Today APIs are validated at the network boundary.
-The Today API owns price comparison and best-time selection; the browser only
-renders those decisions. The +24-hour persistence reference remains visible
-for context but cannot be highlighted as a savings opportunity.
+## Structure
+
+- `src/pages/`: application pages
+- `src/components/`: reusable UI components
+- `src/layout/`: page layout and navigation
+- `src/api/`: API clients
+- `src/domain/`: client-side business interpretation
+- `src/i18n/`: English and French wording
+- `src/styles/`: responsive application styles
+
+## API
+
+Development requests are proxied to the Express API.
+
+The main application endpoints are:
+
+- `/api/v1/health`
+- `/api/v1/now`
+- `/api/v1/today`
+
+Backend prices use dollars per megawatt-hour. The frontend may convert values
+for consumer-facing display where the interface explicitly requires it.
