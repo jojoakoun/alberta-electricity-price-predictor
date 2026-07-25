@@ -7,371 +7,481 @@ PIP ?= pip
 PYTEST ?= pytest
 NPM ?= npm
 CURL ?= curl
-SERVER_DIR ?= app/server
-CLIENT_DIR ?= app/client
-DOTENV ?= $(SERVER_DIR)/node_modules/.bin/dotenv
 
-# All command targets are phony; keep this inventory synchronized with help.
+SERVER_DIR := app/server
+CLIENT_DIR := app/client
+DOTENV := $(SERVER_DIR)/node_modules/.bin/dotenv
+
+GENERATED_DIRECTORIES := \
+	data/interim \
+	data/processed \
+	reports \
+	models/candidates \
+	models/production \
+	dist/model-releases
+
+PROTECTED_REGRESSION_TEST := \
+	tests/modeling/regression/test_final_test_evaluation.py
+
+PROTECTED_CLASSIFICATION_TEST := \
+	tests/modeling/classification/test_final_test_evaluation.py
+
+
+# ==============================================================================
+# ==============================================================================
+#
+#                    WATTWISE — MAIN COMMANDS
+#
+#                   USE THIS SECTION NORMALLY
+#
+# ==============================================================================
+# ==============================================================================
+
 .PHONY: \
 	help \
 	install \
-	verify \
-	app-check \
-	database-check \
-	dev \
+	reset \
+	rebuild \
+	activate \
+	sync \
+	start \
+	restart \
 	stop \
-	sync-history \
-	sync-and-predict \
-	worker-run \
-	research-rebuild \
-	research-rebuild-all \
-	lifecycle-status \
-	lifecycle-run \
-	lifecycle-promote \
-	lifecycle-rollback \
-	release-build \
-	models-install \
-	hourly-refresh \
-	retrain-if-due \
-	local-bootstrap \
-	db-clean \
-	config-check \
-	compile-check \
-	inference-check \
-	test-python \
-	test-server \
-	test-client \
-	refresh-data \
-	data-quality \
-	features \
-	feature-quality \
-	training-data \
-	regression-models \
-	select-best-regression-model \
-	classification-models \
-	select-best-classification-model \
-	spike-definition-analysis \
-	spike-regime-analysis \
-	decision-window-analysis \
-	decision-regime-analysis \
-	decision-policy-backtest \
-	decision-policy-calibration \
-	predicted-decision-stress-test \
-	decision-analysis \
-	final-regression-evaluation \
-	save-selected-regression-models \
-	final-classification-evaluation \
-	save-selected-classification-models
-
-# ==============================================================================
-# Help: complete catalogue grouped by the responsibilities used below.
-# ==============================================================================
+	check \
+	status \
+	verify
 
 help:
 	@echo ""
-	@echo "WattWise commands"
+	@echo "WattWise — main commands"
+	@echo "========================"
 	@echo ""
-	@echo "Setup and verification:"
-	@echo "  make install              Install Python and Node dependencies"
-	@echo "  make verify               Run the complete automated verification"
-	@echo "  make app-check            Verify the local API endpoints"
-	@echo "  make database-check       Verify local PostgreSQL connectivity"
+	@echo "Installation:"
+	@echo "  make install"
+	@echo "      Install Python, API, and frontend dependencies."
 	@echo ""
-	@echo "Application:"
-	@echo "  make dev                  Start the API and frontend locally"
-	@echo "  make stop                 Stop local application processes"
-	@echo "  make sync-and-predict     Refresh data, sync history, and predict"
-	@echo "  make worker-run           Run one production worker cycle"
+	@echo "Complete rebuild:"
+	@echo "  make reset CONFIRM=YES"
+	@echo "      Delete generated files and reset the local database."
+	@echo "      Preserve the raw CSV source and PostgreSQL schema."
 	@echo ""
-	@echo "Data and model research:"
-	@echo "  make sync-history         Synchronize historical prices to PostgreSQL"
-	@echo "  make research-rebuild     Rebuild validation research outputs"
-	@echo "  make research-rebuild-all Run the complete approved research rebuild"
+	@echo "  make rebuild"
+	@echo "      Rebuild data, reports, models, and the lifecycle candidate."
+	@echo "      Does not run protected final-test evaluations."
+	@echo "      Does not activate models automatically."
 	@echo ""
-	@echo "Model lifecycle:"
-	@echo "  make lifecycle-status     Show current lifecycle state"
-	@echo "  make lifecycle-run        Prepare and compare lifecycle candidates"
-	@echo "  make lifecycle-promote    Promote an approved candidate"
-	@echo "  make lifecycle-rollback   Roll back the active model registry"
+	@echo "  make activate"
+	@echo "      Manually activate the latest approved candidate."
 	@echo ""
-	@echo "Release and scheduling:"
-	@echo "  make release-build        Build a versioned model release"
-	@echo "  make models-install       Install a prepared model release"
-	@echo "  make hourly-refresh       Run the scheduled hourly refresh"
-	@echo "  make retrain-if-due       Run lifecycle preparation when due"
+	@echo "Normal application update:"
+	@echo "  make sync"
+	@echo "      Refresh AESO/PostgreSQL data and generate predictions."
+	@echo "      Does not retrain models."
 	@echo ""
-	@echo "Local maintenance:"
-	@echo "  make local-bootstrap      Prepare the local database and application"
-	@echo "  make db-clean CONFIRM=YES Remove local application data"
+	@echo "Local application:"
+	@echo "  make start"
+	@echo "      Start the API and frontend."
 	@echo ""
-# ==============================================================================
-# Configuration and installation
-# Install dependencies and validate configuration without running a pipeline.
-# ==============================================================================
+	@echo "  make restart"
+	@echo "      Restart the API and frontend."
+	@echo ""
+	@echo "  make stop"
+	@echo "      Stop the API and frontend."
+	@echo ""
+	@echo "  make check"
+	@echo "      Check the health, now, and today endpoints."
+	@echo ""
+	@echo "Verification:"
+	@echo "  make status"
+	@echo "      Show Git, PostgreSQL, model, and generated-file status."
+	@echo ""
+	@echo "  make verify"
+	@echo "      Run allowed tests, lint, and the production build."
+	@echo ""
+
 
 install:
-	# Install Python development/runtime dependencies and both Node workspaces.
-	# Writes local dependency environments only; it does not install active models.
+	@echo ""
+	@echo "=== Installing dependencies ==="
 	$(PIP) install -r requirements.txt
 	$(PIP) install -e .
-
-	# Install backend and frontend dependencies.
 	$(NPM) --prefix $(SERVER_DIR) install
 	$(NPM) --prefix $(CLIENT_DIR) install
+	@echo ""
+	@echo "INSTALL=PASS"
 
-config-check:
-	# Verify that the project configuration loads correctly.
+
+reset:
+	@if [ "$(CONFIRM)" != "YES" ]; then \
+		echo ""; \
+		echo "ERROR: this command deletes generated files"; \
+		echo "and clears local application tables."; \
+		echo ""; \
+		echo "Correct command:"; \
+		echo "  make reset CONFIRM=YES"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "============================================================"
+	@echo "WattWise — local reset"
+	@echo "============================================================"
+	$(MAKE) internal-stop
+	$(MAKE) internal-clean-generated CONFIRM=YES
+	$(MAKE) internal-reset-database CONFIRM=YES
+	@echo ""
+	@echo "RESET=PASS"
+	@echo "The raw CSV source and PostgreSQL schema were preserved."
+	@echo ""
+	@echo "Next command:"
+	@echo "  make rebuild"
+
+
+rebuild:
+	@echo ""
+	@echo "============================================================"
+	@echo "WattWise — complete reconstruction"
+	@echo "============================================================"
+	@echo ""
+	@echo "This command will:"
+	@echo "  1. check PostgreSQL;"
+	@echo "  2. rebuild and synchronize data;"
+	@echo "  3. rebuild features;"
+	@echo "  4. train and select models;"
+	@echo "  5. rebuild the decision policy;"
+	@echo "  6. create and evaluate the operational candidate."
+	@echo ""
+	@echo "Protected final-test evaluations will not run."
+	@echo "No model will be activated automatically."
+	@echo ""
+	$(MAKE) internal-database-check
+	$(MAKE) internal-refresh-data
+	$(MAKE) internal-data-quality
+	$(MAKE) internal-sync-history
+	$(MAKE) internal-features
+	$(MAKE) internal-feature-quality
+	$(MAKE) internal-training-data
+	$(MAKE) internal-spike-definition
+	$(MAKE) internal-spike-regime
+	$(MAKE) internal-regression-models
+	$(MAKE) internal-select-regression
+	$(MAKE) internal-classification-models
+	$(MAKE) internal-select-classification
+	$(MAKE) internal-decision-analysis
+	$(MAKE) internal-live-datasets
+	$(MAKE) internal-live-validations
+	$(MAKE) internal-lifecycle-run FORCE=1
+	@echo ""
+	@echo "REBUILD=PASS"
+	@echo ""
+	@echo "Next command after candidate review:"
+	@echo "  make activate"
+
+
+activate:
+	@echo ""
+	@echo "============================================================"
+	@echo "WattWise — manual activation"
+	@echo "============================================================"
+	$(MAKE) internal-validate-candidate
+	$(MAKE) internal-promote-models
+	@test -f models/production/active_models.json || \
+		(echo "ERROR: active_models.json was not created."; exit 1)
+	@echo ""
+	@echo "ACTIVATION=PASS"
+	@echo ""
+	@echo "Next command:"
+	@echo "  make sync"
+
+
+sync:
+	@echo ""
+	@echo "============================================================"
+	@echo "WattWise — operational synchronization"
+	@echo "============================================================"
+	@test -f models/production/active_models.json || \
+		(echo ""; \
+		 echo "ERROR: no active model registry exists."; \
+		 echo "Run first: make activate"; \
+		 echo ""; \
+		 exit 1)
+	$(MAKE) internal-sync-and-predict
+	@echo ""
+	@echo "SYNC=PASS"
+	@echo "The Now and Today pages can use the latest prediction run."
+
+
+start:
+	$(MAKE) internal-start
+
+
+restart:
+	$(MAKE) internal-stop
+	$(MAKE) internal-start
+
+
+stop:
+	$(MAKE) internal-stop
+
+
+check:
+	$(MAKE) internal-app-check
+
+
+status:
+	@echo ""
+	@echo "============================================================"
+	@echo "WattWise — project status"
+	@echo "============================================================"
+	@echo ""
+	@echo "===== Git ====="
+	@git branch --show-current
+	@git rev-parse --short HEAD
+	@git status --short
+	@echo ""
+	@echo "===== PostgreSQL ====="
+	@$(MAKE) internal-database-check
+	@echo ""
+	@echo "===== Active models ====="
+	@if [ -f models/production/active_models.json ]; then \
+		$(PYTHON) -m json.tool models/production/active_models.json; \
+	else \
+		echo "No active model registry exists."; \
+	fi
+	@echo ""
+	@echo "===== Generated files ====="
+	@for directory in $(GENERATED_DIRECTORIES); do \
+		mkdir -p "$$directory"; \
+		count=$$(find "$$directory" -type f | wc -l | tr -d ' '); \
+		echo "$$directory: $$count file(s)"; \
+	done
+	@echo ""
+
+
+verify:
+	@echo ""
+	@echo "============================================================"
+	@echo "WattWise — automated verification"
+	@echo "============================================================"
+	$(MAKE) internal-config-check
+	$(MAKE) internal-compile-check
+	$(PYTEST) -q \
+		--ignore=$(PROTECTED_REGRESSION_TEST) \
+		--ignore=$(PROTECTED_CLASSIFICATION_TEST)
+	NODE_ENV=test $(NPM) --prefix $(SERVER_DIR) test
+	$(NPM) --prefix $(CLIENT_DIR) test
+	$(NPM) --prefix $(CLIENT_DIR) run lint
+	$(NPM) --prefix $(CLIENT_DIR) run build
+	git diff --check
+	@echo ""
+	@echo "VERIFY=PASS"
+	@echo "Protected final-test evaluations were not executed."
+
+
+# ==============================================================================
+# ==============================================================================
+#
+#               INTERNAL COMMANDS — DO NOT USE DIRECTLY
+#
+#   These targets exist only to support the main commands and compatibility.
+#
+# ==============================================================================
+# ==============================================================================
+
+.PHONY: \
+	internal-config-check \
+	internal-compile-check \
+	internal-database-check \
+	internal-clean-generated \
+	internal-reset-database \
+	internal-refresh-data \
+	internal-data-quality \
+	internal-sync-history \
+	internal-features \
+	internal-feature-quality \
+	internal-training-data \
+	internal-spike-definition \
+	internal-spike-regime \
+	internal-regression-models \
+	internal-select-regression \
+	internal-classification-models \
+	internal-select-classification \
+	internal-decision-window-analysis \
+	internal-decision-regime-analysis \
+	internal-decision-backtest \
+	internal-decision-calibration \
+	internal-decision-analysis \
+	internal-live-datasets \
+	internal-live-validations \
+	internal-lifecycle-run \
+	internal-validate-candidate \
+	internal-promote-models \
+	internal-sync-and-predict \
+	internal-start \
+	internal-stop \
+	internal-app-check \
+	sync-and-predict \
+	worker-run \
+	hourly-refresh \
+	dev \
+	app-check \
+	database-check \
+	db-clean \
+	lifecycle-run \
+	lifecycle-status \
+	lifecycle-promote
+
+
+internal-config-check:
 	$(PYTHON) -c \
 		"from electricity_predictor.config import load_configuration; print(load_configuration()['project']['name'])"
 
 
-# ==============================================================================
-# Project verification
-# Run static checks and automated suites without rebuilding research data.
-# ==============================================================================
-
-compile-check:
-	# Compile Python source files to detect syntax and import problems.
+internal-compile-check:
 	$(PYTHON) -m compileall -q src
 
-inference-check:
-	# Run focused model-serving and inference tests.
-	$(PYTEST) -q tests/serving
 
-test-python:
-	# Run the complete Python test suite.
-	$(PYTEST)
-
-test-server:
-	# Run the Express API test suite.
-	NODE_ENV=test $(NPM) --prefix $(SERVER_DIR) test
-
-test-client:
-	# Run frontend tests, lint, and the production build.
-	$(NPM) --prefix $(CLIENT_DIR) test
-	$(NPM) --prefix $(CLIENT_DIR) run lint
-	$(NPM) --prefix $(CLIENT_DIR) run build
-
-verify:
-	# Verify the project without rebuilding or retraining models.
-	$(MAKE) config-check
-	$(MAKE) compile-check
-	$(MAKE) inference-check
-	$(MAKE) test-python
-	$(MAKE) test-server
-	$(MAKE) test-client
-	git diff --check
+internal-database-check:
+	@test -x "$(DOTENV)" || \
+		(echo "ERROR: dotenv executable not found: $(DOTENV)"; exit 1)
+	$(DOTENV) \
+		-e .env \
+		-- sh -c \
+		'psql "$$DATABASE_URL" -v ON_ERROR_STOP=1 -c \
+		"SELECT current_database(), current_user, NOW() AS database_time;"'
 
 
-# ==============================================================================
-# Historical data
-# Rebuild and inspect clean history; PostgreSQL synchronization remains explicit.
-# ==============================================================================
+internal-clean-generated:
+	@if [ "$(CONFIRM)" != "YES" ]; then \
+		echo "ERROR: confirmation required."; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "Deleting generated files..."
+	@for directory in $(GENERATED_DIRECTORIES); do \
+		mkdir -p "$$directory"; \
+		find "$$directory" -mindepth 1 -maxdepth 1 -exec rm -rf {} +; \
+	done
+	@echo "GENERATED_FILES_CLEANED=PASS"
 
-refresh-data:
-	# Rebuild canonical research history from the configured CSV and normalized AESO data.
-	# Writes interim CSV artifacts; does not touch PostgreSQL or train models.
+
+internal-reset-database:
+	@if [ "$(CONFIRM)" != "YES" ]; then \
+		echo "ERROR: confirmation required."; \
+		exit 1; \
+	fi
+	@CONFIRM_DB_CLEANUP=YES \
+		./scripts/cleanup_local_database.sh
+	@echo "DATABASE_RESET=PASS"
+
+
+internal-refresh-data:
 	$(PYTHON) \
 		src/electricity_predictor/data/pipeline.py
 
-data-quality:
-	# Inspect the refreshed historical dataset.
+
+internal-data-quality:
 	$(PYTHON) \
 		src/electricity_predictor/data/data_quality.py
 
-sync-history:
-	# Upsert the canonical clean-history CSV into PostgreSQL hourly_prices.
-	# Requires DATABASE_URL; does not create predictions or train models.
-	$(PYTHON) -m electricity_predictor.worker.research_history_sync
+
+internal-sync-history:
+	$(PYTHON) \
+		-m electricity_predictor.worker.research_history_sync
 
 
-# ==============================================================================
-# Feature engineering
-# Create, inspect, and finalize chronological model-ready datasets.
-# ==============================================================================
-
-features:
-	# Build the feature-engineered modeling dataset.
+internal-features:
 	$(PYTHON) \
 		src/electricity_predictor/features/feature_engineering.py
 
-feature-quality:
-	# Inspect feature-engineering output quality.
+
+internal-feature-quality:
 	$(PYTHON) \
 		src/electricity_predictor/features/feature_quality.py
 
-training-data:
-	# Build the chronological model-ready training dataset.
+
+internal-training-data:
 	$(PYTHON) \
 		src/electricity_predictor/features/training_data.py
 
 
-# ==============================================================================
-# Regression research
-# Train, tune, compare, select, protected-test evaluate, and save regression artifacts.
-# ==============================================================================
-
-regression-models:
-	# Run the complete regression-model comparison.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/run_regression_models.py
-
-select-best-regression-model:
-	# Select the strongest validation regression model per horizon.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/best_model_selection.py
-
-final-regression-evaluation:
-	# Refit selected regression configurations and evaluate on the protected test split.
-	# Writes final reports and must not be used for model selection.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/final_test_evaluation.py
-
-save-selected-regression-models:
-	# Refit selected regression configurations and serialize artifacts plus metadata.
-	# Saves research models but does not activate or promote them.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/save_selected_models.py
-
-
-# ==============================================================================
-# Classification research
-# Define spikes, train, tune, select, protected-test evaluate, and save classifiers.
-# ==============================================================================
-
-spike-definition-analysis:
-	# Compare train-derived spike definitions.
+internal-spike-definition:
 	$(PYTHON) \
 		src/electricity_predictor/modeling/classification/analyze_spike_definition.py
 
-spike-regime-analysis:
-	# Analyze yearly spike rates.
+
+internal-spike-regime:
 	$(PYTHON) \
 		src/electricity_predictor/modeling/classification/analyze_spike_regime.py
 
-classification-models:
-	# Run the complete classification-model comparison.
+
+internal-regression-models:
+	$(PYTHON) \
+		src/electricity_predictor/modeling/regression/run_regression_models.py
+
+
+internal-select-regression:
+	$(PYTHON) \
+		src/electricity_predictor/modeling/regression/best_model_selection.py
+
+
+internal-classification-models:
 	$(PYTHON) \
 		src/electricity_predictor/modeling/classification/run_classification_models.py
 
-select-best-classification-model:
-	# Select the strongest validation classifier per horizon.
+
+internal-select-classification:
 	$(PYTHON) \
 		src/electricity_predictor/modeling/classification/best_model_selection.py
 
-final-classification-evaluation:
-	# Refit selected classifiers and evaluate on the protected test split.
-	# Writes threshold/uncertainty reports and must not drive model selection.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/classification/final_test_evaluation.py
 
-save-selected-classification-models:
-	# Refit selected classifiers and serialize artifacts plus metadata.
-	# Saves research models but does not activate or promote them.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/classification/save_selected_models.py
-
-
-# ==============================================================================
-# Decision policy
-# Analyze consumer decision rules using PostgreSQL history and saved regression artifacts.
-# ==============================================================================
-
-decision-window-analysis:
-	# Compare rolling windows and write stability reports.
+internal-decision-window-analysis:
 	$(PYTHON) \
 		-m electricity_predictor.modeling.decision.analyze_decision_windows
 
-decision-regime-analysis:
-	# Compare decision stability across market regimes.
+
+internal-decision-regime-analysis:
 	$(PYTHON) \
 		-m electricity_predictor.modeling.decision.analyze_decision_regimes
 
-decision-policy-backtest:
-	# Backtest candidate rolling-window policies.
+
+internal-decision-backtest:
 	$(PYTHON) \
 		-m electricity_predictor.modeling.decision.backtest_decision_windows
 
-decision-policy-calibration:
-	# Calibrate recommendation quantiles and threshold multipliers.
+
+internal-decision-calibration:
 	$(PYTHON) \
 		-m electricity_predictor.modeling.decision.calibrate_decision_policy
 
-predicted-decision-stress-test:
-	# Compare predictions with actual future-price labels.
+
+internal-decision-analysis:
+	$(MAKE) internal-decision-window-analysis
+	$(MAKE) internal-decision-regime-analysis
+	$(MAKE) internal-decision-backtest
+	$(MAKE) internal-decision-calibration
+
+
+internal-live-datasets:
 	$(PYTHON) \
-		-m electricity_predictor.modeling.decision.stress_test_predicted_decisions
-
-decision-analysis:
-	# Regenerate research and calibration reports without opening the protected test.
-	$(MAKE) decision-window-analysis
-	$(MAKE) decision-regime-analysis
-	$(MAKE) decision-policy-backtest
-	$(MAKE) decision-policy-calibration
+		-m electricity_predictor.modeling.live_contract.live_model_datasets
+	@test -f data/processed/live_modeling_dataset.csv
+	@test -f data/processed/live_training_dataset.csv
 
 
-# ==============================================================================
-# Research orchestration
-# Run approved research stages sequentially and fail fast; these workflows train models.
-# ==============================================================================
-
-research-rebuild:
-	# Run repeatable research and validation sequentially without opening protected test data.
-	$(MAKE) config-check
-	$(MAKE) refresh-data
-	$(MAKE) sync-history
-	$(MAKE) data-quality
-	$(MAKE) features
-	$(MAKE) feature-quality
-	$(MAKE) training-data
-	$(MAKE) spike-definition-analysis
-	$(MAKE) spike-regime-analysis
-	$(MAKE) regression-models
-	$(MAKE) select-best-regression-model
-	$(MAKE) classification-models
-	$(MAKE) select-best-classification-model
-	$(MAKE) decision-analysis
-	$(MAKE) compile-check
-	$(MAKE) inference-check
-	$(MAKE) test-python
-
-research-rebuild-all:
-	# Run research, perform the explicitly protected final evaluations, save selected
-	# artifacts, and publish predictions. Use only after final evaluation approval.
-	$(MAKE) research-rebuild
-	$(MAKE) final-regression-evaluation
-	$(MAKE) final-classification-evaluation
-	$(MAKE) save-selected-regression-models
-	$(MAKE) save-selected-classification-models
-	$(MAKE) predicted-decision-stress-test
-	$(MAKE) sync-and-predict
-
-
-# ==============================================================================
-# Model lifecycle
-# Inspect, challenge, promote, restore, package, or install production model releases.
-# ==============================================================================
-
-lifecycle-status:
-	# Show the scheduler state without training models.
+internal-live-validations:
+	@mkdir -p reports
 	$(PYTHON) \
-		-m electricity_predictor.modeling.lifecycle.model_retraining_scheduler \
-		--status
+		-m electricity_predictor.modeling.live_contract.regression_validation \
+		--output reports/live_regression_validation_results.csv
+	$(PYTHON) \
+		-m electricity_predictor.modeling.live_contract.classification_validation \
+		--output reports/live_classification_validation_results.csv
+	@test -f reports/live_regression_validation_results.csv
+	@test -f reports/live_classification_validation_results.csv
 
-	@echo ""
-	@echo "===== ACTIVE MODEL REGISTRY ====="
-	@if [ -f models/production/active_models.json ]; then \
-		$(PYTHON) -m json.tool \
-			models/production/active_models.json; \
-	else \
-		echo "No active model registry found."; \
-	fi
 
-	@echo ""
-
-lifecycle-run:
-	# When due (or FORCE=1), train and evaluate challengers against active champions.
-	# Creates candidate artifacts and reports but never promotes automatically.
+internal-lifecycle-run:
 	@force_flag=""; \
 	if [ "$(FORCE)" = "1" ]; then \
 		force_flag="--force"; \
@@ -380,180 +490,99 @@ lifecycle-run:
 		-m electricity_predictor.modeling.lifecycle.model_retraining_scheduler \
 		$$force_flag
 
-lifecycle-promote:
-	# Promote one manually approved task and snapshot the prior active registry.
-	# Requires TASK=regression|classification and changes serving state.
-	@if [ "$(TASK)" != "regression" ] && \
-		[ "$(TASK)" != "classification" ]; then \
-		echo "ERROR: TASK must be regression or classification."; \
-		echo "Example:"; \
-		echo "  make lifecycle-promote TASK=regression"; \
-		exit 1; \
-	fi
 
+internal-validate-candidate:
+	$(PYTHON) -c '\
+import json; \
+from pathlib import Path; \
+paths = sorted( \
+    Path("models/candidates").glob("candidate-*/candidate_manifest.json"), \
+    key=lambda path: path.stat().st_mtime \
+); \
+assert paths, "No lifecycle candidate exists. Run: make rebuild"; \
+manifest = json.loads(paths[-1].read_text(encoding="utf-8")); \
+comparison = manifest.get("comparison", {}); \
+assert comparison.get("regression_gate_pass") is True, \
+    "Regression gate did not pass"; \
+assert comparison.get("classification_gate_pass") is True, \
+    "Classification gate did not pass"; \
+assert comparison.get("promotion_ready") is True, \
+    "Candidate is not ready for activation"; \
+print("candidate=" + str(manifest.get("model_version"))); \
+print("candidate_validation=PASS")'
+
+
+internal-promote-models:
 	$(PYTHON) \
 		-m electricity_predictor.modeling.lifecycle.model_promotion \
-		--task "$(TASK)"
+		--task regression \
+		--task classification
 
-lifecycle-rollback:
-	# Restore an explicit active-registry snapshot without retraining models.
-	# Requires an existing SNAPSHOT and changes serving state.
-	@if [ -z "$(SNAPSHOT)" ]; then \
-		echo "ERROR: SNAPSHOT is required."; \
-		echo "Example:"; \
-		echo "  make lifecycle-rollback \\"; \
-		echo "    SNAPSHOT=models/production/history/<snapshot>.json"; \
-		exit 1; \
-	fi
 
-	@if [ ! -f "$(SNAPSHOT)" ]; then \
-		echo "ERROR: Snapshot does not exist: $(SNAPSHOT)"; \
-		exit 1; \
-	fi
-
+internal-sync-and-predict:
 	$(PYTHON) \
-		-m electricity_predictor.modeling.lifecycle.model_promotion \
-		--rollback "$(SNAPSHOT)"
-
-release-build:
-	# Package only artifacts referenced by the active registry into a release bundle.
-	# Writes dist/model-releases; does not train or promote models.
-	$(PYTHON) \
-		-m electricity_predictor.modeling.lifecycle.release_bundle
-
-models-install:
-	# Install a checksum-pinned remote release or validate the local active registry.
-	# May write production model files; does not train models.
-	@release_url="$${MODEL_RELEASE_URL:-}"; \
-	release_sha256="$${MODEL_RELEASE_SHA256:-}"; \
-	if [ -n "$$release_url" ] || [ -n "$$release_sha256" ]; then \
-		if [ -z "$$release_url" ] || [ -z "$$release_sha256" ]; then \
-			echo "ERROR: MODEL_RELEASE_URL and MODEL_RELEASE_SHA256 must be set together."; \
-			exit 1; \
-		fi; \
-		echo "Installing configured production model release."; \
-		$(PYTHON) -m electricity_predictor.serving.release_installer; \
-	elif [ -f models/production/active_models.json ]; then \
-		echo "No remote model release configured."; \
-		echo "Using local active model registry:"; \
-		echo "  models/production/active_models.json"; \
-	else \
-		echo "ERROR: No active models are available."; \
-		echo "Local development requires:"; \
-		echo "  models/production/active_models.json"; \
-		echo "Production requires:"; \
-		echo "  MODEL_RELEASE_URL"; \
-		echo "  MODEL_RELEASE_SHA256"; \
-		exit 1; \
-	fi
+		-m electricity_predictor.worker.application_prediction_pipeline
 
 
-# ==============================================================================
-# Operational worker
-# Refresh AESO/PostgreSQL state and publish predictions with active models; never train.
-# ==============================================================================
-
-sync-and-predict:
-	# Canonical operational pipeline: refresh AESO/PostgreSQL state, build inference
-	# features, load active models, and persist one five-horizon prediction run.
-	$(PYTHON) -m electricity_predictor.worker.application_prediction_pipeline
-
-worker-run:
-	# Production entrypoint: ensure active models, refresh AESO/PostgreSQL data,
-	# generate five horizons, and persist the run; never trains models.
-	$(PYTHON) \
-		-m electricity_predictor.worker.production_worker
-
-
-# ==============================================================================
-# Local application
-# Start, stop, and probe the local Express and React application.
-# ==============================================================================
-
-dev:
-	# Start local Express/Nodemon and React/Vite processes. The application reads
-	# PostgreSQL but this target does not refresh data or create predictions.
+internal-start:
 	./scripts/dev-app.sh
 
-stop:
-	# Stop Nodemon and Vite processes started for local development.
-	# Retains the existing broad process match and does not modify PostgreSQL.
-	pkill -f "nodemon" || true
-	pkill -f "vite" || true
 
-app-check:
-	# Verify public application endpoints while the API is running.
+internal-stop:
+	@pkill -f "nodemon" 2>/dev/null || true
+	@pkill -f "vite" 2>/dev/null || true
+	@echo "APPLICATION_STOPPED=PASS"
+
+
+internal-app-check:
+	@echo ""
 	@echo "===== HEALTH ====="
 	$(CURL) -fsS \
 		http://127.0.0.1:8000/api/v1/health
-
 	@echo ""
 	@echo "===== NOW ====="
 	$(CURL) -fsS \
 		http://127.0.0.1:8000/api/v1/now
-
 	@echo ""
 	@echo "===== TODAY ====="
 	$(CURL) -fsS \
 		http://127.0.0.1:8000/api/v1/today
-
 	@echo ""
 
 
-# ==============================================================================
-# Database
-# Perform a read-only PostgreSQL connectivity check through the root environment.
-# ==============================================================================
+# ------------------------------------------------------------------------------
+# Compatibility aliases
+# ------------------------------------------------------------------------------
 
-database-check:
-	# Load DATABASE_URL from root .env and issue a read-only PostgreSQL identity/time query.
-	# Requires the server dotenv executable and psql.
-	$(DOTENV) \
-		-e .env \
-		-- sh -c \
-		'psql "$$DATABASE_URL" -c \
-		"SELECT current_database(), current_user, NOW() AS database_time;"'
+sync-and-predict: sync
 
+worker-run: sync
 
-# ==============================================================================
-# Destructive operations
-# Isolate confirmation-gated local database deletion from ordinary maintenance.
-# ==============================================================================
+hourly-refresh: sync
+
+dev: start
+
+app-check: check
+
+database-check: internal-database-check
 
 db-clean:
-	# DESTRUCTIVE local-only operation. Truncates application tables while preserving
-	# schema/migrations; requires CONFIRM=YES and rejects non-local DATABASE_URL values.
-	@CONFIRM_DB_CLEANUP="$(CONFIRM)" \
-		./scripts/cleanup_local_database.sh
+	$(MAKE) internal-reset-database CONFIRM="$(CONFIRM)"
 
+lifecycle-run:
+	$(MAKE) internal-lifecycle-run FORCE="$(FORCE)"
 
-# ==============================================================================
-# Exports and maintenance
-# Build and verify project context and archive outputs.
-# ==============================================================================
+lifecycle-status:
+	$(PYTHON) \
+		-m electricity_predictor.modeling.lifecycle.model_retraining_scheduler \
+		--status
 
-# ==============================================================================
-# Compatibility aliases
-# Keep legacy names separate; every target delegates to a canonical command.
-# ==============================================================================
-
-# ==============================================================================
-# Final local and scheduled workflows
-# ==============================================================================
-
-
-hourly-refresh:
-	# Refresh AESO/PostgreSQL state and publish one current-hour five-horizon run.
-	$(MAKE) sync-and-predict
-
-retrain-if-due:
-	# Run the lifecycle checker; candidate training occurs only when the interval is due.
-	# Promotion remains manual.
-	$(MAKE) lifecycle-run
-
-local-bootstrap:
-	# Rebuild the local operational state without retraining or protected evaluation.
-	$(MAKE) models-install
-	$(MAKE) database-check
-	$(MAKE) sync-history
-	$(MAKE) hourly-refresh
+lifecycle-promote:
+	@if [ "$(TASK)" != "regression" ] && \
+		[ "$(TASK)" != "classification" ]; then \
+		echo "ERROR: use TASK=regression or TASK=classification"; \
+		exit 1; \
+	fi
+	$(PYTHON) \
+		-m electricity_predictor.modeling.lifecycle.model_promotion \
+		--task "$(TASK)"
