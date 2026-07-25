@@ -1,3 +1,5 @@
+"""Verify Railway worker configuration and canonical worker commands."""
+
 import json
 from pathlib import Path
 import re
@@ -83,22 +85,13 @@ def test_worker_uses_installed_canonical_entry_point() -> None:
 
 
 def test_models_install_supports_remote_release() -> None:
-  makefile = load_makefile()
-
   target = extract_make_target(
-    makefile=makefile,
+    makefile=load_makefile(),
     target_name="models-install",
   )
 
-  assert (
-    "MODEL_RELEASE_URL"
-    in target
-  )
-
-  assert (
-    "MODEL_RELEASE_SHA256"
-    in target
-  )
+  assert "MODEL_RELEASE_URL" in target
+  assert "MODEL_RELEASE_SHA256" in target
 
   assert (
     "$(PYTHON) -m "
@@ -109,10 +102,8 @@ def test_models_install_supports_remote_release() -> None:
 
 
 def test_models_install_supports_local_registry() -> None:
-  makefile = load_makefile()
-
   target = extract_make_target(
-    makefile=makefile,
+    makefile=load_makefile(),
     target_name="models-install",
   )
 
@@ -128,73 +119,64 @@ def test_models_install_supports_local_registry() -> None:
   )
 
 
-def test_make_worker_target_uses_canonical_python_entry_point() -> None:
-  makefile = load_makefile()
-
+def test_worker_target_uses_canonical_python_entry_point() -> None:
   target = extract_make_target(
-    makefile=makefile,
+    makefile=load_makefile(),
     target_name="worker-run",
   )
 
   assert "$(PYTHON)" in target
+
   assert (
     "-m electricity_predictor.worker.production_worker"
     in target
   )
-  assert "$(MAKE) models-install" not in target
-  assert "$(MAKE) app-refresh" not in target
 
-
-def test_application_prediction_pipeline_target_uses_renamed_worker_module() -> None:
-  makefile = load_makefile()
-
-  canonical_target = extract_make_target(
-    makefile=makefile,
-    target_name="sync-and-predict",
+  assert (
+    "$(MAKE) models-install"
+    not in target
   )
-  alias_target = extract_make_target(
-    makefile=makefile,
-    target_name="app-refresh",
+
+
+def test_sync_and_predict_uses_canonical_worker_module() -> None:
+  target = extract_make_target(
+    makefile=load_makefile(),
+    target_name="sync-and-predict",
   )
 
   assert (
     "$(PYTHON) -m "
     "electricity_predictor.worker."
     "application_prediction_pipeline"
-    in canonical_target
+    in target
   )
+
   assert (
     "electricity_predictor.application_pipeline"
-    not in canonical_target
-  )
-  assert "$(MAKE) sync-and-predict" in alias_target
-  assert (
-    "electricity_predictor.worker.application_prediction_pipeline"
-    not in alias_target
+    not in target
   )
 
 
 def test_worker_entry_point_is_installed_by_python_package() -> None:
-  with Path("pyproject.toml").open("rb") as stream:
-    pyproject = tomllib.load(stream)
+  with Path(
+    "pyproject.toml"
+  ).open("rb") as stream:
+    pyproject = tomllib.load(
+      stream
+    )
 
   assert (
-    pyproject["project"]["scripts"]["wattwise-worker"]
-    == "electricity_predictor.worker.production_worker:main"
-  )
-
-
-def test_legacy_railway_alias_uses_worker_run() -> None:
-  makefile = load_makefile()
-
-  target = extract_make_target(
-    makefile=makefile,
-    target_name="railway-worker",
-  )
-
-  assert (
-    "$(MAKE) worker-run"
-    in target
+    pyproject[
+      "project"
+    ][
+      "scripts"
+    ][
+      "wattwise-worker"
+    ]
+    == (
+      "electricity_predictor.worker."
+      "production_worker:main"
+    )
   )
 
 

@@ -15,49 +15,14 @@ DOTENV ?= $(SERVER_DIR)/node_modules/.bin/dotenv
 .PHONY: \
 	help \
 	install \
-	config-check \
-	compile-check \
-	inference-check \
-	test-python \
-	test-server \
-	test-client \
 	verify \
-	refresh-data \
-	data-quality \
+	app-check \
+	database-check \
+	dev \
+	stop \
 	sync-history \
-	features \
-	feature-quality \
-	training-data \
-	baseline \
-	linear-regression \
-	ridge-regression \
-	lasso-regression \
-	lasso-tuning \
-	elastic-net-regression \
-	elastic-net-tuning \
-	regression-models \
-	select-best-regression-model \
-	final-regression-evaluation \
-	save-selected-regression-models \
-	spike-definition-analysis \
-	spike-regime-analysis \
-	classification-baseline \
-	logistic-regression \
-	logistic-tuning \
-	random-forest \
-	random-forest-tuning \
-	gradient-boosting \
-	gradient-boosting-tuning \
-	classification-models \
-	select-best-classification-model \
-	final-classification-evaluation \
-	save-selected-classification-models \
-	decision-window-analysis \
-	decision-regime-analysis \
-	decision-policy-backtest \
-	decision-policy-calibration \
-	predicted-decision-stress-test \
-	decision-analysis \
+	sync-and-predict \
+	worker-run \
 	research-rebuild \
 	research-rebuild-all \
 	lifecycle-status \
@@ -66,31 +31,37 @@ DOTENV ?= $(SERVER_DIR)/node_modules/.bin/dotenv
 	lifecycle-rollback \
 	release-build \
 	models-install \
-	sync-and-predict \
-	worker-run \
-	dev \
-	stop \
-	app-check \
-	database-check \
+	hourly-refresh \
+	retrain-if-due \
+	local-bootstrap \
 	db-clean \
-	project-context \
-	project-zip \
-	project-export \
-	project-export-check \
-	app-refresh \
-	app-dev \
-	app-stop \
-	refresh-application \
-	install-model-release \
-	railway-worker \
-	rebuild-ml \
-	rebuild-all \
-	pipeline \
-	application-pipeline \
-	production-pipeline \
-	ml-pipeline \
-	pipelines \
-	test
+	config-check \
+	compile-check \
+	inference-check \
+	test-python \
+	test-server \
+	test-client \
+	refresh-data \
+	data-quality \
+	features \
+	feature-quality \
+	training-data \
+	regression-models \
+	select-best-regression-model \
+	classification-models \
+	select-best-classification-model \
+	spike-definition-analysis \
+	spike-regime-analysis \
+	decision-window-analysis \
+	decision-regime-analysis \
+	decision-policy-backtest \
+	decision-policy-calibration \
+	predicted-decision-stress-test \
+	decision-analysis \
+	final-regression-evaluation \
+	save-selected-regression-models \
+	final-classification-evaluation \
+	save-selected-classification-models
 
 # ==============================================================================
 # Help: complete catalogue grouped by the responsibilities used below.
@@ -98,116 +69,41 @@ DOTENV ?= $(SERVER_DIR)/node_modules/.bin/dotenv
 
 help:
 	@echo ""
-	@echo "WattWise / Alberta Electricity Predictor"
+	@echo "WattWise commands"
 	@echo ""
-	@echo "Configuration and installation"
-	@echo "  make install                               "
-	@echo "  make config-check                          "
+	@echo "Setup and verification:"
+	@echo "  make install              Install Python and Node dependencies"
+	@echo "  make verify               Run the complete automated verification"
+	@echo "  make app-check            Verify the local API endpoints"
+	@echo "  make database-check       Verify local PostgreSQL connectivity"
 	@echo ""
-	@echo "Project verification"
-	@echo "  make compile-check                         "
-	@echo "  make inference-check                       "
-	@echo "  make test-python                           "
-	@echo "  make test-server                           "
-	@echo "  make test-client                           "
-	@echo "  make verify                                "
+	@echo "Application:"
+	@echo "  make dev                  Start the API and frontend locally"
+	@echo "  make stop                 Stop local application processes"
+	@echo "  make sync-and-predict     Refresh data, sync history, and predict"
+	@echo "  make worker-run           Run one production worker cycle"
 	@echo ""
-	@echo "Historical data"
-	@echo "  make refresh-data                          "
-	@echo "  make data-quality                          "
-	@echo "  make sync-history                          "
+	@echo "Data and model research:"
+	@echo "  make sync-history         Synchronize historical prices to PostgreSQL"
+	@echo "  make research-rebuild     Rebuild validation research outputs"
+	@echo "  make research-rebuild-all Run the complete approved research rebuild"
 	@echo ""
-	@echo "Feature engineering"
-	@echo "  make features                              "
-	@echo "  make feature-quality                       "
-	@echo "  make training-data                         "
+	@echo "Model lifecycle:"
+	@echo "  make lifecycle-status     Show current lifecycle state"
+	@echo "  make lifecycle-run        Prepare and compare lifecycle candidates"
+	@echo "  make lifecycle-promote    Promote an approved candidate"
+	@echo "  make lifecycle-rollback   Roll back the active model registry"
 	@echo ""
-	@echo "Regression research"
-	@echo "  make baseline                               [trains/evaluates]"
-	@echo "  make linear-regression                      [trains/evaluates]"
-	@echo "  make ridge-regression                       [trains/evaluates]"
-	@echo "  make lasso-regression                       [trains/evaluates]"
-	@echo "  make lasso-tuning                           [trains/evaluates]"
-	@echo "  make elastic-net-regression                 [trains/evaluates]"
-	@echo "  make elastic-net-tuning                     [trains/evaluates]"
-	@echo "  make regression-models                      [trains/evaluates]"
-	@echo "  make select-best-regression-model          "
-	@echo "  make final-regression-evaluation            [trains/evaluates]"
-	@echo "  make save-selected-regression-models       "
+	@echo "Release and scheduling:"
+	@echo "  make release-build        Build a versioned model release"
+	@echo "  make models-install       Install a prepared model release"
+	@echo "  make hourly-refresh       Run the scheduled hourly refresh"
+	@echo "  make retrain-if-due       Run lifecycle preparation when due"
 	@echo ""
-	@echo "Classification research"
-	@echo "  make spike-definition-analysis             "
-	@echo "  make spike-regime-analysis                 "
-	@echo "  make classification-baseline                [trains/evaluates]"
-	@echo "  make logistic-regression                    [trains/evaluates]"
-	@echo "  make logistic-tuning                        [trains/evaluates]"
-	@echo "  make random-forest                          [trains/evaluates]"
-	@echo "  make random-forest-tuning                   [trains/evaluates]"
-	@echo "  make gradient-boosting                      [trains/evaluates]"
-	@echo "  make gradient-boosting-tuning               [trains/evaluates]"
-	@echo "  make classification-models                  [trains/evaluates]"
-	@echo "  make select-best-classification-model      "
-	@echo "  make final-classification-evaluation        [trains/evaluates]"
-	@echo "  make save-selected-classification-models   "
+	@echo "Local maintenance:"
+	@echo "  make local-bootstrap      Prepare the local database and application"
+	@echo "  make db-clean CONFIRM=YES Remove local application data"
 	@echo ""
-	@echo "Decision policy"
-	@echo "  make decision-window-analysis              "
-	@echo "  make decision-regime-analysis              "
-	@echo "  make decision-policy-backtest              "
-	@echo "  make decision-policy-calibration           "
-	@echo "  make predicted-decision-stress-test         [protected test]"
-	@echo "  make decision-analysis                      [validation only]"
-	@echo ""
-	@echo "Research orchestration"
-	@echo "  make research-rebuild                       [validation only]"
-	@echo "  make research-rebuild-all                   [protected test/publish]"
-	@echo ""
-	@echo "Model lifecycle"
-	@echo "  make lifecycle-status                      "
-	@echo "  make lifecycle-run                          [trains/evaluates]"
-	@echo "  make lifecycle-promote                     "
-	@echo "  make lifecycle-rollback                    "
-	@echo "  make release-build                         "
-	@echo "  make models-install                        "
-	@echo ""
-	@echo "Operational worker"
-	@echo "  make sync-and-predict                       [active models]"
-	@echo "  make worker-run                             [active models]"
-	@echo ""
-	@echo "Local application"
-	@echo "  make dev                                   "
-	@echo "  make stop                                  "
-	@echo "  make app-check                             "
-	@echo ""
-	@echo "Database"
-	@echo "  make database-check                        "
-	@echo ""
-	@echo "Destructive operations"
-	@echo "  make db-clean                               [DESTRUCTIVE]"
-	@echo ""
-	@echo "Exports and maintenance"
-	@echo "  make project-context                       "
-	@echo "  make project-zip                           "
-	@echo "  make project-export                        "
-	@echo "  make project-export-check                  "
-	@echo ""
-	@echo "Compatibility aliases"
-	@echo "  make app-refresh                            -> canonical target"
-	@echo "  make app-dev                                -> canonical target"
-	@echo "  make app-stop                               -> canonical target"
-	@echo "  make refresh-application                    -> canonical target"
-	@echo "  make install-model-release                  -> canonical target"
-	@echo "  make railway-worker                         -> canonical target"
-	@echo "  make rebuild-ml                             -> canonical target"
-	@echo "  make rebuild-all                            -> canonical target"
-	@echo "  make pipeline                               -> canonical target"
-	@echo "  make application-pipeline                   -> canonical target"
-	@echo "  make production-pipeline                    -> canonical target"
-	@echo "  make ml-pipeline                            -> canonical target"
-	@echo "  make pipelines                              -> canonical target"
-	@echo "  make test                                   -> canonical target"
-	@echo ""
-
 # ==============================================================================
 # Configuration and installation
 # Install dependencies and validate configuration without running a pipeline.
@@ -315,35 +211,6 @@ training-data:
 # Train, tune, compare, select, protected-test evaluate, and save regression artifacts.
 # ==============================================================================
 
-baseline:
-	# Evaluate the naive regression baseline.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/regression/baseline/naive_baseline.py
-
-linear-regression:
-	# Train and evaluate Linear Regression.
-	$(PYTHON) -m electricity_predictor.modeling.regression.linear.linear_regression
-
-ridge-regression:
-	# Train and evaluate Ridge Regression.
-	$(PYTHON) -m electricity_predictor.modeling.regression.ridge.ridge_regression
-
-lasso-regression:
-	# Train and evaluate Lasso Regression.
-	$(PYTHON) -m electricity_predictor.modeling.regression.lasso.lasso_regression
-
-lasso-tuning:
-	# Tune Lasso with chronological TimeSeriesSplit.
-	$(PYTHON) -m electricity_predictor.modeling.regression.lasso.lasso_tuning
-
-elastic-net-regression:
-	# Train and evaluate Elastic Net Regression.
-	$(PYTHON) -m electricity_predictor.modeling.regression.elastic_net.elastic_net_regression
-
-elastic-net-tuning:
-	# Tune Elastic Net with chronological TimeSeriesSplit.
-	$(PYTHON) -m electricity_predictor.modeling.regression.elastic_net.elastic_net_tuning
-
 regression-models:
 	# Run the complete regression-model comparison.
 	$(PYTHON) \
@@ -381,41 +248,6 @@ spike-regime-analysis:
 	# Analyze yearly spike rates.
 	$(PYTHON) \
 		src/electricity_predictor/modeling/classification/analyze_spike_regime.py
-
-classification-baseline:
-	# Evaluate the naive spike-classification baseline.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/classification/baseline/naive_spike_baseline.py
-
-logistic-regression:
-	# Train and evaluate Logistic Regression.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/classification/logistic/logistic_regression.py
-
-logistic-tuning:
-	# Tune Logistic Regression.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/classification/logistic/logistic_tuning.py
-
-random-forest:
-	# Train and evaluate Random Forest classification.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/classification/random_forest/random_forest_classifier.py
-
-random-forest-tuning:
-	# Tune Random Forest classification.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/classification/random_forest/random_forest_tuning.py
-
-gradient-boosting:
-	# Train and evaluate Gradient Boosting classification.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_classifier.py
-
-gradient-boosting-tuning:
-	# Tune Gradient Boosting classification.
-	$(PYTHON) \
-		src/electricity_predictor/modeling/classification/gradient_boosting/gradient_boosting_tuning.py
 
 classification-models:
 	# Run the complete classification-model comparison.
@@ -700,103 +532,15 @@ db-clean:
 # Build and verify project context and archive outputs.
 # ==============================================================================
 
-project-context:
-	# Export relevant text files and inventory binary files.
-	$(PYTHON) \
-		scripts/export_project_context.py \
-		--mode context
-
-project-zip:
-	# Archive relevant project files, data, and model assets.
-	$(PYTHON) \
-		scripts/export_project_context.py \
-		--mode zip
-
-project-export:
-	# Generate the complete context, ZIP archive, and manifests.
-	$(PYTHON) \
-		scripts/export_project_context.py \
-		--mode all
-
-	$(MAKE) project-export-check
-
-project-export-check:
-	@echo "===== PROJECT EXPORT ====="
-	$(PYTHON) \
-		scripts/verify_project_export.py
-	@du -h \
-		context_exports/project_context_full.txt
-	@du -h \
-		context_exports/alberta-electricity-price-predictor.zip
-
-
 # ==============================================================================
 # Compatibility aliases
 # Keep legacy names separate; every target delegates to a canonical command.
 # ==============================================================================
 
-app-refresh:
-	@echo "NOTICE: 'app-refresh' is a compatibility alias for 'sync-and-predict'."
-	$(MAKE) sync-and-predict
-
-app-dev:
-	@echo "NOTICE: use 'make dev'."
-	$(MAKE) dev
-
-app-stop:
-	@echo "NOTICE: use 'make stop'."
-	$(MAKE) stop
-
-refresh-application:
-	@echo "NOTICE: use 'make app-refresh'."
-	$(MAKE) app-refresh
-
-install-model-release:
-	@echo "NOTICE: use 'make models-install'."
-	$(MAKE) models-install
-
-railway-worker:
-	@echo "NOTICE: use 'make worker-run'."
-	$(MAKE) worker-run
-
-rebuild-ml:
-	@echo "NOTICE: use 'make research-rebuild'."
-	$(MAKE) research-rebuild
-
-rebuild-all:
-	@echo "NOTICE: use 'make research-rebuild-all'."
-	$(MAKE) research-rebuild-all
-
-pipeline:
-	@echo "NOTICE: use 'make refresh-data'."
-	$(MAKE) refresh-data
-
-application-pipeline:
-	@echo "NOTICE: use 'make sync-and-predict'."
-	$(MAKE) sync-and-predict
-
-production-pipeline:
-	@echo "NOTICE: use 'make app-refresh'."
-	$(MAKE) app-refresh
-
-ml-pipeline:
-	@echo "NOTICE: use 'make research-rebuild'."
-	$(MAKE) research-rebuild
-
-pipelines:
-	@echo "NOTICE: use 'make research-rebuild-all'."
-	$(MAKE) research-rebuild-all
-
-test:
-	@echo "NOTICE: use 'make test-python' or 'make verify'."
-	$(MAKE) test-python
-
-
 # ==============================================================================
 # Final local and scheduled workflows
 # ==============================================================================
 
-.PHONY: hourly-refresh retrain-if-due local-bootstrap local-reset
 
 hourly-refresh:
 	# Refresh AESO/PostgreSQL state and publish one current-hour five-horizon run.
@@ -813,13 +557,3 @@ local-bootstrap:
 	$(MAKE) database-check
 	$(MAKE) sync-history
 	$(MAKE) hourly-refresh
-
-local-reset:
-	# Destructive reset requires explicit confirmation.
-	@if [ "$(CONFIRM)" != "YES" ]; then \
-		echo "ERROR: run make local-reset CONFIRM=YES"; \
-		exit 1; \
-	fi
-	$(MAKE) stop
-	CONFIRM=YES $(MAKE) db-clean
-	$(MAKE) local-bootstrap
