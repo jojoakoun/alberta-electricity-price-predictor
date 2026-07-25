@@ -22,6 +22,9 @@ from electricity_predictor.modeling.regression.ridge.ridge_regression import (
   train_ridge_regression_model,
 )
 from electricity_predictor.modeling.split import split_time_series_data_from_config
+from electricity_predictor.contracts.columns import (
+  TARGET_COLUMN,
+)
 
 
 RIDGE_ALPHAS = [0.1, 1.0, 10.0, 100.0]
@@ -29,7 +32,6 @@ RIDGE_TUNING_SPLITS = 3
 TIME_SERIES_CV_GAP_HOURS = get_time_series_cv_gap_hours(
   load_configuration()["modeling"]
 )
-TARGET_COLUMN = "actual_price"
 
 
 def evaluate_ridge_alpha_with_time_series_cv(

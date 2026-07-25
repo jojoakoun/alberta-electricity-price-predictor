@@ -6,9 +6,6 @@ import pandas as pd
 from sklearn.ensemble import ExtraTreesClassifier
 
 from electricity_predictor.config import load_configuration
-from electricity_predictor.features.feature_columns import (
-  MODEL_FEATURE_COLUMNS,
-)
 from electricity_predictor.modeling.classification.target_builder import (
   build_spike_target_column_name,
   prepare_classification_training_splits,
@@ -30,9 +27,11 @@ from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
+from electricity_predictor.contracts.columns import (
+  CLASSIFICATION_FEATURE_COLUMNS,
+)
 
 
-CLASSIFICATION_FEATURE_COLUMNS = MODEL_FEATURE_COLUMNS
 
 DEFAULT_N_ESTIMATORS = 200
 DEFAULT_MAX_DEPTH = None

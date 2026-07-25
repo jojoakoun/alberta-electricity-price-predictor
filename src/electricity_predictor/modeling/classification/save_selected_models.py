@@ -24,6 +24,9 @@ from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
+from electricity_predictor.contracts.columns import (
+  CLASSIFICATION_MODEL_METADATA_COLUMNS as MODEL_METADATA_COLUMNS,
+)
 
 
 MODEL_OUTPUT_DIR = Path("models/classification")
@@ -34,22 +37,6 @@ MODEL_METADATA_PATH = (
   MODEL_OUTPUT_DIR / "selected_classification_model_metadata.csv"
 )
 
-MODEL_METADATA_COLUMNS = [
-  "model_name",
-  "horizon_hours",
-  "target_column",
-  "spike_threshold",
-  "decision_threshold",
-  "artifact_path",
-  "training_rows",
-  "feature_columns",
-  "sklearn_version",
-  "training_start_utc",
-  "training_end_utc",
-  "selection_metric",
-  "selection_rule",
-  "model_parameters",
-]
 
 
 def build_model_artifact_filename(

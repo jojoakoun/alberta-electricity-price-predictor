@@ -36,6 +36,9 @@ from electricity_predictor.modeling.live_contract.regression_validation import (
 from electricity_predictor.modeling.live_contract.validation_comparison import (
   build_validation_only_splits,
 )
+from electricity_predictor.contracts.columns import (
+  DATETIME_COLUMN,
+)
 
 
 REGRESSION_RESULTS_PATH = Path(
@@ -73,9 +76,6 @@ MANIFEST_PATH = (
   / "manifest.json"
 )
 
-DATETIME_COLUMN = (
-  "datetime_universal_time"
-)
 
 
 def load_selected_results(

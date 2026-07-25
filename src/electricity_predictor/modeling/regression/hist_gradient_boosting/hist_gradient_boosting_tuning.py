@@ -25,13 +25,15 @@ from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
+from electricity_predictor.contracts.columns import (
+  TARGET_COLUMN,
+)
 
 
 HIST_GRADIENT_BOOSTING_TUNING_SPLITS = 3
 TIME_SERIES_CV_GAP_HOURS = get_time_series_cv_gap_hours(
   load_configuration()["modeling"]
 )
-TARGET_COLUMN = "actual_price"
 
 # This curated grid changes one or two complexity controls at a time so that
 # the tuning result remains understandable and reasonably fast to reproduce.

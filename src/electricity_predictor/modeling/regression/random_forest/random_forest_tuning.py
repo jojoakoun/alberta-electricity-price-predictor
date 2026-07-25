@@ -24,13 +24,15 @@ from electricity_predictor.modeling.regression.random_forest.random_forest impor
   train_random_forest_model,
 )
 from electricity_predictor.modeling.split import split_time_series_data_from_config
+from electricity_predictor.contracts.columns import (
+  TARGET_COLUMN,
+)
 
 
 RANDOM_FOREST_TUNING_SPLITS = 3
 TIME_SERIES_CV_GAP_HOURS = get_time_series_cv_gap_hours(
   load_configuration()["modeling"]
 )
-TARGET_COLUMN = "actual_price"
 
 RANDOM_FOREST_CONFIGS = [
   {"n_estimators": 100, "max_depth": None, "min_samples_leaf": 1},

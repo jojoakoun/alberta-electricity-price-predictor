@@ -18,17 +18,16 @@ from electricity_predictor.modeling.model_results import (
   append_model_result,
   build_model_result_row,
 )
-from electricity_predictor.features.feature_columns import (
-  MODEL_FEATURE_COLUMNS,
-)
 from electricity_predictor.modeling.split import (
   TRAINING_DATASET_PATH,
   load_training_dataset,
   split_time_series_data_from_config,
 )
+from electricity_predictor.contracts.columns import (
+  CLASSIFICATION_FEATURE_COLUMNS,
+)
 
 
-CLASSIFICATION_FEATURE_COLUMNS = MODEL_FEATURE_COLUMNS
 
 
 def train_random_forest_classifier(

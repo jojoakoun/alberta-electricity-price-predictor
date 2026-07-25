@@ -3,15 +3,11 @@
 from pathlib import Path
 
 import pandas as pd
+from electricity_predictor.contracts.columns import (
+  RAW_COLUMNS,
+)
 
 
-RAW_COLUMNS = {
-  "Date_Begin_GMT": "datetime_universal_time",
-  "Date_Begin_Local": "datetime_local_time",
-  "ACTUAL_POOL_PRICE": "actual_price",
-  "HOUR_AHEAD_POOL_PRICE_FORECAST": "forecast_price",
-  "ACTUAL_AIL": "alberta_internal_load",
-}
 
 
 def validate_historical_data(data: pd.DataFrame) -> None:

@@ -1,3 +1,0 @@
--r requirements-research.txt
-
-pytest==9.0.3

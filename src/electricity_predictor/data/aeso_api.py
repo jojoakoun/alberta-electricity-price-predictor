@@ -8,14 +8,11 @@ import requests
 from dotenv import load_dotenv
 
 from electricity_predictor.config import load_configuration
+from electricity_predictor.contracts.columns import (
+  API_COLUMNS,
+)
 
 
-API_COLUMNS = {
-  "begin_datetime_utc": "datetime_universal_time",
-  "begin_datetime_mpt": "datetime_local_time",
-  "pool_price": "actual_price",
-  "forecast_pool_price": "forecast_price",
-}
 
 
 def fetch_pool_price_report(start_date: str, end_date: str) -> dict[str, Any]:

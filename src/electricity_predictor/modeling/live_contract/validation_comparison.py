@@ -33,6 +33,9 @@ from electricity_predictor.modeling.metrics import (
   mean_absolute_error_value,
   root_mean_squared_error_value,
 )
+from electricity_predictor.contracts.columns import (
+  DATETIME_COLUMN,
+)
 
 
 HISTORICAL_DATASET_PATH = Path(
@@ -49,7 +52,6 @@ CLASSIFICATION_METADATA_PATH = Path(
   "selected_classification_model_metadata.csv"
 )
 
-DATETIME_COLUMN = "datetime_universal_time"
 
 
 def parse_parameter_text(

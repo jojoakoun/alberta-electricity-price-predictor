@@ -2,59 +2,33 @@
 
 import pandas as pd
 
+from electricity_predictor.contracts.columns import (
+  ACTUAL_PRICE_COLUMN,
+  ACTUAL_PRICE_LAG_24H_COLUMN,
+  ACTUAL_PRICE_SAFE_24H_MAX_COLUMN,
+  ACTUAL_PRICE_SAFE_24H_MEAN_COLUMN,
+  ACTUAL_PRICE_SAFE_7D_MEAN_COLUMN,
+  CONSERVATIVE_ACTUAL_FEATURE_COLUMNS,
+  CONSERVATIVE_HYBRID_LIVE_FEATURE_COLUMNS,
+  DATETIME_COLUMN,
+  FORECAST_DERIVED_FEATURE_COLUMNS,
+  FORECAST_ONLY_LIVE_FEATURE_COLUMNS,
+  FORECAST_PRICE_COLUMN,
+  FORECAST_PRICE_LAG_1H_COLUMN,
+  FORECAST_PRICE_LAG_24H_COLUMN,
+  FORECAST_PRICE_ROLLING_24H_MAX_COLUMN,
+  FORECAST_PRICE_ROLLING_24H_MEAN_COLUMN,
+  FORECAST_PRICE_ROLLING_7D_MEAN_COLUMN,
+  LIVE_FEATURE_CONTRACTS,
+  LIVE_TIME_FEATURE_COLUMNS,
+  LOCAL_DATETIME_COLUMN,
+  SELECTED_LIVE_FEATURE_COLUMNS,
+  SELECTED_LIVE_FEATURE_CONTRACT,
+)
 from electricity_predictor.features.feature_engineering import (
   ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS,
   add_time_features,
   validate_continuous_hourly_utc_timestamps,
-)
-
-
-FORECAST_DERIVED_FEATURE_COLUMNS = [
-  "forecast_price",
-  "forecast_price_lag_1h",
-  "forecast_price_lag_24h",
-  "forecast_price_rolling_24h_mean",
-  "forecast_price_rolling_24h_max",
-  "forecast_price_rolling_7d_mean",
-]
-
-CONSERVATIVE_ACTUAL_FEATURE_COLUMNS = [
-  "actual_price_lag_24h",
-  "actual_price_safe_24h_mean",
-  "actual_price_safe_24h_max",
-  "actual_price_safe_7d_mean",
-]
-
-LIVE_TIME_FEATURE_COLUMNS = [
-  "hour",
-  "day_of_week",
-  "month",
-  "is_weekend",
-]
-
-FORECAST_ONLY_LIVE_FEATURE_COLUMNS = [
-  *LIVE_TIME_FEATURE_COLUMNS,
-  *FORECAST_DERIVED_FEATURE_COLUMNS,
-]
-
-CONSERVATIVE_HYBRID_LIVE_FEATURE_COLUMNS = [
-  *FORECAST_ONLY_LIVE_FEATURE_COLUMNS,
-  *CONSERVATIVE_ACTUAL_FEATURE_COLUMNS,
-]
-
-LIVE_FEATURE_CONTRACTS = {
-  "forecast_only": FORECAST_ONLY_LIVE_FEATURE_COLUMNS,
-  "conservative_hybrid":
-    CONSERVATIVE_HYBRID_LIVE_FEATURE_COLUMNS,
-}
-
-# One shared production contract keeps training and hourly inference aligned.
-SELECTED_LIVE_FEATURE_CONTRACT = "conservative_hybrid"
-
-SELECTED_LIVE_FEATURE_COLUMNS = list(
-  LIVE_FEATURE_CONTRACTS[
-    SELECTED_LIVE_FEATURE_CONTRACT
-  ]
 )
 
 
@@ -82,10 +56,10 @@ def validate_live_feature_source(
 ) -> None:
   """Validate the raw hourly columns needed by both live contracts."""
   required_columns = {
-    "datetime_universal_time",
-    "datetime_local_time",
-    "actual_price",
-    "forecast_price",
+    DATETIME_COLUMN,
+    LOCAL_DATETIME_COLUMN,
+    ACTUAL_PRICE_COLUMN,
+    FORECAST_PRICE_COLUMN,
   }
 
   missing_columns = (
@@ -117,7 +91,7 @@ def add_live_feature_candidates(
   features = (
     data
     .sort_values(
-      "datetime_universal_time"
+      DATETIME_COLUMN
     )
     .reset_index(drop=True)
     .copy()
@@ -127,20 +101,30 @@ def add_live_feature_candidates(
     features
   )
 
-  features["forecast_price_lag_1h"] = (
-    features["forecast_price"].shift(1)
+  features[
+    FORECAST_PRICE_LAG_1H_COLUMN
+  ] = (
+    features[
+      FORECAST_PRICE_COLUMN
+    ].shift(1)
   )
 
-  features["forecast_price_lag_24h"] = (
-    features["forecast_price"].shift(24)
+  features[
+    FORECAST_PRICE_LAG_24H_COLUMN
+  ] = (
+    features[
+      FORECAST_PRICE_COLUMN
+    ].shift(24)
   )
 
   past_forecast = (
-    features["forecast_price"].shift(1)
+    features[
+      FORECAST_PRICE_COLUMN
+    ].shift(1)
   )
 
   features[
-    "forecast_price_rolling_24h_mean"
+    FORECAST_PRICE_ROLLING_24H_MEAN_COLUMN
   ] = (
     past_forecast
     .rolling(
@@ -151,7 +135,7 @@ def add_live_feature_candidates(
   )
 
   features[
-    "forecast_price_rolling_24h_max"
+    FORECAST_PRICE_ROLLING_24H_MAX_COLUMN
   ] = (
     past_forecast
     .rolling(
@@ -162,27 +146,33 @@ def add_live_feature_candidates(
   )
 
   features[
-    "forecast_price_rolling_7d_mean"
+    FORECAST_PRICE_ROLLING_7D_MEAN_COLUMN
   ] = (
     past_forecast
     .rolling(
-      window=ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS,
-      min_periods=ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS,
+      window=(
+        ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS
+      ),
+      min_periods=(
+        ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS
+      ),
     )
     .mean()
   )
 
-  # At source hour H, H-24 is safely behind normal AESO finalization delays.
+  # H-24 is safely behind normal AESO finalization delays.
   safe_actual_price = (
-    features["actual_price"].shift(24)
-  )
-
-  features["actual_price_lag_24h"] = (
-    safe_actual_price
+    features[
+      ACTUAL_PRICE_COLUMN
+    ].shift(24)
   )
 
   features[
-    "actual_price_safe_24h_mean"
+    ACTUAL_PRICE_LAG_24H_COLUMN
+  ] = safe_actual_price
+
+  features[
+    ACTUAL_PRICE_SAFE_24H_MEAN_COLUMN
   ] = (
     safe_actual_price
     .rolling(
@@ -193,7 +183,7 @@ def add_live_feature_candidates(
   )
 
   features[
-    "actual_price_safe_24h_max"
+    ACTUAL_PRICE_SAFE_24H_MAX_COLUMN
   ] = (
     safe_actual_price
     .rolling(
@@ -204,12 +194,16 @@ def add_live_feature_candidates(
   )
 
   features[
-    "actual_price_safe_7d_mean"
+    ACTUAL_PRICE_SAFE_7D_MEAN_COLUMN
   ] = (
     safe_actual_price
     .rolling(
-      window=ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS,
-      min_periods=ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS,
+      window=(
+        ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS
+      ),
+      min_periods=(
+        ACTUAL_PRICE_ROLLING_7D_WINDOW_HOURS
+      ),
     )
     .mean()
   )

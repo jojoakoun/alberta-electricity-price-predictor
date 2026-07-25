@@ -3,10 +3,12 @@
 from pathlib import Path
 
 import pandas as pd
+from electricity_predictor.contracts.columns import (
+  DATETIME_COLUMN,
+)
 
 
 TRAINING_DATASET_PATH = Path("data/processed/training_dataset.csv")
-DATETIME_COLUMN = "datetime_universal_time"
 
 
 def load_training_dataset(file_path: Path = TRAINING_DATASET_PATH) -> pd.DataFrame:

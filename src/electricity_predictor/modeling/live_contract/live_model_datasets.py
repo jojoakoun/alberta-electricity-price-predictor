@@ -16,6 +16,10 @@ from electricity_predictor.features.live_feature_contract import (
   SELECTED_LIVE_FEATURE_CONTRACT,
   add_live_feature_candidates,
 )
+from electricity_predictor.contracts.columns import (
+  DATETIME_COLUMN,
+  LOCAL_DATETIME_COLUMN,
+)
 
 
 HISTORICAL_DATASET_PATH = Path(
@@ -30,8 +34,6 @@ LIVE_TRAINING_DATASET_PATH = Path(
   "data/processed/live_training_dataset.csv"
 )
 
-DATETIME_COLUMN = "datetime_universal_time"
-LOCAL_DATETIME_COLUMN = "datetime_local_time"
 
 
 def load_live_feature_source(

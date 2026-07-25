@@ -22,13 +22,15 @@ from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
+from electricity_predictor.contracts.columns import (
+  AESO_FORECAST_COLUMN,
+  PREVIOUS_DAY_PRICE_COLUMN,
+)
 
 
 AESO_FORECAST_BASELINE_NAME = "aeso_forecast_spike_baseline"
-AESO_FORECAST_COLUMN = "forecast_price"
 
 PREVIOUS_DAY_BASELINE_NAME = "previous_day_spike_baseline"
-PREVIOUS_DAY_PRICE_COLUMN = "actual_price_lag_24h"
 
 
 def predict_spikes_from_price_column(

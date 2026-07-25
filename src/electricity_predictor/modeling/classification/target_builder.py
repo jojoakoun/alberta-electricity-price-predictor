@@ -5,9 +5,11 @@ from electricity_predictor.modeling.classification.spike_definition import (
   calculate_iqr_spike_threshold,
   classify_spikes,
 )
+from electricity_predictor.contracts.columns import (
+  ACTUAL_PRICE_COLUMN,
+)
 
 
-ACTUAL_PRICE_COLUMN = "actual_price"
 
 
 def build_spike_target_column_name(horizon_hours: int) -> str:

@@ -43,6 +43,9 @@ from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
+from electricity_predictor.contracts.columns import (
+  RULE_BASELINE_PREDICTION_COLUMNS,
+)
 
 
 BEST_MODEL_PATH = Path("reports/best_classification_model.csv")
@@ -57,11 +60,6 @@ FINAL_CONFIDENCE_INTERVALS_PATH = Path(
 )
 
 
-RULE_BASELINE_PREDICTION_COLUMNS = {
-  "naive_spike_baseline": "actual_price_lag_1h",
-  "aeso_forecast_spike_baseline": "forecast_price",
-  "previous_day_spike_baseline": "actual_price_lag_24h",
-}
 
 
 TUNED_REQUIRED_PARAMETERS = {

@@ -1,3 +1,4 @@
+# Runtime, data processing, modeling, and PostgreSQL
 pandas==3.0.3
 numpy==2.4.6
 requests==2.34.2
@@ -6,3 +7,9 @@ PyYAML==6.0.3
 scikit-learn==1.9.0
 joblib==1.5.3
 psycopg==3.3.4
+
+# Research and visualization
+matplotlib==3.11.0
+
+# Test tooling
+pytest==9.0.3

@@ -14,9 +14,11 @@ from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
+from electricity_predictor.contracts.columns import (
+  ACTUAL_PRICE_COLUMN,
+)
 
 
-ACTUAL_PRICE_COLUMN = "actual_price"
 
 SPIKE_ANALYSIS_PATH = Path("reports/spike_definition_analysis.csv")
 

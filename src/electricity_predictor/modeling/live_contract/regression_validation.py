@@ -41,13 +41,15 @@ from electricity_predictor.modeling.regression.hist_gradient_boosting.hist_gradi
 from electricity_predictor.modeling.split import (
   get_time_series_cv_gap_hours,
 )
+from electricity_predictor.contracts.columns import (
+  DATETIME_COLUMN,
+)
 
 
 LIVE_TRAINING_DATASET_PATH = Path(
   "data/processed/live_training_dataset.csv"
 )
 
-DATETIME_COLUMN = "datetime_universal_time"
 CV_SPLITS = 3
 
 

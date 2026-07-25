@@ -20,10 +20,12 @@ from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
+from electricity_predictor.contracts.columns import (
+  BASELINE_PRICE_COLUMN,
+)
 
 
 CLASSIFICATION_BASELINE_NAME = "naive_spike_baseline"
-BASELINE_PRICE_COLUMN = "actual_price_lag_1h"
 
 
 def predict_spike_persistence(

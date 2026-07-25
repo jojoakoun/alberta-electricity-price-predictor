@@ -19,9 +19,11 @@ from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
+from electricity_predictor.contracts.columns import (
+  TARGET_COLUMN,
+)
 
 
-TARGET_COLUMN = "actual_price"
 HIST_GRADIENT_BOOSTING_LOSS = "absolute_error"
 HIST_GRADIENT_BOOSTING_LEARNING_RATE = 0.1
 HIST_GRADIENT_BOOSTING_MAX_ITER = 100

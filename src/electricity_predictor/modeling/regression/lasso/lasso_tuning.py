@@ -23,6 +23,9 @@ from electricity_predictor.modeling.regression.lasso.lasso_regression import (
   train_lasso_regression_model,
 )
 from electricity_predictor.modeling.split import split_time_series_data_from_config
+from electricity_predictor.contracts.columns import (
+  TARGET_COLUMN,
+)
 
 
 LASSO_ALPHAS = [0.001, 0.01, 0.1, 1.0, 10.0]
@@ -30,7 +33,6 @@ LASSO_TUNING_SPLITS = 3
 TIME_SERIES_CV_GAP_HOURS = get_time_series_cv_gap_hours(
   load_configuration()["modeling"]
 )
-TARGET_COLUMN = "actual_price"
 
 
 def evaluate_lasso_alpha_with_time_series_cv(

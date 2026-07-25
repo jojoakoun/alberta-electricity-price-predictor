@@ -23,6 +23,9 @@ from electricity_predictor.modeling.regression.elastic_net.elastic_net_regressio
 )
 from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
 from electricity_predictor.modeling.split import split_time_series_data_from_config
+from electricity_predictor.contracts.columns import (
+  TARGET_COLUMN,
+)
 
 
 ELASTIC_NET_CONFIGS = [
@@ -41,7 +44,6 @@ ELASTIC_NET_TUNING_SPLITS = 3
 TIME_SERIES_CV_GAP_HOURS = get_time_series_cv_gap_hours(
   load_configuration()["modeling"]
 )
-TARGET_COLUMN = "actual_price"
 
 
 def format_elastic_net_parameters(config: dict) -> str:

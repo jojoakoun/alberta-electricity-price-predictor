@@ -17,10 +17,12 @@ from electricity_predictor.modeling.split import (
   load_training_dataset,
   split_time_series_data_from_config,
 )
+from electricity_predictor.contracts.columns import (
+  NAIVE_BASELINE_PREDICTION_COLUMN,
+  TARGET_COLUMN,
+)
 
 
-TARGET_COLUMN = "actual_price"
-NAIVE_BASELINE_PREDICTION_COLUMN = "actual_price_lag_1h"
 
 # Keep every simple regression benchmark in one explicit, ordered contract.
 # The historical naive_baseline name stays unchanged for backward compatibility.

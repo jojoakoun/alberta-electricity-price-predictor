@@ -19,9 +19,11 @@ from electricity_predictor.modeling.split import (
 )
 from electricity_predictor.features.feature_columns import MODEL_FEATURE_COLUMNS
 from electricity_predictor.modeling.split import split_time_series_data_from_config
+from electricity_predictor.contracts.columns import (
+  TARGET_COLUMN,
+)
 
 
-TARGET_COLUMN = "actual_price"
 RANDOM_FOREST_N_ESTIMATORS = 100
 RANDOM_FOREST_MAX_DEPTH = None
 RANDOM_FOREST_MIN_SAMPLES_LEAF = 1

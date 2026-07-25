@@ -216,7 +216,7 @@ help:
 install:
 	# Install Python development/runtime dependencies and both Node workspaces.
 	# Writes local dependency environments only; it does not install active models.
-	$(PIP) install -r requirements-dev.txt
+	$(PIP) install -r requirements.txt
 	$(PIP) install -e .
 
 	# Install backend and frontend dependencies.
