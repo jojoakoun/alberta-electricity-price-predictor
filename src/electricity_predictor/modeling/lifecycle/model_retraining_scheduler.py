@@ -185,26 +185,44 @@ def write_lifecycle_state(
 def load_promotion_summary(
   candidate_manifest: dict,
 ) -> tuple[Path | None, dict | None]:
-  """Load the comparison summary for one candidate."""
-  candidate_directory = (
-    candidate_manifest.get(
-      "candidate_directory"
-    )
+  """Load the lifecycle review summary recorded in the candidate manifest."""
+  comparison = candidate_manifest.get(
+    "comparison",
+    {},
   )
 
-  if not candidate_directory:
-    return None, None
+  recorded_summary_path = comparison.get(
+    "promotion_summary_path"
+  )
 
-  summary_path = (
-    Path(
+  if recorded_summary_path:
+    summary_path = Path(
       str(
-        candidate_directory
+        recorded_summary_path
       )
     )
-    / "reports"
-    / "comparison"
-    / "promotion_summary.json"
-  )
+  else:
+    candidate_directory = (
+      candidate_manifest.get(
+        "candidate_directory"
+      )
+    )
+
+    if not candidate_directory:
+      return None, None
+
+    # Keep compatibility with candidates created before the manifest
+    # started recording the exact lifecycle review-summary path.
+    summary_path = (
+      Path(
+        str(
+          candidate_directory
+        )
+      )
+      / "reports"
+      / "comparison"
+      / "promotion_summary.json"
+    )
 
   if not summary_path.exists():
     return summary_path, None

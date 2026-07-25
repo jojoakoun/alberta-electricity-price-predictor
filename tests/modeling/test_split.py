@@ -267,3 +267,38 @@ def test_split_time_series_data_from_config_rejects_missing_keys():
         "train_start_utc": "2023-12-28 00:00:00",
       },
     )
+
+
+def test_split_time_series_data_normalizes_timezone_aware_utc_values():
+  """Timezone-aware UTC input must follow the existing naive UTC contract."""
+  timestamps = pd.date_range(
+    start="2023-12-28 00:00:00",
+    end="2025-01-03 23:00:00",
+    freq="h",
+    tz="UTC",
+  )
+
+  data = pd.DataFrame({
+    "datetime_universal_time": timestamps,
+    "actual_price": range(len(timestamps)),
+  })
+
+  train, validation, test = split_time_series_data(
+    data=data,
+    train_start_utc="2023-12-28 00:00:00",
+    validation_start_utc="2024-01-01 00:00:00",
+    test_start_utc="2025-01-01 00:00:00",
+    test_end_utc="2025-01-03 23:00:00",
+    purge_hours=24,
+  )
+
+  assert train["datetime_universal_time"].dt.tz is None
+  assert validation["datetime_universal_time"].dt.tz is None
+  assert test["datetime_universal_time"].dt.tz is None
+
+  assert train["datetime_universal_time"].min() == pd.Timestamp(
+    "2023-12-28 00:00:00"
+  )
+  assert train["datetime_universal_time"].max() == pd.Timestamp(
+    "2023-12-30 23:00:00"
+  )

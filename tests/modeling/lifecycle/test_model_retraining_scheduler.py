@@ -509,3 +509,78 @@ def test_review_trained_candidate_routes_normal_comparison(
   assert calls == [
     "comparison",
   ]
+
+
+def test_load_promotion_summary_uses_recorded_first_activation_path(
+  tmp_path,
+):
+  from electricity_predictor.modeling.lifecycle import (
+    model_retraining_scheduler as scheduler,
+  )
+
+  summary_path = (
+    tmp_path
+    / "reports"
+    / "comparison"
+    / "first_activation_summary.json"
+  )
+
+  summary_path.parent.mkdir(
+    parents=True,
+    exist_ok=True,
+  )
+
+  summary_path.write_text(
+    '{"promotion_ready": true}\n',
+    encoding="utf-8",
+  )
+
+  resolved_path, summary = scheduler.load_promotion_summary(
+    {
+      "candidate_directory": str(tmp_path),
+      "comparison": {
+        "promotion_summary_path": str(summary_path),
+      },
+    }
+  )
+
+  assert resolved_path == summary_path
+  assert summary == {
+    "promotion_ready": True,
+  }
+
+
+def test_load_promotion_summary_keeps_legacy_default_path(
+  tmp_path,
+):
+  from electricity_predictor.modeling.lifecycle import (
+    model_retraining_scheduler as scheduler,
+  )
+
+  summary_path = (
+    tmp_path
+    / "reports"
+    / "comparison"
+    / "promotion_summary.json"
+  )
+
+  summary_path.parent.mkdir(
+    parents=True,
+    exist_ok=True,
+  )
+
+  summary_path.write_text(
+    '{"promotion_ready": false}\n',
+    encoding="utf-8",
+  )
+
+  resolved_path, summary = scheduler.load_promotion_summary(
+    {
+      "candidate_directory": str(tmp_path),
+    }
+  )
+
+  assert resolved_path == summary_path
+  assert summary == {
+    "promotion_ready": False,
+  }

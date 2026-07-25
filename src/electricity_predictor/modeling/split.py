@@ -21,10 +21,13 @@ def load_training_dataset(file_path: Path = TRAINING_DATASET_PATH) -> pd.DataFra
   if DATETIME_COLUMN not in data.columns:
     raise ValueError(f"Missing required datetime column: {DATETIME_COLUMN}")
 
+  # Parse every timestamp as UTC, then remove timezone metadata.
+  # Modeling keeps UTC values in the project's established naive format.
   data[DATETIME_COLUMN] = pd.to_datetime(
     data[DATETIME_COLUMN],
     errors="coerce",
-  )
+    utc=True,
+  ).dt.tz_localize(None)
 
   if data[DATETIME_COLUMN].isna().any():
     raise ValueError("Training dataset contains invalid UTC timestamps.")
@@ -44,6 +47,7 @@ def validate_fixed_split_configuration(
   if purge_hours < 0:
     raise ValueError("Purge hours must be greater than or equal to 0.")
 
+  # Normalize aware and naive boundaries to the same naive UTC format.
   timestamps = pd.to_datetime(
     [
       train_start_utc,
@@ -52,7 +56,8 @@ def validate_fixed_split_configuration(
       test_end_utc,
     ],
     errors="coerce",
-  )
+    utc=True,
+  ).tz_localize(None)
 
   if timestamps.isna().any():
     raise ValueError("Fixed split boundaries must be valid UTC timestamps.")
@@ -84,10 +89,12 @@ def split_time_series_data(
     raise ValueError(f"Missing required datetime column: {DATETIME_COLUMN}")
 
   working_data = data.copy()
+  # Normalize incoming values before comparing them with split boundaries.
   working_data[DATETIME_COLUMN] = pd.to_datetime(
     working_data[DATETIME_COLUMN],
     errors="coerce",
-  )
+    utc=True,
+  ).dt.tz_localize(None)
 
   if working_data[DATETIME_COLUMN].isna().any():
     raise ValueError("Cannot split data with invalid UTC timestamps.")
