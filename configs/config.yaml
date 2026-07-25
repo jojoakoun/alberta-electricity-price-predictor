@@ -1,0 +1,33 @@
+project:
+  name: "Alberta Electricity Price Predictor"
+
+paths:
+  raw_data_dir: "data/raw"
+  interim_data_dir: "data/interim"
+
+data:
+  historical_csv_name: "Hourly_Metered_Volumes_and_Pool_Price_and_AIL_2020-Jul2025.csv"
+
+api:
+  aeso_base_url: "https://apimgw.aeso.ca/public/poolprice-api/v1.1"
+  aeso_pool_price_endpoint: "/price/poolPrice"
+
+modeling:
+  horizons_hours: [1, 3, 6, 12, 24]
+  train_start_utc: "2020-01-08 07:00:00"
+  validation_start_utc: "2024-01-01 00:00:00"
+  test_start_utc: "2025-01-01 00:00:00"
+  test_end_utc: "2026-06-30 23:00:00"
+  purge_hours: 24
+  time_series_cv_gap_hours: 24
+decision:
+  window_hours: 720
+
+model_lifecycle:
+  strategy: "expanding"
+  validation_days: 365
+  test_days: 180
+  purge_hours: 24
+  minimum_training_days: 1095
+  retraining_interval_days: 90
+  promotion_mode: "manual"

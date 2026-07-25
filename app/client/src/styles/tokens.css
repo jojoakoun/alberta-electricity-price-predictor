@@ -1,0 +1,64 @@
+:root {
+  --color-brand: #0f766e;
+  --color-good: #15803d;
+  --color-okay: #b45309;
+  --color-wait: #c2410c;
+  --color-error: #b91c1c;
+
+  --color-bg: #fafaf9;
+  --color-surface: #ffffff;
+  --color-text: #1c1917;
+  --color-text-muted: #57534e;
+  --color-border: #d6d3d1;
+  --color-focus: #0f766e;
+
+  --color-good-surface: #f0fdf4;
+  --color-okay-surface: #fffbeb;
+  --color-wait-surface: #fff7ed;
+  --color-error-surface: #fef2f2;
+  --color-brand-surface: #f0fdfa;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 3rem;
+  --space-7: 4rem;
+
+  --radius: 0.75rem;
+
+  --shadow-card:
+    0 1px 2px rgb(28 25 23 / 0.04),
+    0 8px 24px rgb(28 25 23 / 0.06);
+
+  --motion-duration: 200ms;
+  --motion-easing: ease-out;
+
+  --font-sans:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  --font-size-hero: 2rem;
+  --line-height-hero: 2.5rem;
+
+  --font-size-h1: 1.5rem;
+  --line-height-h1: 2rem;
+
+  --font-size-h2: 1.25rem;
+  --line-height-h2: 1.75rem;
+
+  --font-size-h3: 1.0625rem;
+  --line-height-h3: 1.5rem;
+
+  --font-size-body: 1rem;
+  --line-height-body: 1.5rem;
+
+  --font-size-caption: 0.8125rem;
+  --line-height-caption: 1.25rem;
+}

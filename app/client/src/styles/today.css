@@ -1,0 +1,307 @@
+/* Today page */
+
+.today-best-card {
+  display: grid;
+  gap: var(--space-6);
+  overflow: hidden;
+  border-color: var(--color-brand);
+  background:
+    linear-gradient(
+      135deg,
+      var(--color-brand-surface),
+      var(--color-surface) 72%
+    );
+  padding: clamp(1.5rem, 5vw, 2.75rem);
+}
+
+.today-best-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.today-best-heading > div {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.today-best-icon {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--color-brand);
+  color: white;
+  box-shadow: 0 0 0 0.5rem var(--color-brand-surface);
+}
+
+.today-best-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding-block: var(--space-2);
+}
+
+.today-best-time {
+  padding-bottom: 0.08em;
+  font-size: clamp(2.7rem, 7vw, 4.75rem);
+  font-weight: 750;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+.today-best-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem var(--space-2);
+  padding-bottom: 0.08em;
+  color: var(--color-brand);
+  font-size: clamp(1.75rem, 4.5vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.today-best-price span {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+.today-chart-card {
+  display: grid;
+  gap: var(--space-4);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(
+      180deg,
+      var(--color-surface),
+      var(--color-brand-surface)
+    );
+  padding: clamp(1rem, 4vw, 2rem);
+  box-shadow: var(--shadow-card);
+}
+
+.today-chart-path {
+  stroke-dasharray: 1600;
+  stroke-dashoffset: 0;
+}
+
+.app-reveal.is-visible .today-chart-path {
+  animation: today-chart-draw 900ms ease-out both;
+}
+
+.today-chart-point-group {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.app-reveal.is-visible .today-chart-point-group {
+  animation:
+    today-point-enter 360ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    var(--point-delay, 0ms)
+    both;
+}
+
+.today-chart-best-halo {
+  fill: var(--color-brand-surface);
+  stroke: var(--color-brand);
+  stroke-width: 1;
+  animation: today-best-pulse 2.4s ease-in-out infinite;
+}
+
+.forecast-toggle-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-card);
+}
+
+.forecast-toggle-panel > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.forecast-toggle-panel p {
+  color: var(--color-text-muted);
+}
+
+.forecast-details-reveal {
+  animation:
+    forecast-details-enter 360ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+@media (min-width: 640px) {
+
+  .today-best-content {
+    flex-direction: row;
+    align-items: end;
+    justify-content: space-between;
+  }
+
+  .forecast-toggle-panel {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+@keyframes today-chart-draw {
+  from {
+    stroke-dashoffset: 1600;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes today-point-enter {
+  from {
+    opacity: 0.75;
+    transform: scale(0.75);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes today-best-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.9);
+    transform-origin: center;
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+    transform-origin: center;
+  }
+}
+
+@keyframes forecast-details-enter {
+  from {
+    opacity: 0.9;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forecast-details-reveal,
+.today-chart-point-group {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .today-chart-best-halo {
+    animation: none;
+  }
+
+  .today-chart-path {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+}
+
+.today-best-icon.is-neutral {
+  background: var(--color-okay-surface);
+  color: var(--color-okay);
+}
+
+.today-best-day {
+  color: var(--color-brand);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.today-best-price-label {
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: 650;
+}
+
+.today-best-current-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding-block: var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.today-best-current-price strong {
+  color: var(--color-text);
+}
+
+.today-best-comparison-badge {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  background: var(--color-okay-surface);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-okay);
+  font-weight: 700;
+  text-align: center;
+}
+
+.today-best-card {
+  min-height: 0;
+  align-content: start;
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.today-best-content {
+  min-height: 0;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.today-best-current-price {
+  padding-block: var(--space-3);
+}
+
+.today-best-current-price-copy {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.today-best-observed-at {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+}
+
+@media (min-width: 768px) {
+  .today-best-card {
+    padding: 2rem;
+  }
+}

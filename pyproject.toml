@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alberta-electricity-price-predictor"
+version = "0.1.0"
+description = "A machine learning project for Alberta electricity price prediction and decision support."
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+
+[project.scripts]
+wattwise-worker = "electricity_predictor.worker.production_worker:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

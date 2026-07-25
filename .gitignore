@@ -1,0 +1,53 @@
+# Python
+pycache/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+Node
+
+node_modules/
+dist/
+coverage/
+
+Environment and secrets
+
+.env
+.env.*
+*.pem
+*.key
+
+Generated data and models
+
+data/
+models/
+reports/
+context_exports/
+project_cleanup_reports/
+*.csv
+*.parquet
+*.joblib
+*.pkl
+*.pickle
+*.sqlite
+*.db
+
+Private project operations
+
+docs/
+scripts/
+Makefile
+Makefile.*
+railway*.json
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+Procfile
+architecture_et_comprehension.md
+
+Local files
+
+.DS_Store
+*.log

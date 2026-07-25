@@ -1,0 +1,148 @@
+/* Now page */
+
+.now-recommendation-card {
+  position: relative;
+  display: grid;
+  gap: var(--space-5);
+  overflow: hidden;
+  border-color: var(--color-brand);
+  background:
+    linear-gradient(
+      135deg,
+      var(--color-surface),
+      var(--color-brand-surface)
+    );
+  padding: clamp(1.5rem, 5vw, 2.75rem);
+}
+
+.now-recommendation-card::after {
+  position: absolute;
+  right: -5rem;
+  bottom: -7rem;
+  width: 15rem;
+  height: 15rem;
+  border-radius: 9999px;
+  background: var(--color-brand-surface);
+  content: "";
+  filter: blur(12px);
+}
+
+.now-recommendation-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.now-recommendation-copy {
+  max-width: 34rem;
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.now-action-panel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-radius: var(--radius);
+  background: rgb(255 255 255 / 78%);
+  padding: var(--space-3);
+  color: var(--color-brand);
+  font-weight: 600;
+}
+
+.now-action-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--color-brand-surface);
+}
+
+.now-price-panel {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-5);
+}
+
+.now-price-label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.now-price-value {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem var(--space-2);
+  padding-bottom: 0.12em;
+  overflow-wrap: anywhere;
+  font-size: clamp(2.75rem, 7vw, 4.5rem);
+  font-weight: 750;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+.now-price-value span {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  .now-recommendation-card {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(20rem, 0.92fr);
+    align-items: stretch;
+  }
+
+  .now-price-panel {
+    border-top: 0;
+    border-left: 1px solid var(--color-border);
+    padding-top: 0;
+    padding-left: var(--space-5);
+  }
+}
+
+.now-market-hour-row {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-size: clamp(
+    0.72rem,
+    1.25vw,
+    var(--font-size-caption)
+  );
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.now-market-hour-range {
+  color: var(--color-text);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 420px) {
+  .now-market-hour-row {
+    font-size: clamp(
+      0.7rem,
+      3vw,
+      var(--font-size-caption)
+    );
+    letter-spacing: -0.015em;
+  }
+}

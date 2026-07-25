@@ -1,0 +1,214 @@
+/* Project motion */
+
+.project-reveal {
+  opacity: 1;
+}
+
+.project-reveal.is-visible {
+  animation:
+    project-soft-rise 420ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    var(--motion-delay, 0ms)
+    both;
+}
+
+.project-stagger-item {
+  opacity: 1;
+}
+
+.project-reveal.is-visible .project-stagger-item {
+  animation:
+    project-soft-rise 360ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    var(--item-delay, 0ms)
+    both;
+}
+
+.project-hero-item,
+.project-hero-aside {
+  opacity: 1;
+  animation:
+    project-soft-rise 430ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    var(--hero-delay, 0ms)
+    both;
+}
+
+.project-hero-aside .project-link-button {
+  margin-top: 0.65rem;
+}
+
+.project-reveal.is-visible .project-journey-timeline::after {
+  animation:
+    project-draw-line 780ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    80ms
+    forwards;
+}
+
+.project-reveal.is-visible .project-journey-step {
+  animation:
+    project-soft-rise 360ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    var(--step-delay, 0ms)
+    both;
+}
+
+.project-reveal.is-visible .project-tech-pill {
+  animation:
+    project-chip-enter 320ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    var(--tech-delay, 0ms)
+    both;
+}
+
+.project-reveal.is-visible .project-developer-photo-wrap {
+  animation:
+    project-photo-enter 480ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+}
+
+.project-reveal.is-visible .project-developer-copy {
+  animation:
+    project-soft-rise 420ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    90ms
+    both;
+}
+
+.project-reveal.is-visible .project-reflection::after {
+  animation:
+    project-draw-horizontal 620ms
+    cubic-bezier(0.22, 1, 0.36, 1)
+    140ms
+    forwards;
+}
+
+.project-reveal.is-visible .project-reflection-icon {
+  animation: project-lightbulb 520ms ease 120ms both;
+}
+
+@keyframes project-soft-rise {
+  from {
+    opacity: 0.88;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes project-chip-enter {
+  from {
+    opacity: 0.9;
+    transform: translateY(6px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes project-photo-enter {
+  from {
+    opacity: 0.9;
+    transform: scale(0.94);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes project-draw-line {
+  from {
+    transform: scaleY(0);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes project-draw-horizontal {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes project-orb-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(-2rem, 1.5rem, 0) scale(1.06);
+  }
+}
+
+@keyframes project-lightbulb {
+  0% {
+    transform: scale(0.82) rotate(-8deg);
+  }
+
+  55% {
+    transform: scale(1.12) rotate(4deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (min-width: 768px) {
+
+  .project-reveal.is-visible .project-journey-timeline::after {
+    animation-name: project-draw-line-desktop;
+  }
+}
+
+@keyframes project-draw-line-desktop {
+  from {
+    transform: translateX(-50%) scaleY(0);
+  }
+
+  to {
+    transform: translateX(-50%) scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-reveal,
+  .project-reveal.is-visible,
+  .project-stagger-item,
+  .project-journey-step,
+  .project-tech-pill,
+  .project-developer-copy,
+  .project-developer-photo-wrap,
+  .project-hero-item,
+  .project-hero-aside {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .project-hero-orb,
+  .project-reflection-icon {
+    animation: none;
+  }
+
+  .project-journey-timeline::after,
+  .project-reflection::after {
+    transform: none;
+    animation: none;
+  }
+}
