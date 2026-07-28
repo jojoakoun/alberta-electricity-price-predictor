@@ -107,12 +107,6 @@
     both;
 }
 
-.today-chart-best-halo {
-  fill: var(--color-brand-surface);
-  stroke: var(--color-brand);
-  stroke-width: 1;
-  animation: today-best-pulse 2.4s ease-in-out infinite;
-}
 
 .forecast-toggle-panel {
   display: flex;
@@ -305,3 +299,131 @@
     padding: 2rem;
   }
 }
+
+/* Price-trend legend: point color communicates the recommendation,
+   while the halo identifies only the best available option. */
+.today-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-top: 0.75rem;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.today-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.today-chart-legend-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+.today-chart-legend-good {
+  background: var(--color-brand);
+}
+
+.today-chart-legend-okay {
+  background: var(--color-okay);
+}
+
+.today-chart-legend-wait {
+  background: var(--color-wait);
+}
+
+.today-chart-legend-halo {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex: 0 0 auto;
+  border: 2px solid var(--color-brand);
+  border-radius: 999px;
+  background: transparent;
+}
+
+/* FINAL BEST OPTION HALO — START */
+
+/*
+ * Point color communicates Good, Okay, or Better to wait.
+ * The animated ring communicates only the best available option.
+ */
+.today-chart-best-halo {
+  fill: transparent;
+  stroke: var(--color-brand);
+  stroke-width: 2;
+  opacity: 0.88;
+  filter: drop-shadow(
+    0 0 5px
+    color-mix(
+      in srgb,
+      var(--color-brand) 28%,
+      transparent
+    )
+  );
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    wattwise-best-option-pulse
+    3s
+    ease-in-out
+    infinite;
+}
+
+@keyframes wattwise-best-option-pulse {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: scale(1.35);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.46);
+  }
+}
+
+/*
+ * The legend uses the same target symbol as the chart,
+ * but remains static so it does not distract the user.
+ */
+.today-chart-legend-halo {
+  position: relative;
+  display: inline-grid;
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2px solid var(--color-brand);
+  border-radius: 999px;
+  background: transparent;
+  box-shadow:
+    0 0 0 3px
+    color-mix(
+      in srgb,
+      var(--color-brand) 14%,
+      transparent
+    );
+}
+
+.today-chart-legend-halo::after {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--color-brand);
+  content: "";
+}
+
+/* Respect accessibility preferences for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .today-chart-best-halo {
+    animation: none;
+    opacity: 0.9;
+    transform: scale(1.35);
+  }
+}
+
+/* FINAL BEST OPTION HALO — END */

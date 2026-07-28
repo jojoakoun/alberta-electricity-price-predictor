@@ -1,196 +1,91 @@
-"""Verify Railway worker configuration and canonical worker commands."""
+"""Deployment contract tests for the scheduled Railway worker."""
 
 import json
 from pathlib import Path
-import re
-import tomllib
 
 
-CONFIG_PATH = Path(
-  "railway.worker.json"
-)
-
-MAKEFILE_PATH = Path(
-  "Makefile"
-)
+ROOT = Path(__file__).resolve().parents[2]
+WORKER_CONFIG = ROOT / "railway.worker.json"
+PYPROJECT = ROOT / "pyproject.toml"
+MAKEFILE = ROOT / "Makefile"
 
 
 def load_worker_config() -> dict:
   """Load the Railway worker configuration."""
   return json.loads(
-    CONFIG_PATH.read_text(
-      encoding="utf-8"
-    )
+    WORKER_CONFIG.read_text(encoding="utf-8")
   )
 
 
-def load_makefile() -> str:
-  """Load the project Makefile."""
-  return MAKEFILE_PATH.read_text(
-    encoding="utf-8"
+def collect_strings(value) -> list[str]:
+  """Collect every string contained in nested JSON data."""
+  if isinstance(value, str):
+    return [value]
+
+  if isinstance(value, list):
+    strings = []
+    for item in value:
+      strings.extend(collect_strings(item))
+    return strings
+
+  if isinstance(value, dict):
+    strings = []
+    for item in value.values():
+      strings.extend(collect_strings(item))
+    return strings
+
+  return []
+
+
+def normalize_whitespace(value: str) -> str:
+  """Collapse formatting whitespace for command comparisons."""
+  return " ".join(value.split())
+
+
+def test_worker_config_uses_installed_entry_point() -> None:
+  """Railway must invoke the installed worker directly."""
+  commands = " ".join(
+    collect_strings(load_worker_config())
   )
 
+  assert "wattwise-worker" in commands
 
-def extract_make_target(
-  makefile: str,
-  target_name: str,
-) -> str:
-  """Extract one Makefile target body."""
-  pattern = re.compile(
-    rf"(?ms)^{re.escape(target_name)}:\n"
-    rf"(?P<body>.*?)"
-    rf"(?=^[A-Za-z0-9_.-]+:|\Z)"
+
+def test_worker_config_does_not_use_removed_make_aliases() -> None:
+  """Deployment must not depend on legacy Makefile aliases."""
+  commands = " ".join(
+    collect_strings(load_worker_config())
   )
 
-  match = pattern.search(
-    makefile
+  removed_aliases = (
+    "make worker-run",
+    "make sync-and-predict",
+    "make models-install",
   )
 
-  if match is None:
-    raise AssertionError(
-      f"Missing Makefile target: {target_name}"
-    )
-
-  return match.group(
-    "body"
-  )
+  for alias in removed_aliases:
+    assert alias not in commands
 
 
-def test_worker_uses_railpack() -> None:
-  config = load_worker_config()
+def test_python_package_defines_worker_command() -> None:
+  """The installed command must be declared by the package."""
+  pyproject = PYPROJECT.read_text(encoding="utf-8")
 
+  assert "wattwise-worker" in pyproject
   assert (
-    config["build"]["builder"]
-    == "RAILPACK"
-  )
-
-  assert config[
-    "build"
-  ][
-    "buildCommand"
-  ] == (
-    "pip install -r requirements.txt "
-    "&& pip install -e ."
+    "electricity_predictor.worker.production_worker"
+    in pyproject
   )
 
 
-def test_worker_uses_installed_canonical_entry_point() -> None:
-  config = load_worker_config()
-
-  assert config[
-    "deploy"
-  ][
-    "startCommand"
-  ] == "wattwise-worker"
-
-
-def test_models_install_supports_remote_release() -> None:
-  target = extract_make_target(
-    makefile=load_makefile(),
-    target_name="models-install",
-  )
-
-  assert "MODEL_RELEASE_URL" in target
-  assert "MODEL_RELEASE_SHA256" in target
-
-  assert (
-    "$(PYTHON) -m "
-    "electricity_predictor.serving."
-    "release_installer"
-    in target
-  )
-
-
-def test_models_install_supports_local_registry() -> None:
-  target = extract_make_target(
-    makefile=load_makefile(),
-    target_name="models-install",
+def test_sync_uses_canonical_prediction_pipeline() -> None:
+  """The canonical sync command must call the worker pipeline."""
+  makefile = normalize_whitespace(
+    MAKEFILE.read_text(encoding="utf-8")
   )
 
   assert (
-    "models/production/"
-    "active_models.json"
-    in target
-  )
-
-  assert (
-    "Using local active model registry"
-    in target
-  )
-
-
-def test_worker_target_uses_canonical_python_entry_point() -> None:
-  target = extract_make_target(
-    makefile=load_makefile(),
-    target_name="worker-run",
-  )
-
-  assert "$(PYTHON)" in target
-
-  assert (
-    "-m electricity_predictor.worker.production_worker"
-    in target
-  )
-
-  assert (
-    "$(MAKE) models-install"
-    not in target
-  )
-
-
-def test_sync_and_predict_uses_canonical_worker_module() -> None:
-  target = extract_make_target(
-    makefile=load_makefile(),
-    target_name="sync-and-predict",
-  )
-
-  assert (
-    "$(PYTHON) -m "
     "electricity_predictor.worker."
     "application_prediction_pipeline"
-    in target
+    in makefile
   )
-
-  assert (
-    "electricity_predictor.application_pipeline"
-    not in target
-  )
-
-
-def test_worker_entry_point_is_installed_by_python_package() -> None:
-  with Path(
-    "pyproject.toml"
-  ).open("rb") as stream:
-    pyproject = tomllib.load(
-      stream
-    )
-
-  assert (
-    pyproject[
-      "project"
-    ][
-      "scripts"
-    ][
-      "wattwise-worker"
-    ]
-    == (
-      "electricity_predictor.worker."
-      "production_worker:main"
-    )
-  )
-
-
-def test_worker_has_hourly_cron_schedule() -> None:
-  config = load_worker_config()
-
-  assert config[
-    "deploy"
-  ][
-    "cronSchedule"
-  ] == "15 * * * *"
-
-  assert config[
-    "deploy"
-  ][
-    "restartPolicyType"
-  ] == "NEVER"

@@ -8,6 +8,9 @@ import {
 
 import { copy } from "../../copy";
 import {
+  formatElectricityPrice,
+} from "../../utils/electricity-price";
+import {
   formatAlbertaDay,
   formatAlbertaTime,
   formatNumber,
@@ -175,7 +178,7 @@ export function BestTimeCard({
             </p>
 
             <p className="today-best-price">
-              {formatNumber(bestTime.priceCents)}
+              {formatElectricityPrice(bestTime.priceCents)}
               <span>¢/kWh</span>
             </p>
           </div>
@@ -219,7 +222,7 @@ export function BestTimeCard({
           </div>
 
           <strong>
-            {formatNumber(currentPriceCents)}
+            {formatElectricityPrice(currentPriceCents)}
             {" "}¢/kWh
           </strong>
         </div>

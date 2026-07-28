@@ -1,93 +1,104 @@
 # Data and Features
 
-## Data source
+## Source
 
-The project consumes hourly Alberta electricity information from the Alberta
-Electric System Operator.
+WattWise consumes hourly Alberta electricity information from the Alberta
+Electric System Operator (AESO).
 
-The normalized source fields include:
+Normalized source fields include:
 
-- UTC datetime
-- Alberta local datetime
-- actual pool price
-- forecast pool price
-- Alberta internal load
+- UTC datetime;
+- Alberta local datetime;
+- actual pool price;
+- forecast pool price;
+- Alberta internal load.
 
-## Data stages
+## Data lineage
 
 ```text
-raw source
-  → cleaned historical data
-  → engineered modeling data
-  → chronological training data
-  → lifecycle comparison data
+source API / raw CSV
+  → data/raw/
+  → cleaning and normalization
+  → data/interim/current_historical_prices_clean.csv
+  → feature engineering
+  → data/processed/modeling_dataset.csv
+  → chronological training datasets
+  → lifecycle candidate datasets
 ```
 
-Raw source files must not be replaced by generated datasets.
+Raw data is source evidence. Interim and processed files are reproducible
+outputs and must not be edited by hand.
 
-Generated data and model artifacts are reproducible outputs and should not be
-treated as hand-maintained source files.
+## Time contract
 
-## Time handling
+UTC is the canonical ordering and comparison key. Alberta local time is retained
+for user display and calendar features.
 
-UTC is the canonical ordering key.
-
-Local Alberta time is retained for user-facing interpretation and calendar
-features.
-
-Chronological splits use fixed calendar boundaries and a purge gap to reduce
-leakage between training, validation, and test periods.
+Chronological splitting is required because random splitting would allow future
+market patterns to leak into earlier training periods. A purge gap reduces
+boundary leakage from lagged and rolling features.
 
 ## Shared column contract
 
-`src/electricity_predictor/contracts/columns.py` is the only authoritative
-module for shared column names and feature lists.
+Authoritative path:
 
-Modules may define local schemas only when those schemas are specific to that
-module and are not shared contracts.
+`src/electricity_predictor/contracts/columns.py`
 
-## Live feature contract
+This file owns shared names, supported horizons, feature lists, and required
+training columns. Modules may define local schemas only for local-only data.
 
-The selected live contract contains 14 features:
+## Selected live feature contract
 
-1. hour
-2. day of week
-3. month
-4. weekend indicator
-5. forecast price
-6. forecast price lagged by one hour
-7. forecast price lagged by 24 hours
-8. forecast-price 24-hour mean
-9. forecast-price 24-hour maximum
-10. forecast-price seven-day mean
-11. actual price lagged by 24 hours
-12. safe actual-price 24-hour mean
-13. safe actual-price 24-hour maximum
-14. safe actual-price seven-day mean
+The live contract contains 14 features:
 
-The actual-price features are delayed so that the live prediction contract does
-not depend on future actual prices.
+1. hour;
+2. day of week;
+3. month;
+4. weekend indicator;
+5. forecast price;
+6. forecast price lagged one hour;
+7. forecast price lagged 24 hours;
+8. forecast-price 24-hour mean;
+9. forecast-price 24-hour maximum;
+10. forecast-price seven-day mean;
+11. actual price lagged 24 hours;
+12. safe actual-price 24-hour mean;
+13. safe actual-price 24-hour maximum;
+14. safe actual-price seven-day mean.
+
+The actual-price features are delayed so live predictions do not depend on an
+actual value that is unavailable at prediction time.
+
+## Feature intuition
+
+| Feature type | Intuition |
+|---|---|
+| Calendar | Electricity behaviour changes by hour, weekday, and season |
+| Lag | Recent market values often carry predictive information |
+| Rolling mean | Describes the recent price level |
+| Rolling maximum | Describes recent stress or spike conditions |
+| Forecast price | Encodes the system operator's forward expectation |
+| Internal load | Describes demand pressure on the grid |
 
 ## Targets
 
-Regression predicts future pool price for supported horizons.
-
+Regression predicts a future pool price for supported horizons.
 Classification predicts whether the future price belongs to the configured
 spike regime.
 
-Target creation, spike thresholds, and decision thresholds must be derived from
-approved training or validation data. Protected test results must not influence
-feature design, model selection, or threshold tuning.
+Thresholds must be derived only from approved training or validation data. The
+protected test split cannot influence feature design, candidate selection,
+hyperparameters, or decision thresholds.
 
-## Quality checks
+## Quality controls
 
-The data pipeline checks:
+The pipeline checks:
 
-- required columns
-- chronological order
-- duplicate timestamps
-- missing-value expectations
-- feature availability
-- target availability
-- split boundaries
-- leakage-sensitive feature behavior
+- required columns;
+- chronological ordering;
+- duplicate timestamps;
+- missing-value expectations;
+- feature and target availability;
+- split boundaries;
+- leakage-sensitive behaviour;
+- live/training feature parity.

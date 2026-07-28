@@ -5,8 +5,9 @@ function dollarsPerMwhToCentsPerKwh(value) {
     throw new TypeError("Price must be a finite number.");
   }
 
-  // Convert the internal $/MWh value to the public ¢/kWh value.
-  return Number((price / 10).toFixed(2));
+  // Preserve small positive values so the client can distinguish
+  // a near-zero market price from an exact zero price.
+  return Number((price / 10).toFixed(4));
 }
 
 module.exports = {

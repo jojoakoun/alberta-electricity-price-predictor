@@ -6,8 +6,10 @@ import {
 
 import { copy } from "../../copy";
 import {
+  formatElectricityPrice,
+} from "../../utils/electricity-price";
+import {
   formatAlbertaTime,
-  formatNumber,
 } from "../../i18n/formatters";
 import { isLowerPriceOpportunity } from "../../domain/today";
 import { StatusBadge } from "../StatusBadge";
@@ -126,7 +128,7 @@ export function ForecastList({
                       : "text-[var(--color-text)]",
                   ].join(" ")}
                 >
-                  {formatNumber(forecast.priceCents)} ¢/kWh
+                  {formatElectricityPrice(forecast.priceCents)} ¢/kWh
                 </span>
 
                 <ChevronDown

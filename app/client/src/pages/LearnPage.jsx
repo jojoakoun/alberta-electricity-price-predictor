@@ -1,5 +1,9 @@
 import "../styles/learn.css";
 
+import {
+  usePageAnalytics,
+} from "../analytics/usePageAnalytics";
+
 import { AudienceNotice } from "../components/learn/AudienceNotice";
 import { ConfidenceLevels } from "../components/learn/ConfidenceLevels";
 import { DataSourceCard } from "../components/learn/DataSourceCard";
@@ -11,6 +15,8 @@ import { RecommendationExplorer } from "../components/learn/RecommendationExplor
 import { AppReveal } from "../components/motion/AppReveal";
 
 export function LearnPage() {
+  usePageAnalytics("learn");
+
   return (
     <div
       className={[

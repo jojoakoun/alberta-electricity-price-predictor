@@ -3,83 +3,65 @@
 ## D-01 — One shared column contract
 
 Shared column names, supported horizons, model feature lists, and training
-requirements are defined in:
+requirements are defined in `src/electricity_predictor/contracts/columns.py`.
+Feature behaviour remains in feature modules.
 
-`src/electricity_predictor/contracts/columns.py`
+## D-02 — One pinned Python dependency file
 
-Feature behavior remains in the feature modules.
+Python runtime, research, and test packages are pinned in `requirements.txt`.
+`pyproject.toml` owns package metadata and installed commands.
 
-## D-02 — One Python dependency file
+## D-03 — Canonical public Make commands
 
-All Python runtime, research, and test packages are pinned in:
+Primary developer operations are `install`, `start`, `stop`, `check`, `status`,
+`verify`, `sync`, `reset`, `rebuild`, and `activate`. Help output groups commands
+by normal operational importance. Compatibility aliases are temporary and must
+not be used in new automation.
 
-`requirements.txt`
+## D-04 — Destructive commands require confirmation
 
-`pyproject.toml` remains responsible for packaging and installed commands.
+`make reset`, `make db-clean`, and `make analytics-reset` require `CONFIRM=YES`.
+The reset preserves the raw source and PostgreSQL schema.
 
-## D-03 — Canonical Makefile commands
+## D-05 — Candidate creation and activation are separate
 
-The Makefile exposes 49 canonical targets.
-
-Compatibility aliases and individual algorithm shortcuts were removed.
-
-Research algorithms remain executable through their Python modules and approved
-research orchestration.
-
-## D-04 — No destructive reset shortcut
-
-The combined local reset command was removed.
-
-Database cleanup remains separately available only through:
-
-```bash
-make db-clean CONFIRM=YES
-```
-
-## D-05 — Candidate preparation and activation are separate
-
-Training or refitting a candidate does not activate it.
-
-Only lifecycle promotion can write the active model registry.
+Training or refitting a candidate never activates it. Only lifecycle promotion
+may write the active registry.
 
 ## D-06 — First activation is explicit
 
-A fresh installation may contain no active model.
+A fresh installation may contain no active model. The first activation follows
+the same review and promotion boundary as later replacements.
 
-The first activation follows the same review and promotion boundary as later
-model replacements.
+## D-07 — Protected final-test isolation
 
-## D-07 — Protected final test isolation
+Final regression and classification evaluation tests are excluded from routine
+verification. Their results cannot influence training, features, tuning,
+thresholds, or candidate selection.
 
-The final regression and classification evaluation tests are excluded from
-routine verification.
+## D-08 — Railway uses direct runtime entry points
 
-Protected test results do not influence training, feature design,
-hyperparameter tuning, threshold tuning, or candidate selection.
+The web service uses npm scripts. The worker uses the installed
+`wattwise-worker` command. Railway does not depend on compatibility Make aliases.
 
-## D-08 — Railway uses direct entry points
+## D-09 — Architecture work has no ML side effects
 
-The Railway web service uses npm commands directly.
+Refactoring and documentation updates must not train models, generate production
+predictions, promote candidates, or change the active registry.
 
-The Railway worker uses the installed `wattwise-worker` command directly.
+## D-10 — Anonymous analytics minimizes collected data
 
-Deployment does not depend on legacy Makefile aliases.
+Analytics excludes direct personal identifiers, IP addresses, user agents,
+location data, and browser fingerprints. Private summaries require a server-side
+key.
 
-## D-09 — No model or database side effects during refactoring
+## D-11 — Database schema changes require migrations
 
-Architecture cleanup, documentation updates, and foundation verification must
-not:
+Every table used by repositories, including `analytics_events`, must be created
+through a committed migration before deployment.
 
-- train models;
-- generate production predictions;
-- modify PostgreSQL;
-- promote candidates;
-- change the active registry;
-- push commits.
+## D-12 — Documentation has one responsibility per file
 
-## D-10 — Documentation is organized by responsibility
-
-The root README provides orientation.
-
-Detailed truth is separated into architecture, data, lifecycle, development,
-deployment, project status, and decision documents.
+The README orients. Specialized documents define architecture, data, lifecycle,
+development, deployment, access, operations, status, and decisions. The Study
+Manual teaches the entire system and links theory to source functions.

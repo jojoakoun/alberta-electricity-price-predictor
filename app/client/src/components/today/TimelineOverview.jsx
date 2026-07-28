@@ -1,8 +1,7 @@
-import {
-  useId,
-} from "react";
-
 import { copy } from "../../copy";
+import {
+  formatElectricityPrice,
+} from "../../utils/electricity-price";
 import { isLowerPriceOpportunity } from "../../domain/today";
 import {
   formatAlbertaDay,
@@ -10,12 +9,14 @@ import {
   formatNumber,
 } from "../../i18n/formatters";
 import {
+  getRecommendationColor,
+} from "./recommendation-color";
+import {
   buildChartPoints,
   buildDayGroups,
   buildGridLines,
   buildPriceDomain,
   buildSmoothPath,
-  buildTrendGradientStops,
   CHART_HEIGHT,
   CHART_WIDTH,
   getPriceLabelY,
@@ -31,12 +32,6 @@ export function TimelineOverview({
   currentPriceSourceAtUtc,
   forecastSourceTimeUtc,
 }) {
-  const gradientId = useId()
-    .replace(
-      /:/g,
-      "",
-    );
-
   if (forecasts.length === 0) {
     return null;
   }
@@ -89,19 +84,17 @@ export function TimelineOverview({
       ? bestTime?.horizonHours
       : undefined;
 
-  const bestPointIndex = bestHorizon === undefined
-    ? -1
-    : points.findIndex(
-        ({ forecast }) =>
-          forecast.horizonHours
-          === bestHorizon,
-      );
-
-  const trendGradientStops =
-    buildTrendGradientStops(
-      points,
-      bestPointIndex,
-    );
+  // When the current market price is already the lowest option,
+  // treat the first chart point as the highlighted opportunity.
+  const bestPointIndex = comparison === "current_lower"
+    ? 0
+    : bestHorizon === undefined
+      ? -1
+      : points.findIndex(
+          ({ forecast }) =>
+            forecast.horizonHours
+            === bestHorizon,
+        );
 
   const gridLines = buildGridLines(
     domainMinimum,
@@ -134,6 +127,43 @@ export function TimelineOverview({
           {copy.forecast.priceTrendTitle}
         </h2>
 
+        <div
+          aria-label="Price recommendation legend"
+          className="today-chart-legend"
+        >
+          <span>
+            <i
+              aria-hidden="true"
+              className="today-chart-legend-dot today-chart-legend-good"
+            />
+            {copy.recommendations.recommended.label}
+          </span>
+
+          <span>
+            <i
+              aria-hidden="true"
+              className="today-chart-legend-dot today-chart-legend-okay"
+            />
+            {copy.recommendations.acceptable.label}
+          </span>
+
+          <span>
+            <i
+              aria-hidden="true"
+              className="today-chart-legend-dot today-chart-legend-wait"
+            />
+            {copy.recommendations.avoid.label}
+          </span>
+
+          <span>
+            <i
+              aria-hidden="true"
+              className="today-chart-legend-halo"
+            />
+            Best option
+          </span>
+        </div>
+
         <p
           id="price-trend-description"
           className="text-[var(--color-text-muted)]"
@@ -150,27 +180,6 @@ export function TimelineOverview({
         role="img"
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
       >
-        <defs>
-          <linearGradient
-            id={gradientId}
-            data-testid="forecast-trend-gradient"
-            gradientUnits="userSpaceOnUse"
-            x1={PLOT_LEFT}
-            x2={PLOT_RIGHT}
-            y1="0"
-            y2="0"
-          >
-            {trendGradientStops.map(
-              (stop, index) => (
-                <stop
-                  key={`${stop.offset}-${index}`}
-                  offset={stop.offset}
-                  stopColor={stop.color}
-                />
-              ),
-            )}
-          </linearGradient>
-        </defs>
 
         {gridLines.map(
           ({ value, y }, index) => (
@@ -215,7 +224,7 @@ export function TimelineOverview({
           className="today-chart-path"
           d={path}
           fill="none"
-          stroke={`url(#${gradientId})`}
+          stroke="var(--color-text-muted)"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="4"
@@ -234,11 +243,9 @@ export function TimelineOverview({
               forecast.pointKind
               === "current";
 
-            const isBest = (
-              !isCurrent
-              && forecast.horizonHours
-                === bestHorizon
-            );
+            // Use the already-calculated index so the halo works
+            // for both the current point and future forecast points.
+            const isBest = index === bestPointIndex;
 
             return (
               <g
@@ -273,10 +280,12 @@ export function TimelineOverview({
                   cy={y}
                   fill={
                     isCurrent
-                      ? "var(--color-text)"
-                      : isBest
+                      ? comparison === "current_lower"
                         ? "var(--color-brand)"
-                        : "var(--color-okay)"
+                        : "var(--color-text)"
+                      : getRecommendationColor(
+                          forecast.recommendation,
+                        )
                   }
                   r={
                     isCurrent
@@ -294,12 +303,15 @@ export function TimelineOverview({
                   ].join(" ")}
                   textAnchor="middle"
                   x={x}
-                  y={getPriceLabelY(
+                  y={
+                    getPriceLabelY(
                     points,
                     index,
-                  )}
+                  )
+                    - (isBest ? 14 : 0)
+                  }
                 >
-                  {formatNumber(
+                  {formatElectricityPrice(
                     forecast.priceCents,
                   )}
                   ¢
@@ -416,7 +428,7 @@ export function TimelineOverview({
               forecast.targetTimeUtc,
             )}
             {": "}
-            {formatNumber(
+            {formatElectricityPrice(
               forecast.priceCents,
             )}
             {" ¢/kWh"}

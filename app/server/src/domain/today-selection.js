@@ -99,16 +99,27 @@ function compareForecastWithObservedPrice(
     };
   }
 
+  // Compare the same two-decimal values shown to the consumer.
+  // Extra API precision is retained only to distinguish a small
+  // positive price from an exact zero in the visual display.
+  const publicForecastPrice = Number(
+    bestForecast.priceCents.toFixed(2),
+  );
+
+  const publicCurrentPrice = Number(
+    currentPriceCents.toFixed(2),
+  );
+
   const priceDifferenceCents = Number(
     Math.abs(
-      bestForecast.priceCents
-      - currentPriceCents,
+      publicForecastPrice
+      - publicCurrentPrice,
     ).toFixed(2),
   );
 
   if (
-    bestForecast.priceCents
-    < currentPriceCents
+    publicForecastPrice
+    < publicCurrentPrice
   ) {
     return {
       comparison: "forecast_lower",
@@ -117,8 +128,8 @@ function compareForecastWithObservedPrice(
   }
 
   if (
-    bestForecast.priceCents
-    > currentPriceCents
+    publicForecastPrice
+    > publicCurrentPrice
   ) {
     return {
       comparison: "current_lower",

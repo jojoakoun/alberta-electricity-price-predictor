@@ -1,102 +1,96 @@
 # Model Lifecycle
 
-## Purpose
+## Core rule
 
-The lifecycle separates model construction from model activation.
+A trained model is not automatically a production model.
 
-A model is not active merely because it was trained successfully.
-
-## Lifecycle stages
-
-### 1. Research
-
-Research pipelines prepare datasets, train model families, tune supported
-algorithms, and select validation candidates.
-
-```bash
-make research-rebuild
+```text
+training
+  → candidate
+  → validation and comparison
+  → human review
+  → explicit promotion
+  → active registry
 ```
 
-A full approved rebuild is available through:
+## Rebuild
 
 ```bash
-make research-rebuild-all
+make rebuild
 ```
 
-The full rebuild must be intentional because it can include final evaluation
-and publication-oriented outputs.
+The rebuild reconstructs data, features, regression and classification results,
+decision-policy analysis, live candidate models, and lifecycle evidence.
 
-### 2. Candidate preparation
+It does **not**:
 
-Lifecycle preparation creates candidate bundles and records the exact data,
-features, configuration, and model metadata used to create them.
+- execute protected final-evaluation tests;
+- activate the candidate;
+- replace the active registry automatically.
+
+## Candidate preparation
+
+Internal lifecycle modules record:
+
+- candidate identifier;
+- source-data and split metadata;
+- feature contract;
+- model families and parameters;
+- validation metrics;
+- model artifact paths;
+- comparison and promotion readiness.
+
+Primary path:
+
+`src/electricity_predictor/modeling/lifecycle/`
+
+## Review
+
+Before activation, review regression, classification, decision-policy, and
+champion/challenger reports. Confirm that both technical quality and product
+behaviour are acceptable.
+
+## Activation
 
 ```bash
-make lifecycle-run
+make activate
 ```
 
-### 3. Comparison
+Activation validates the latest candidate and promotes the approved regression
+and classification models. It is the only public command that may create or
+change:
 
-Candidates are compared against the actual currently active model version.
+`models/production/active_models.json`
 
-Comparison and promotion are separate actions.
-
-### 4. Promotion
-
-Promotion is explicit:
+Immediately afterward:
 
 ```bash
-make lifecycle-promote
+make sync
 ```
 
-Promotion owns active registry writes, including the first activation when no
-active model exists.
+## First activation
 
-### 5. Rollback
+A clean repository may contain no active model. This is a valid initial state.
+The first production model follows the same review and promotion boundary as
+later replacements.
 
-Rollback restores a previously registered active version:
+## Rollback principle
 
-```bash
-make lifecycle-rollback
-```
-
-### 6. Status
-
-```bash
-make lifecycle-status
-```
-
-## Initial state
-
-The repository may legitimately contain no active model after a cleanup or
-fresh installation.
-
-In that state:
-
-- application prediction cannot invent a model;
-- the lifecycle can prepare and compare candidates;
-- the first activation remains manual;
-- the active registry is created only through approved promotion.
+Rollback restores a previously approved registry/release. It must not retrain a
+model. After restoring the previous version, run `make sync` to generate fresh
+predictions with that version.
 
 ## Protected final evaluation
 
-These tests are excluded from routine verification:
+Routine verification excludes:
 
 - `tests/modeling/regression/test_final_test_evaluation.py`
 - `tests/modeling/classification/test_final_test_evaluation.py`
 
-The protected test split is used only for an explicitly authorized final
-evaluation. It must not be used to fit models, select candidates, tune
-hyperparameters, or choose thresholds.
+These tests may run only during an explicitly authorized final evaluation. Their
+results must never feed training, tuning, feature design, or threshold selection.
 
-## Release flow
+## Release boundary
 
-After an approved promotion:
-
-```bash
-make release-build
-make models-install
-```
-
-A live refit may update a candidate bundle, but it must not directly activate
-the result.
+Deployment must use an approved active release. Deployment itself cannot train,
+select, or promote a model.

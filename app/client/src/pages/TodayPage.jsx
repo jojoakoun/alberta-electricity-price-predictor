@@ -11,6 +11,12 @@ import {
 } from "react";
 
 import { useTodayQuery } from "../api/useTodayQuery";
+import {
+  trackRefresh,
+} from "../analytics/analytics";
+import {
+  usePageAnalytics,
+} from "../analytics/usePageAnalytics";
 import { AppReveal } from "../components/motion/AppReveal";
 import { BestTimeCard } from "../components/today/BestTimeCard";
 import { Button } from "../components/Button";
@@ -26,10 +32,17 @@ import {
 } from "../domain/today";
 
 export function TodayPage() {
+  usePageAnalytics("today");
+
   const todayQuery = useTodayQuery();
   const forecastsRef = useRef(null);
   const detailsButtonRef = useRef(null);
   const [showForecasts, setShowForecasts] = useState(false);
+
+  function refreshToday() {
+    trackRefresh("today");
+    void todayQuery.refetch();
+  }
 
   function toggleForecasts() {
     const nextState = !showForecasts;
@@ -101,7 +114,7 @@ export function TodayPage() {
 
           <Button
             className="product-action-button"
-            onClick={() => void todayQuery.refetch()}
+            onClick={refreshToday}
           >
             <RefreshCw
               aria-hidden="true"

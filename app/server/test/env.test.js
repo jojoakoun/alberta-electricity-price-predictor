@@ -6,6 +6,7 @@ describe("server environment", () => {
   test("uses Railway PORT and public binding in production", () => {
     const environment = createEnv({
       NODE_ENV: "production",
+      ANALYTICS_PRIVATE_KEY: "a".repeat(32),
       PORT: "3200",
       API_PORT: "8000",
       DATABASE_URL:
@@ -29,6 +30,7 @@ describe("server environment", () => {
   test("allows an explicit host override", () => {
     const environment = createEnv({
       NODE_ENV: "production",
+      ANALYTICS_PRIVATE_KEY: "a".repeat(32),
       API_HOST: "127.0.0.1",
       PORT: "3100",
       DATABASE_URL:
@@ -43,6 +45,7 @@ describe("server environment", () => {
     expect(() => {
       createEnv({
         NODE_ENV: "production",
+        ANALYTICS_PRIVATE_KEY: "a".repeat(32),
         PORT: "3000",
       });
     }).toThrow(
@@ -58,9 +61,35 @@ describe("server environment", () => {
 
     const environment = createEnv({
       NODE_ENV: "production",
+      ANALYTICS_PRIVATE_KEY: "a".repeat(32),
       DATABASE_URL: databaseUrl,
     });
 
     expect(environment.databaseUrl).toBe(databaseUrl);
+  });
+
+  test("requires a private analytics key in production", () => {
+    expect(() => createEnv({
+      NODE_ENV: "production",
+      PORT: "8000",
+      DATABASE_URL:
+        "postgresql://user:password@localhost:5432/wattwise",
+    })).toThrow(
+      "ANALYTICS_PRIVATE_KEY must contain at least 32 characters in production.",
+    );
+  });
+
+  test("accepts a valid private analytics key in production", () => {
+    const environment = createEnv({
+      NODE_ENV: "production",
+      PORT: "8000",
+      DATABASE_URL:
+        "postgresql://user:password@localhost:5432/wattwise",
+      ANALYTICS_PRIVATE_KEY: "a".repeat(32),
+    });
+
+    expect(environment.analyticsPrivateKey).toBe(
+      "a".repeat(32),
+    );
   });
 });

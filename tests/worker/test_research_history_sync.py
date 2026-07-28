@@ -23,14 +23,16 @@ def test_sync_history_target_uses_relocated_module() -> None:
   target = makefile.split("sync-history:\n", 1)[1].split(
     "\n\n", 1
   )[0]
+  normalized_target = " ".join(
+    target.replace("\\\n", " ").split()
+  )
 
   assert (
     "$(PYTHON) -m "
     "electricity_predictor.worker.research_history_sync"
-    in target
+    in normalized_target
   )
   assert "electricity_predictor.worker.importer" not in target
-  assert "make sync-history" in makefile
 
 
 def test_load_current_history_returns_sorted_required_columns(

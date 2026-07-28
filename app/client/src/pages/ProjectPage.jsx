@@ -1,4 +1,7 @@
 import { ProjectAudience } from "../components/project/ProjectAudience";
+import {
+  usePageAnalytics,
+} from "../analytics/usePageAnalytics";
 import "../styles/project.css";
 import "../styles/project-motion.css";
 
@@ -11,6 +14,8 @@ import { ProjectReflection } from "../components/project/ProjectReflection";
 import { TechnologyStack } from "../components/project/TechnologyStack";
 
 export function ProjectPage() {
+  usePageAnalytics("project");
+
   return (
     <div
       className={[

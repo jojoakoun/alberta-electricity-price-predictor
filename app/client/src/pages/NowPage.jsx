@@ -8,6 +8,12 @@ import {
 import { Link } from "react-router";
 
 import { useNowQuery } from "../api/useNowQuery";
+import {
+  trackRefresh,
+} from "../analytics/analytics";
+import {
+  usePageAnalytics,
+} from "../analytics/usePageAnalytics";
 import { AppReveal } from "../components/motion/AppReveal";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
@@ -17,7 +23,14 @@ import { StatusBadge } from "../components/StatusBadge";
 import { copy } from "../copy";
 
 export function NowPage() {
+  usePageAnalytics("now");
+
   const nowQuery = useNowQuery();
+
+  function refreshNow() {
+    trackRefresh("now");
+    void nowQuery.refetch();
+  }
 
   if (nowQuery.isPending) {
     return (
@@ -69,7 +82,7 @@ export function NowPage() {
 
           <Button
             className="product-action-button"
-            onClick={() => void nowQuery.refetch()}
+            onClick={refreshNow}
           >
             <RefreshCw
               aria-hidden="true"

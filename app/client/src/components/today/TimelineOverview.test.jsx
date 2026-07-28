@@ -332,7 +332,7 @@ describe("TimelineOverview", () => {
         ),
       ).toHaveAttribute(
         "fill",
-        "var(--color-brand)",
+        "var(--color-okay)",
       );
     },
   );

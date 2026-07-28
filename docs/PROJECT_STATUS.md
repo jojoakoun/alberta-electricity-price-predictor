@@ -1,74 +1,61 @@
 # Project Status
 
-## Foundation
+## Current milestone
 
-The repository architecture cleanup is complete.
+The architecture cleanup and application feature work are complete and verified.
 
-Completed foundation work includes:
+Verified results before this documentation update:
 
-- dead-code and unused-import cleanup
-- worker naming normalization
-- lifecycle ownership separation
-- active-registry write isolation
-- removal of legacy lifecycle candidate trainers
-- shared column contract centralization
-- single Python requirements file
-- Makefile reduction from 82 targets to 49
-- removal of obsolete Makefile aliases
-- removal of the destructive reset shortcut
-- replacement of obsolete documentation
+- 520 authorized Python tests passed;
+- 25 server test suites and 134 server tests passed;
+- 19 client test files and 65 client tests passed;
+- frontend lint reported zero warnings and zero errors;
+- the production client build succeeded;
+- Git whitespace verification passed.
 
-## Current architecture
+Protected final-evaluation tests were intentionally not executed.
 
-```text
-live model construction
-  → lifecycle candidate preparation
-  → lifecycle comparison
-  → lifecycle promotion
-  → active model registry
-```
+## Completed work
 
-Candidate preparation does not activate models.
-
-Live refitting does not activate models.
-
-Promotion owns first activation and later active-version changes.
-
-## Application
-
-The repository includes:
-
-- PostgreSQL storage
-- Express API
-- React frontend
-- scheduled Python worker
-- Railway web configuration
-- Railway worker configuration
+- architecture responsibility cleanup;
+- shared column contract centralization;
+- lifecycle promotion ownership;
+- worker naming and deployment entry-point normalization;
+- current recommendation and Today timeline UX;
+- near-zero electricity-price presentation;
+- anonymous public analytics ingestion;
+- private analytics summary and reset;
+- `analytics_events` migration;
+- test alignment with current architecture;
+- clean documentation set and visual study manual.
 
 ## Current operational state
 
-The foundation is ready for a fresh manual rebuild.
+The code foundation is ready to be committed. Generated model, report, and
+prediction outputs will then be deliberately cleaned and reconstructed before
+Railway deployment.
 
-Generated training outputs, model reports, and active-model state may be absent
-until the rebuild and promotion steps are deliberately executed.
+## Next phase — fresh reconstruction
 
-This absence is an expected initial state, not an architecture failure.
+```text
+commit verified code and documentation
+  → create production-preparation branch
+  → remove generated data/reports/models safely
+  → reset local application tables
+  → run make rebuild
+  → review all model and decision reports
+  → run make activate after approval
+  → run make sync
+  → verify local product behaviour
+```
 
-## Next phases
+## Following phase — Railway deployment
 
-### B5 — Manual reconstruction
+Deployment starts only after:
 
-The developer will explicitly run the approved data and modeling reconstruction
-and review its report.
-
-No automatic reconstruction is performed by the cleanup process.
-
-### B6 — Deployment
-
-Deployment begins only after:
-
-- reconstruction succeeds;
-- model results are reviewed;
+- fresh reconstruction succeeds;
+- metrics and decision behaviour are reviewed;
 - lifecycle comparison succeeds;
 - promotion is explicitly approved;
-- an active release is available.
+- an active release and fresh prediction run exist;
+- migrations and secrets are prepared.

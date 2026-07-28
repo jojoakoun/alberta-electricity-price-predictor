@@ -1,85 +1,97 @@
 # Deployment
 
-## Web application
-
-`railway.json` defines the Railway web service.
-
-The web build installs server dependencies, installs client build dependencies,
-and builds the React application.
-
-The deployment runs database migrations before starting the Express server.
-
-The health endpoint is:
+## Components
 
 ```text
-/api/v1/health
+Railway project
+├── PostgreSQL database
+├── Web service
+│   ├── Express API
+│   └── built React application
+└── Scheduled worker
+    └── wattwise-worker
 ```
 
-## Worker
+## Web service
 
-`railway.worker.json` defines the scheduled worker.
+Configuration: `railway.json`
 
-The worker build installs `requirements.txt` and the local Python package.
+The web build installs server dependencies, installs client build dependencies,
+and builds the React application. Production startup applies database migrations
+before the Express server starts.
 
-The installed command is:
+Health endpoint:
+
+`GET /api/v1/health`
+
+## Scheduled worker
+
+Configuration: `railway.worker.json`
+
+The worker installs `requirements.txt` and the local Python package. Railway
+invokes the installed command directly:
 
 ```text
 wattwise-worker
 ```
 
-The Railway worker invokes this command directly. It does not depend on a
-Makefile alias.
+The scheduled worker runs hourly. It performs operational synchronization and
+prediction generation only. It cannot train or promote a model.
 
-The worker schedule is hourly.
+## Docker
 
-## Database
+`docker-compose.yml` provides local PostgreSQL. Docker credentials in this file
+are development-only values and must never be reused in production.
 
-The application uses PostgreSQL.
-
-Local PostgreSQL configuration is defined in `docker-compose.yml`.
-
-Production credentials and connection strings must be provided through
-environment variables and must not be committed.
-
-## Model releases
-
-An approved model release can be built with:
-
-```bash
-make release-build
+```text
+Docker Compose
+  → PostgreSQL container
+  → local DATABASE_URL
+  → server + Python pipeline
 ```
 
-A prepared release can be installed with:
+Persistent production model files require an appropriate Railway volume or a
+versioned remote release mechanism shared by the worker that loads them.
 
-```bash
-make models-install
-```
+## Environment variables
 
-The installer supports the approved local registry and configured remote
-release metadata.
+Store production values only in Railway variables. Store local values only in
+`.env`. `.env.example` documents variable names but contains no real secrets.
 
-Deployment must not silently train or promote a model.
+Important variables include:
 
-## Required deployment sequence
+- `DATABASE_URL`;
+- `ANALYTICS_PRIVATE_KEY`;
+- production runtime and client-origin settings documented in `.env.example`.
+
+## Required deployment order
 
 ```text
 verified repository
-  → approved active model
-  → versioned model release
-  → database migrations
+  → fresh reconstruction
+  → report review
+  → explicit activation
+  → fresh sync
+  → versioned active release
+  → PostgreSQL migrations
   → web deployment
   → worker deployment
-  → health and prediction checks
+  → endpoint and freshness checks
 ```
 
-## Production checks
+## Production verification
 
-After deployment, verify:
+Verify:
 
-- `/api/v1/health`
-- `/api/v1/now`
-- `/api/v1/today`
-- worker execution status
-- prediction freshness
-- active model version
-- database migration status
+- `/api/v1/health` returns healthy;
+- `/api/v1/now` returns current data;
+- `/api/v1/today` returns all required horizons;
+- the worker completes successfully;
+- predictions are fresh;
+- the active model version is correct;
+- all migrations, including `analytics_events`, are applied;
+- private analytics rejects missing or invalid keys.
+
+## Deployment prohibition
+
+Deployment must never silently train, select, promote, or activate a model.

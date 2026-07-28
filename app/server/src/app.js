@@ -12,8 +12,14 @@ const {
 const {
   notFoundHandler,
 } = require("./middleware/not-found");
+const {
+  analyticsRouter,
+} = require("./routes/analytics");
 const { healthRouter } = require("./routes/health");
 const { nowRouter } = require("./routes/now");
+const {
+  privateAnalyticsRouter,
+} = require("./routes/private-analytics");
 const { todayRouter } = require("./routes/today");
 
 const DEFAULT_CLIENT_DIST_PATH = path.resolve(
@@ -23,12 +29,23 @@ const DEFAULT_CLIENT_DIST_PATH = path.resolve(
 
 function createApp({
   nodeEnv = env.nodeEnv,
-  clientDistPath = DEFAULT_CLIENT_DIST_PATH,
-  enableRequestLogging = nodeEnv !== "test",
+  clientDistPath =
+    DEFAULT_CLIENT_DIST_PATH,
+  enableRequestLogging =
+    nodeEnv !== "test",
+  analyticsPrivateKey =
+    env.analyticsPrivateKey,
 } = {}) {
   const app = express();
 
   app.disable("x-powered-by");
+
+  // Store the secret in application state so tests can inject
+  // a temporary value without changing process environment.
+  app.set(
+    "analyticsPrivateKey",
+    analyticsPrivateKey,
+  );
 
   if (enableRequestLogging) {
     app.use(
@@ -43,15 +60,24 @@ function createApp({
   app.use(
     cors({
       origin: env.corsOrigin,
-      methods: ["GET"],
+      methods: ["GET", "POST"],
     }),
   );
 
-  app.use(express.json({ limit: "16kb" }));
+  app.use(
+    express.json({
+      limit: "16kb",
+    }),
+  );
 
   app.use("/api/v1", healthRouter);
   app.use("/api/v1", nowRouter);
   app.use("/api/v1", todayRouter);
+  app.use("/api/v1", analyticsRouter);
+  app.use(
+    "/api/v1",
+    privateAnalyticsRouter,
+  );
 
   if (nodeEnv === "production") {
     const clientIndexPath = path.join(
@@ -68,26 +94,34 @@ function createApp({
       ),
     );
 
-    // Only browser routes receive the SPA entry point; unknown API paths must
-    // continue to the structured JSON 404 handler below.
-    app.use((request, response, next) => {
-      if (
-        request.method !== "GET"
-        || request.path.startsWith("/api/")
-      ) {
-        next();
-        return;
-      }
+    // Only browser routes receive the SPA entry point.
+    // Unknown API paths continue to the JSON 404 handler.
+    app.use(
+      (
+        request,
+        response,
+        next,
+      ) => {
+        if (
+          request.method !== "GET"
+          || request.path.startsWith(
+            "/api/",
+          )
+        ) {
+          next();
+          return;
+        }
 
-      response.sendFile(
-        clientIndexPath,
-        (error) => {
-          if (error) {
-            next(error);
-          }
-        },
-      );
-    });
+        response.sendFile(
+          clientIndexPath,
+          (error) => {
+            if (error) {
+              next(error);
+            }
+          },
+        );
+      },
+    );
   }
 
   app.use(notFoundHandler);

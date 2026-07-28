@@ -10,11 +10,13 @@ import {
 } from "lucide-react";
 
 import { copy } from "../../copy";
+import {
+  formatElectricityPrice,
+} from "../../utils/electricity-price";
 
 import {
   formatAlbertaHourRange,
   formatAlbertaTime,
-  formatNumber,
 } from "../../i18n/formatters";
 
 import { Card } from "../Card";
@@ -116,7 +118,7 @@ export function RecommendationCard({
         </div>
 
         <p className="now-price-value">
-          {formatNumber(data.price.value)}
+          {formatElectricityPrice(data.price.value)}
 
           <span>
             {data.price.unit}

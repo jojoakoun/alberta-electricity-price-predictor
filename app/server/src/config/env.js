@@ -2,7 +2,10 @@ const path = require("node:path");
 const dotenv = require("dotenv");
 
 dotenv.config({
-  path: path.resolve(__dirname, "../../../../.env"),
+  path: path.resolve(
+    __dirname,
+    "../../../../.env",
+  ),
   quiet: true,
 });
 
@@ -37,8 +40,28 @@ function parseDatabaseUrl(nodeEnv, value) {
   return databaseUrl;
 }
 
+function parseAnalyticsPrivateKey(
+  nodeEnv,
+  value,
+) {
+  const privateKey = value?.trim() || "";
+
+  if (
+    nodeEnv === "production"
+    && privateKey.length < 32
+  ) {
+    throw new Error(
+      "ANALYTICS_PRIVATE_KEY must contain at least "
+      + "32 characters in production.",
+    );
+  }
+
+  return privateKey;
+}
+
 function createEnv(source = process.env) {
-  const nodeEnv = source.NODE_ENV || "development";
+  const nodeEnv =
+    source.NODE_ENV || "development";
 
   return Object.freeze({
     nodeEnv,
@@ -57,11 +80,17 @@ function createEnv(source = process.env) {
     corsOrigin:
       source.CORS_ORIGIN
       || "http://localhost:5173",
-    logLevel: source.LOG_LEVEL || "info",
+    logLevel:
+      source.LOG_LEVEL || "info",
     databaseUrl: parseDatabaseUrl(
       nodeEnv,
       source.DATABASE_URL,
     ),
+    analyticsPrivateKey:
+      parseAnalyticsPrivateKey(
+        nodeEnv,
+        source.ANALYTICS_PRIVATE_KEY,
+      ),
   });
 }
 

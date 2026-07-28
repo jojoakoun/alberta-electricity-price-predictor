@@ -159,8 +159,17 @@ describe("Today service", () => {
     const today = await getToday(viewedAt);
 
     expect(today.comparison).toBe("forecast_equal");
-    expect(today.currentPriceCents).toBe(6.14);
-    expect(today.bestTime.priceCents).toBe(6.14);
+    // The API preserves additional precision so the UI can distinguish
+    // a small positive price from exact zero. Public comparisons still
+    // use the same two-decimal values displayed to consumers.
+    expect(
+      Number(today.currentPriceCents.toFixed(2)),
+    ).toBe(6.14);
+
+    expect(
+      Number(today.bestTime.priceCents.toFixed(2)),
+    ).toBe(6.14);
+
     expect(today.priceDifferenceCents).toBe(0);
   });
 

@@ -30,9 +30,9 @@ PROTECTED_CLASSIFICATION_TEST := \
 # ==============================================================================
 # ==============================================================================
 #
-#                    WATTWISE — MAIN COMMANDS
+#                    WATTWISE — PUBLIC COMMANDS
 #
-#                   USE THIS SECTION NORMALLY
+#             ORDERED BY NORMAL OPERATIONAL IMPORTANCE
 #
 # ==============================================================================
 # ==============================================================================
@@ -53,53 +53,54 @@ PROTECTED_CLASSIFICATION_TEST := \
 
 help:
 	@echo ""
-	@echo "WattWise — main commands"
+	@echo "WattWise — command guide"
 	@echo "========================"
 	@echo ""
-	@echo "Installation:"
+	@echo "1. Setup"
 	@echo "  make install"
 	@echo "      Install Python, API, and frontend dependencies."
 	@echo ""
-	@echo "Complete rebuild:"
+	@echo "2. Daily development"
+	@echo "  make start        Start the API and frontend."
+	@echo "  make restart      Restart the API and frontend."
+	@echo "  make stop         Stop local application processes."
+	@echo "  make check        Check health, now, and today endpoints."
+	@echo "  make status       Show Git, database, models, and generated files."
+	@echo "  make verify       Run authorized tests, lint, and production build."
+	@echo ""
+	@echo "3. Hourly operation"
+	@echo "  make sync"
+	@echo "      Refresh operational data and generate predictions."
+	@echo "      Never retrains or activates models."
+	@echo ""
+	@echo "4. Fresh reconstruction"
 	@echo "  make reset CONFIRM=YES"
-	@echo "      Delete generated files and reset the local database."
-	@echo "      Preserve the raw CSV source and PostgreSQL schema."
+	@echo "      Remove generated outputs and clear local application tables."
+	@echo "      Preserve the raw source and database schema."
 	@echo ""
 	@echo "  make rebuild"
-	@echo "      Rebuild data, reports, models, and the lifecycle candidate."
-	@echo "      Does not run protected final-test evaluations."
-	@echo "      Does not activate models automatically."
+	@echo "      Rebuild data, features, model reports, and a candidate."
+	@echo "      Excludes protected final-evaluation tests."
+	@echo "      Never activates a model automatically."
 	@echo ""
 	@echo "  make activate"
-	@echo "      Manually activate the latest approved candidate."
+	@echo "      Manually promote the latest approved candidate."
 	@echo ""
-	@echo "Normal application update:"
-	@echo "  make sync"
-	@echo "      Refresh AESO/PostgreSQL data and generate predictions."
-	@echo "      Does not retrain models."
+	@echo "5. Private analytics"
+	@echo "  make analytics"
+	@echo "      Read the protected analytics summary."
+	@echo "  make analytics-reset CONFIRM=YES"
+	@echo "      Delete anonymous analytics events."
 	@echo ""
-	@echo "Local application:"
-	@echo "  make start"
-	@echo "      Start the API and frontend."
+	@echo "6. Advanced lifecycle and maintenance"
+	@echo "  make lifecycle-run"
+	@echo "  make lifecycle-status"
+	@echo "  make lifecycle-promote"
+	@echo "  make db-clean CONFIRM=YES"
 	@echo ""
-	@echo "  make restart"
-	@echo "      Restart the API and frontend."
+	@echo "Compatibility aliases remain temporary and are not documented"
+	@echo "as primary commands. New automation must use canonical commands."
 	@echo ""
-	@echo "  make stop"
-	@echo "      Stop the API and frontend."
-	@echo ""
-	@echo "  make check"
-	@echo "      Check the health, now, and today endpoints."
-	@echo ""
-	@echo "Verification:"
-	@echo "  make status"
-	@echo "      Show Git, PostgreSQL, model, and generated-file status."
-	@echo ""
-	@echo "  make verify"
-	@echo "      Run allowed tests, lint, and the production build."
-	@echo ""
-
-
 install:
 	@echo ""
 	@echo "=== Installing dependencies ==="
@@ -551,7 +552,7 @@ internal-app-check:
 
 
 # ------------------------------------------------------------------------------
-# Compatibility aliases
+# Temporary compatibility aliases — do not use in new automation
 # ------------------------------------------------------------------------------
 
 sync-and-predict: sync
@@ -586,3 +587,45 @@ lifecycle-promote:
 	$(PYTHON) \
 		-m electricity_predictor.modeling.lifecycle.model_promotion \
 		--task "$(TASK)"
+
+
+# ============================================================
+# PRIVATE ANALYTICS
+# ============================================================
+
+.PHONY: analytics
+
+analytics:
+	@set -a; \
+	source .env; \
+	set +a; \
+	test -n "$$ANALYTICS_PRIVATE_KEY" || { \
+		echo "ANALYTICS_PRIVATE_KEY is missing from .env."; \
+		exit 1; \
+	}; \
+	curl -fsS \
+		-H "Accept: application/json" \
+		-H "X-Analytics-Key: $$ANALYTICS_PRIVATE_KEY" \
+		"http://127.0.0.1:$${API_PORT:-8000}/api/v1/private/analytics" \
+		| python -m json.tool
+# ============================================================
+# PRIVATE ANALYTICS RESET
+# ============================================================
+
+.PHONY: analytics-reset
+
+analytics-reset:
+	@test "$(CONFIRM)" = "YES" || { \
+		echo "STOP: analytics reset requires CONFIRM=YES"; \
+		echo "Run: make analytics-reset CONFIRM=YES"; \
+		exit 1; \
+	}
+	@set -a; \
+	. ./.env; \
+	set +a; \
+	psql "$$DATABASE_URL" \
+		-v ON_ERROR_STOP=1 \
+		-c "TRUNCATE TABLE analytics_events RESTART IDENTITY;" \
+		-c "SELECT COUNT(*) AS remaining_analytics_events FROM analytics_events;"
+	@echo ""
+	@echo "ANALYTICS_RESET=PASS"
