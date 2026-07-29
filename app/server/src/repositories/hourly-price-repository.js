@@ -85,6 +85,14 @@ async function getCurrentMarketPrice(
     ],
   );
 
+  console.log(
+    "DEBUG_HOURLY_QUERY",
+    JSON.stringify({
+      rowCount: rows.length,
+      firstRow: rows[0] ?? null,
+    }),
+  );
+
   return rows[0] ?? null;
 }
 
