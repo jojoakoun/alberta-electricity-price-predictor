@@ -38,6 +38,14 @@ async function getNow(
     getRecentFinalizedPrices(),
   ]);
 
+  console.log(
+    "DEBUG_NOW",
+    JSON.stringify({
+      viewedAt: viewedAt.toISOString(),
+      currentMarketPrice,
+    }),
+  );
+
   if (!currentMarketPrice) {
     return null;
   }
