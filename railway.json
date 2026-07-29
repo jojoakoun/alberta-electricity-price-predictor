@@ -1,12 +1,12 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "RAILPACK",
-    "buildCommand": "npm ci --omit=dev --prefix app/server && npm ci --include=dev --prefix app/client && npm --prefix app/client run build"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile.web"
   },
   "deploy": {
-    "preDeployCommand": "npm --prefix app/server run migrate:prod",
-    "startCommand": "npm --prefix app/server start",
+    "preDeployCommand": "npm run migrate:prod",
+    "startCommand": "npm start",
     "healthcheckPath": "/api/v1/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
