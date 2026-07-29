@@ -1,0 +1,24 @@
+# -----------------------------------------------------------------------------
+# WattWise production worker
+# -----------------------------------------------------------------------------
+FROM python:3.14-slim-bookworm
+
+WORKDIR /app
+
+# Keep Python output visible in container logs and avoid local bytecode files.
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PIP_NO_CACHE_DIR=1
+
+# Install the currently locked project dependencies.
+COPY requirements.txt pyproject.toml README.md ./
+RUN python -m pip install --upgrade pip \
+    && python -m pip install --requirement requirements.txt
+
+# Install the WattWise package and its worker command.
+COPY src/ ./src/
+RUN python -m pip install --no-deps .
+
+# This command runs one operational prediction cycle.
+# It does not start model training.
+CMD ["wattwise-worker"]
