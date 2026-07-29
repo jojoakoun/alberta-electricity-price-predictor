@@ -1,12 +1,9 @@
 # WattWise
 
-```{=html}
 <p align="center">
-```
-`<img src="app/client/public/wattwise-mark.svg" alt="WattWise mark" width="96">`{=html}
-```{=html}
+  <img src="app/client/public/wattwise-mark.svg" alt="WattWise mark" width="96">
 </p>
-```
+
 WattWise is an end-to-end machine-learning application that predicts
 Alberta hourly electricity pool prices and transforms market forecasts
 into simple consumer guidance.
